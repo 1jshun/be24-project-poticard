@@ -124,6 +124,18 @@ const router = createRouter({
           meta: { requiresAuth: false, title: '구독' },
         },
         {
+          path: 'notice',
+          name: 'notice',
+          component: () => import('../views/Notice/NoticeList.vue'),
+          meta: { requiresAuth: false, title: '공지사항' },
+        },
+        {
+          path: 'notice/:Idx',
+          name: 'notice-detail',
+          component: () => import('../views/Notice/NoticeDetail.vue'),
+          meta: { requiresAuth: false, title: '공지사항 상세' },
+        },
+        {
           path: 'searchresults',
           name: 'searchresults',
           component: () => import('../views/SearchResults.vue'),
