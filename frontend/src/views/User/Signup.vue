@@ -262,7 +262,7 @@ const signup = async () => {
       name: joinForm.name.trim(),
       email: joinForm.email.trim(),
       phone: joinForm.phone.trim(),
-      password: joinForm.password,
+      password: joinForm.password.trim()
     })
 
     // 자동 로그인하지 말고 로그인 페이지로 이동
