@@ -1,40 +1,56 @@
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import portfolioApi from '@/api/portfolio/index.js'
 
 const router = useRouter()
+const route = useRoute()
 
-const accent = ref('sky')
+const accent = ref('amber')
 const font = ref('sans')
 
 const projectInfo = ref({
-  name: 'Poticard: 개발자 전용 명함 & 채용 관리 플랫폼',
-  period: '2026.01 – 현재',
-  tags: ['Vue.js', 'Tailwind CSS', 'Vite', 'Frontend-focused'],
-  heroImage: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=1200',
+  name: '',
+  period: '',
+  tags: [],
+  heroImage: '',
+  fullStory: []
+})
 
-  fullStory: [
-    {
-      title: 'Project Overview',
-      content: `Poticard는 단순한 구인구직 사이트를 넘어, 개발자와 기업이 '명함'이라는 매개체를 통해 보다 직관적으로 연결되는 네트워킹 플랫폼입니다. 기존의 경직된 채용 프로세스를 유연한 명함 교환 방식으로 재구성하여 접근성을 높였습니다.`
-    },
-    {
-      title: 'Key Features',
-      content: `주요 기능으로는 개인/기업용 디지털 명함 관리, 직관적인 공고 등록 및 현황 확인 대시보드가 있습니다. 특히 기업 사용자가 등록한 공고에 대한 지원자 현황을 한눈에 파악하고, 실시간 채팅을 통해 소통할 수 있는 기능을 핵심으로 합니다.`
-    },
-    {
-      title: 'Technical Implementation',
-      content: `Vue.js 3와 Tailwind CSS를 사용하여 컴포넌트 기반의 개발을 진행했습니다. 특히 유지보수와 스타일 일관성을 위해 Tailwind의 유틸리티 클래스를 직접 활용하고, 재사용 가능한 UI 컴포넌트를 설계하는 데 집중했습니다.`
-    },
-    {
-      title: 'Frontend Challenges',
-      content: `백엔드 API와의 연동을 위해 Axios 인터셉터와 Vite 프록시 설정을 구축하여 데이터 통신 효율을 높였습니다. 공고 현황 대시보드에서는 복잡한 상태 관리를 최적화하여 사용자에게 매끄러운 UX를 제공하고자 노력했습니다.`
-    },
-    {
-      title: 'Learning Points',
-      content: `Git을 통한 협업 과정에서 충돌 해결 및 브랜치 관리 전략의 중요성을 학습하고 있습니다. 프론트엔드 개발자로서 단순히 화면을 구현하는 것을 넘어, 비즈니스 로직과 데이터 흐름을 어떻게 효율적으로 연결할지에 대한 깊은 고민을 담은 프로젝트입니다.`
+const fetchProjectDetail = async () => {
+  try {
+    // params.id가 아닌 query.idx를 사용합니다.
+    const portfolioIdx = route.query.idx;
+    
+    if (!portfolioIdx) return;
+
+    const res = await portfolioApi.getProjectDetail(portfolioIdx);
+    
+    // BaseResponse의 data 구조에 맞춰 매핑합니다.
+    const data = res.data || res;
+    
+    if (data) {
+      projectInfo.value = {
+        name: data.title || '제목 없음',
+        period: data.period || '',
+        tags: data.keywords || [],
+        heroImage: '', 
+        fullStory: data.sectionList ? data.sectionList.map(sec => ({
+          title: sec.sectionTitle,
+          content: sec.contents
+        })) : []
+      }
+
+      if (data.accentColor) accent.value = data.accentColor;
+      if (data.fontFamily) font.value = data.fontFamily;
     }
-  ]
+  } catch (error) {
+    console.error('프로젝트 상세 정보를 불러오는 데 실패했습니다.', error)
+  }
+}
+
+onMounted(() => {
+  fetchProjectDetail()
 })
 
 const accentMap = {
@@ -89,7 +105,7 @@ const goBack = () => router.push('/portfolio-view')
             </span>
           </div>
 
-          <div
+          <div v-if="projectInfo.heroImage"
             class="relative mx-auto max-w-4xl rounded-[2.5rem] overflow-hidden shadow-2xl border border-white dark:border-zinc-800">
             <img :src="projectInfo.heroImage" alt="Hero" class="w-full aspect-[21/9] object-cover" />
           </div>
@@ -113,9 +129,10 @@ const goBack = () => router.push('/portfolio-view')
               </div>
             </div>
 
-            <p class="text-zinc-600 dark:text-zinc-400 leading-relaxed text-base md:text-lg whitespace-pre-line">
-              {{ section.content }}
-            </p>
+            <div 
+              class="text-zinc-600 dark:text-zinc-400 leading-relaxed text-base md:text-lg whitespace-pre-line"
+              v-html="section.content">
+            </div>
           </section>
         </div>
 
@@ -135,7 +152,6 @@ const goBack = () => router.push('/portfolio-view')
 </template>
 
 <style scoped>
-/* 기존 스타일 유지 */
 .dot-bg {
   background-image: radial-gradient(rgba(0, 0, 0, 0.03) 1.5px, transparent 1.5px);
 }
