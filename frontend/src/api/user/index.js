@@ -10,12 +10,13 @@ const login = async (req) => {
 }
 
 const signup = async (req) => {
-  const res = await apiFetch('/user/join', {
+  const res = await apiFetch('/user/signup', {
     method: 'POST',
     body: {
       email: req.email,
       name: req.name,
       password: req.password,
+      phone: req.phone
     },
   })
 
