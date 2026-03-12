@@ -2,10 +2,10 @@
 import { ref, onMounted } from 'vue'
 import NamecardsFront from '@/components/namecards/NamecardsFront.vue'
 import NamecardsBack from '@/components/namecards/NamecardsBack.vue'
-import { getProjects } from '@/api/portfolio/index.js'
+import { getPortfolioList } from '@/api/portfolio/index.js'
 
 const isFlipped = ref(false)
-const projects = ref([])
+const portfolios = ref([])
 const currentUserId = '1'
 
 const toggleFlip = () => {
@@ -13,21 +13,27 @@ const toggleFlip = () => {
 }
 
 onMounted(async () => {
-  const data = await getProjects()
-  if (data && data.projects) {
-    projects.value = data.projects
-  } else if (Array.isArray(data)) {
-    projects.value = data
+  try {
+    // 백엔드 API 호출 (페이지 0, 사이즈 10)
+    const res = await getPortfolioList(0, 10)
+    
+    // 백엔드 응답 구조(BaseResponse 내부의 Map result)에 맞게 데이터 추출
+    // BaseResponse(data) > Map(result) 구조를 고려한 안전한 추출
+    const fetchedData = res.data?.result || res.result || res.data?.data?.result || []
+    
+    if (Array.isArray(fetchedData)) {
+      portfolios.value = fetchedData
+    }
+  } catch (error) {
+    console.error('포트폴리오 목록을 불러오는 중 오류 발생:', error)
   }
 })
 </script>
 
 <template>
   <div class="bg-pattern text-gray-800 dark:text-gray-100 transition-colors duration-300 min-h-screen flex flex-col">
-    <!-- header fetch -->
     <div id="header-placeholder"></div>
 
-    <!-- 메인 콘텐츠 -->
     <main class="flex-1 w-full max-w-5xl mx-auto px-4 pt-28 pb-20">
       <section class="flex justify-center items-center min-h-[400px]">
 
@@ -53,35 +59,25 @@ onMounted(async () => {
 
       </section>
 
-      <!-- Projects Section -->
-
       <section>
         <div class="flex items-center gap-3 mb-8">
-          <h3 class="text-2xl font-bold text-gray-900 dark:text-white">Featured Projects</h3>
+          <h3 class="text-2xl font-bold text-gray-900 dark:text-white">Featured Portfolios</h3>
           <div class="h-px flex-1 bg-gray-200 dark:bg-zinc-800"></div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <article v-for="project in projects" :key="project.id"
+          <article v-for="portfolio in portfolios" :key="portfolio.idx"
             class="group bg-white dark:bg-zinc-900 rounded-2xl border border-gray-100 dark:border-zinc-800 overflow-hidden hover:shadow-xl hover:shadow-yellow-100/50 dark:hover:shadow-none hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+            
             <div class="w-full h-48 bg-gray-100 dark:bg-zinc-800 relative overflow-hidden">
               <div class="absolute inset-0 flex items-center justify-center text-gray-300 dark:text-zinc-700">
-                <i :class="project.iconClass || 'fa-regular fa-image'" class="text-4xl"></i>
-              </div>
-
-              <div class="absolute inset-0 w-full h-full">
-                <img v-if="project.iconClass && project.iconClass.startsWith('http')" :src="project.iconClass"
-                  class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  alt="Project Image" />
-                <div v-else class="flex items-center justify-center h-full text-gray-300 dark:text-zinc-700">
-                  <i :class="project.iconClass || 'fa-regular fa-image'" class="text-4xl"></i>
-                </div>
+                <i class="fa-regular fa-image text-4xl"></i>
               </div>
 
               <div
                 class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <router-link to="/project-detail"
-                  class="px-4 py-2 bg-white/20 backdrop-blur text-white rounded-full text-sm font-bold border border-white/30 hover:bg-white/40 transition-all">
+                <router-link :to="{ path: '/project-detail', query: { idx: portfolio.idx } }"
+                  class="px-4 py-2 bg-white/20 backdrop-blur text-white rounded-full text-sm font-bold border border-white/30 hover:bg-white/40 transition-all text-yellow-300 hover:text-yellow-400 border-yellow-300/30 hover:border-yellow-400">
                   View Details
                 </router-link>
               </div>
@@ -91,22 +87,19 @@ onMounted(async () => {
               <div class="flex justify-between items-start mb-2">
                 <span
                   class="text-[10px] font-bold text-point-yellow bg-yellow-50 dark:bg-yellow-900/20 px-2 py-1 rounded uppercase tracking-wide">
-                  {{ project.category }}
+                  PORTFOLIO
                 </span>
-                <span class="text-xs text-gray-400">{{ project.date }}</span>
+                <span class="text-xs text-gray-400">N/A</span>
               </div>
+              
               <h4
                 class="text-lg font-bold text-gray-900 dark:text-white mb-2 group-hover:text-point-yellow transition-colors">
-                {{ project.title }}
+                {{ portfolio.title || '제목 없음' }}
               </h4>
+              
               <p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-4">
-                {{ project.description }}
+                상세 내용을 확인하려면 View Details를 클릭하세요.
               </p>
-              <div class="flex flex-wrap gap-2">
-                <span v-for="tag in project.tags" :key="tag" class="text-xs text-gray-400">
-                  #{{ tag }}
-                </span>
-              </div>
             </div>
           </article>
         </div>
@@ -153,24 +146,19 @@ onMounted(async () => {
 }
 
 /* 3D 플립 CSS 앞/뒷면 간섭 없이 동작 */
-
-/* 무대 (원근감) */
 .scene {
   perspective: 1000px;
 }
 
-/* 회전하는 물체 */
 .card-object {
   transition: transform 0.7s cubic-bezier(0.4, 0.2, 0.2, 1);
   transform-style: preserve-3d;
 }
 
-/* 뒤집혔을 때 상태 */
 .card-object.is-flipped {
   transform: rotateY(180deg);
 }
 
-/* 앞면과 뒷면 공통 설정 */
 .card-face {
   position: absolute;
   width: 100%;
@@ -182,12 +170,10 @@ onMounted(async () => {
   overflow: hidden;
 }
 
-/* 뒷면은 처음부터 180도 돌려놓기 */
 .card-back {
   transform: rotateY(180deg);
 }
 
-/* 앞면 기본 0도 */
 .card-front {
   transform: rotateY(0deg);
 }
