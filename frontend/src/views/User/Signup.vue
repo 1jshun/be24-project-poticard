@@ -263,7 +263,7 @@ const signup = async () => {
       email: joinForm.email.trim(),
       phone: joinForm.phone.trim(),
       password: joinForm.password.trim()
-    })
+    }, route.query.type)
 
     // 자동 로그인하지 말고 로그인 페이지로 이동
     const loginPath = route.query.type

@@ -9,8 +9,8 @@ const login = async (req) => {
   return res
 }
 
-const signup = async (req) => {
-  const res = await apiFetch('/user/signup', {
+const signup = async (req, type) => {
+  const res = await apiFetch(`/user/signup?type=${type}`, {
     method: 'POST',
     body: {
       email: req.email,
