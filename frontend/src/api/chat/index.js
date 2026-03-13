@@ -47,8 +47,22 @@ const loadPortfolios = async () => {
   }
 }
 
+// 채팅방 생성
+const createChatRoom = async (guestUserId) => {
+  try {
+    const res = await apiFetch(`/chat/room/create/${guestUserId}`, {
+      method: 'POST',
+    })
+    return res
+  } catch (error) {
+    console.error('채팅방 생성 실패:', error.message)
+    throw error
+  }
+}
+
 export default {
   chatRoomList,
   getChatMessages,
   loadPortfolios,
+  createChatRoom,
 }
