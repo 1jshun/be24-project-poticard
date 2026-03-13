@@ -3,16 +3,58 @@ import { ref, onMounted } from 'vue'
 import NamecardsFront from '@/components/namecards/NamecardsFront.vue'
 import NamecardsBack from '@/components/namecards/NamecardsBack.vue'
 import { getPortfolioList } from '@/api/portfolio/index.js'
+import { useNamecardStore } from '@/stores/namecardStore'
+
+let currentUserId = 1
+// 1. 쿠키 이름으로 값을 가져오는 함수
+const getCookie = (name) => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+};
+
+const token = getCookie('ATOKEN'); // 쿠키 이름을 입력하세요
+console.log(token)
+
+if (token) {
+  // 2. JWT는 [header].[payload].[signature] 구조입니다.
+  // 페이로드 부분(index 1)만 추출합니다.
+  const base64Url = token.split('.')[1];
+  const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+  
+  // 3. 디코딩 후 JSON 파싱
+  const payload = JSON.parse(window.atob(base64));
+  
+  // console.log(payload.idx); // 1001 출력
+  currentUserId=payload.idx;
+}
+
+const store = useNamecardStore()
+const cardData = ref(null)
+const isLoading = ref(true)
+
+
+const loadMyCard = async () => {
+  isLoading.value=true
+  const response = await store.getNamecard(currentUserId)
+  if (response){
+    cardData.value = response
+  }
+
+  isLoading.vaue = false
+}
 
 const isFlipped = ref(false)
 const portfolios = ref([])
-const currentUserId = '1'
+
 
 const toggleFlip = () => {
   isFlipped.value = !isFlipped.value
 }
 
 onMounted(async () => {
+  loadMyCard()
+
   try {
     const res = await getPortfolioList(0, 10)
     
@@ -40,7 +82,7 @@ onMounted(async () => {
             :class="{ 'is-flipped': isFlipped }" @click="toggleFlip">
 
             <div class="card-face card-front">
-              <NamecardsFront :userId="currentUserId" />
+              <NamecardsFront :cardInfo="cardData" />
 
               <div class="absolute bottom-4 right-4 z-20 text-xs text-gray-400 animate-pulse pointer-events-none">
                 Click to flip <i class="fa-solid fa-rotate ml-1"></i>
@@ -48,7 +90,7 @@ onMounted(async () => {
             </div>
 
             <div class="card-face card-back">
-              <NamecardsBack :userId="currentUserId" />
+              <NamecardsBack :cardInfo="cardData" />
             </div>
 
           </div>
