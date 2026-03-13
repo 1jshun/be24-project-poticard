@@ -14,11 +14,8 @@ const toggleFlip = () => {
 
 onMounted(async () => {
   try {
-    // 백엔드 API 호출 (페이지 0, 사이즈 10)
     const res = await getPortfolioList(0, 10)
     
-    // 백엔드 응답 구조(BaseResponse 내부의 Map result)에 맞게 데이터 추출
-    // BaseResponse(data) > Map(result) 구조를 고려한 안전한 추출
     const fetchedData = res.data?.result || res.result || res.data?.data?.result || []
     
     if (Array.isArray(fetchedData)) {
@@ -70,10 +67,10 @@ onMounted(async () => {
             class="group bg-white dark:bg-zinc-900 rounded-2xl border border-gray-100 dark:border-zinc-800 overflow-hidden hover:shadow-xl hover:shadow-yellow-100/50 dark:hover:shadow-none hover:-translate-y-1 transition-all duration-300 cursor-pointer">
             
             <div class="w-full h-48 bg-gray-100 dark:bg-zinc-800 relative overflow-hidden">
-              <div class="absolute inset-0 flex items-center justify-center text-gray-300 dark:text-zinc-700">
+              <img v-if="portfolio.image" :src="portfolio.image" alt="Hero Image" class="w-full h-full object-cover" />
+              <div v-else class="absolute inset-0 flex items-center justify-center text-gray-300 dark:text-zinc-700">
                 <i class="fa-regular fa-image text-4xl"></i>
               </div>
-
               <div
                 class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                 <router-link :to="{ path: '/project-detail', query: { idx: portfolio.idx } }"
@@ -109,7 +106,6 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-/* 3D Flip Animation Styles */
 .perspective-1000 {
   perspective: 1000px;
 }
@@ -131,12 +127,10 @@ onMounted(async () => {
   transform: rotateY(180deg);
 }
 
-/* Card transition */
 #card-inner {
   transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
 }
 
-/* Background Pattern */
 .bg-pattern {
   background-color: #f8fafc;
 }
@@ -145,7 +139,6 @@ onMounted(async () => {
   background-color: #09090b;
 }
 
-/* 3D 플립 CSS 앞/뒷면 간섭 없이 동작 */
 .scene {
   perspective: 1000px;
 }
