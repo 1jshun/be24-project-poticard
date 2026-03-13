@@ -1,3 +1,94 @@
+<script setup>
+import { onMounted, ref } from 'vue'
+import MiniNamecards from '@/components/namecards/MiniNamecards.vue'
+import NamecardsFront from '@/components/namecards/NamecardsFront.vue'
+import NamecardsBack from '@/components/namecards/NamecardsBack.vue'
+import { namecardListStore } from '@/stores/namecardListStore.js'
+
+const pageOfToday = 45;
+
+const store = namecardListStore()
+
+const cardList = ref([])
+const isLoading = ref(true)
+
+const loadMyCardList = async () => {
+  isLoading.value=true
+  const response = await store.namecardList(pageOfToday,10)
+
+  if (response){
+    cardList.value = response.namecardList
+  }
+  isLoading.value = false
+}
+
+onMounted(()=>{
+  loadMyCardList()
+})
+
+// 45부터 55까지 숫자가 담긴 배열 생성
+const stackUserIds = Array.from({ length: 10 }, (_, i) => 45 + i)
+
+// 통합 데이터 생성 (45 ~ 55번 유저)
+// Array.from을 사용해 ID 객체 배열
+const userCards = ref(
+  Array.from({ length: 10 }, (_, i) => ({
+    id: 45 + i
+  }))
+)
+
+// 미니 카드 선택 함수
+const selectCard = (idx) => {
+  selectedIdx.value = idx
+  isFlipped.value = false
+}
+
+const initialCenter = Math.floor(stackUserIds.length / 2)
+const selectedIdx = ref(initialCenter)
+const scrollOffset = ref(initialCenter)
+const isFlipped = ref(false)
+
+const handleScroll = (e) => {
+  const delta = e.deltaY > 0 ? 1 : -1
+  const nextIdx = Math.max(0, Math.min(scrollOffset.value + delta, userCards.value.length - 1))
+  if (scrollOffset.value !== nextIdx) {
+    scrollOffset.value = nextIdx
+    selectedIdx.value = nextIdx
+    isFlipped.value = false
+  }
+}
+
+const getMiniCardStyle = (idx) => {
+  const diff = idx - scrollOffset.value
+  const absDiff = Math.abs(diff)
+  const isSelected = idx === selectedIdx.value
+
+  const translateY = diff * 110
+  const translateX = diff * 45
+  const rotateZ = diff * 15
+  const translateZ = -absDiff * 60
+  const rotateX = diff * -12
+
+  const opacity = isSelected ? 1 : Math.max(0.3, 1 - absDiff * 0.25)
+
+  return {
+    transform: `
+      translateY(${translateY}px) 
+      translateX(${translateX}px) 
+      translateZ(${translateZ}px) 
+      rotateZ(${rotateZ}deg)
+      rotateX(${rotateX}deg) 
+      scale(${isSelected ? 1.1 : 0.95})
+    `,
+    zIndex: 100 - absDiff,
+    opacity: opacity,
+    transition: 'all 0.6s cubic-bezier(0.23, 1, 0.32, 1)',
+    filter: isSelected ? 'none' : `blur(${absDiff * 0.3}px)`,
+    pointerEvents: isSelected ? 'auto' : 'none',
+  }
+}
+</script>
+
 <template>
   <div class="min-h-screen bg-[#f8fafc] p-10 font-sans text-[#333] overflow-x-hidden">
     <div class="max-w-[1280px] mx-auto">
@@ -125,97 +216,6 @@
     </div>
   </div>
 </template>
-
-<script setup>
-import { onMounted, ref } from 'vue'
-import MiniNamecards from '@/components/namecards/MiniNamecards.vue'
-import NamecardsFront from '@/components/namecards/NamecardsFront.vue'
-import NamecardsBack from '@/components/namecards/NamecardsBack.vue'
-import { namecardListStore } from '@/stores/namecardListStore.js'
-
-const pageOfToday = 45;
-
-const store = namecardListStore()
-
-const cardList = ref([])
-const isLoading = ref(true)
-
-const loadMyCardList = async () => {
-  isLoading.value=true
-  const response = await store.namecardList(pageOfToday,10)
-
-  if (response){
-    cardList.value = response.namecardList
-  }
-  isLoading.value = false
-}
-
-onMounted(()=>{
-  loadMyCardList()
-})
-
-// 45부터 55까지 숫자가 담긴 배열 생성
-const stackUserIds = Array.from({ length: 10 }, (_, i) => 45 + i)
-
-// 통합 데이터 생성 (45 ~ 55번 유저)
-// Array.from을 사용해 ID 객체 배열
-const userCards = ref(
-  Array.from({ length: 10 }, (_, i) => ({
-    id: 45 + i
-  }))
-)
-
-// 미니 카드 선택 함수
-const selectCard = (idx) => {
-  selectedIdx.value = idx
-  isFlipped.value = false
-}
-
-const initialCenter = Math.floor(stackUserIds.length / 2)
-const selectedIdx = ref(initialCenter)
-const scrollOffset = ref(initialCenter)
-const isFlipped = ref(false)
-
-const handleScroll = (e) => {
-  const delta = e.deltaY > 0 ? 1 : -1
-  const nextIdx = Math.max(0, Math.min(scrollOffset.value + delta, userCards.value.length - 1))
-  if (scrollOffset.value !== nextIdx) {
-    scrollOffset.value = nextIdx
-    selectedIdx.value = nextIdx
-    isFlipped.value = false
-  }
-}
-
-const getMiniCardStyle = (idx) => {
-  const diff = idx - scrollOffset.value
-  const absDiff = Math.abs(diff)
-  const isSelected = idx === selectedIdx.value
-
-  const translateY = diff * 110
-  const translateX = diff * 45
-  const rotateZ = diff * 15
-  const translateZ = -absDiff * 60
-  const rotateX = diff * -12
-
-  const opacity = isSelected ? 1 : Math.max(0.3, 1 - absDiff * 0.25)
-
-  return {
-    transform: `
-      translateY(${translateY}px) 
-      translateX(${translateX}px) 
-      translateZ(${translateZ}px) 
-      rotateZ(${rotateZ}deg)
-      rotateX(${rotateX}deg) 
-      scale(${isSelected ? 1.1 : 0.95})
-    `,
-    zIndex: 100 - absDiff,
-    opacity: opacity,
-    transition: 'all 0.6s cubic-bezier(0.23, 1, 0.32, 1)',
-    filter: isSelected ? 'none' : `blur(${absDiff * 0.3}px)`,
-    pointerEvents: isSelected ? 'auto' : 'none',
-  }
-}
-</script>
 
 <style scoped>
 .perspective-1000 {
