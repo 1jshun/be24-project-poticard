@@ -18,6 +18,35 @@ const loginForm = reactive({
   password: '',
 })
 
+// cookie 가져오는 함수
+const getCookie = (name) => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
+};
+
+// cookie 가져와서 userIdx 반환하는 함수
+const getIdxFromJwtCookie = (cookieName) => {
+  const token = getCookie(cookieName);
+  if (!token) return null;
+
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    
+    // 브라우저의 atob를 이용해 디코딩 후 JSON 파싱
+    const payload = JSON.parse(decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join('')));
+
+    return payload.idx; // JWT payload 안에 들어있는 idx 반환
+  } catch (e) {
+    console.error("JWT 파싱 실패:", e);
+    return null;
+  }
+};
+
 onMounted(() => {
   loginForm.identifier = ''
   loginForm.password = ''
@@ -74,6 +103,29 @@ const login = async () => {
       redirect = route.query.type === 'business' ? '/company' : '/'
     }
     router.push(redirect)
+
+    // login 성공 시 service-worker에 기기 + 유저 정보 등록
+    try {
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: 'BLHgfPga02L2u89uc4xjhbUFTy_U04rQCjGq7o24oxtqfVmAPHTxOmp6xndSHZtGQpmt7gqTFdMXco2gRNP7_p8'
+    });
+    
+    const userIdx = getIdxFromJwtCookie('ATOKEN'); 
+
+    if (!userIdx) {
+      console.warn('Invalid user');
+    }
+
+    await api.subscribePush(subscription, userIdx);
+    
+    console.log('Web Push subscribed!');
+    } catch (pushError) {
+      // 푸시 구독 실패는 로그인은 성공한 상태이므로 경고만 띄움
+      console.warn('Web Push subscription failed:', pushError);
+    }
+
   } catch (e) {
     serverError.value = e?.userMessage || '로그인 실패'
   }
@@ -141,7 +193,7 @@ const login = async () => {
 
           <button type="submit" :disabled="!canSubmit"
             class="w-full py-4 mt-4 rounded-2xl font-bold text-lg transition-all shadow-lg bg-[#facc15] text-black hover:scale-[1.01] active:scale-95 disabled:opacity-50">
-            로그인
+            로그인  
           </button>
         </form>
 

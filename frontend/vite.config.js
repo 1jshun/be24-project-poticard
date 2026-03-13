@@ -21,13 +21,13 @@ export default defineConfig({
       },
 
       '/ws': {
-        target: 'ws://localhost:8081',
+        target: 'ws://localhost:8080',
         ws: true,
         changeOrigin: true,
       },
 
       '/chat-ws': {
-        target: 'ws://localhost:8081',
+        target: 'ws://localhost:8080',
         ws: true,
         changeOrigin: true,
       },
