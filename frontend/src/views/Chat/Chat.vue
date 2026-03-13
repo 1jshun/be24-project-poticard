@@ -1,9 +1,26 @@
 <script setup>
-import { ref, reactive, onMounted, computed, nextTick } from 'vue'
+import { ref, reactive, onMounted, computed, nextTick, onUnmounted } from 'vue'
 import chatApi from '@/api/chat/index.js'
+import SockJS from 'sockjs-client'
+import Stomp from 'stompjs'
 
 /* 상태 관리 */
 const rooms = reactive([]);
+const messagesByRoom = ref({})
+const activeRoomId = ref(null)
+const searchQuery = ref('')
+const messageInput = ref('')
+const messageArea = ref(null)
+const textareaRef = ref(null)
+
+/* 명함 및 메뉴 관련 상태 */
+const isCardOpen = ref(false)
+const isFlipped = ref(false)
+const isMenuOpen = ref(false)
+
+let stompClient = null
+
+
 const getChatRoomList = async () => {
   try {
     const res = await chatApi.chatRoomList()
@@ -18,30 +35,32 @@ const getChatRoomList = async () => {
   }
 }
 
+// Cookie에서 사용자 ID 가져오기
+const getIdxFromJwtCookie = (cookieName) => {
+  const value = `; ${document.cookie}`
+  const parts = value.split(`; ${cookieName}=`)
+  if (parts.length === 2) {
+    const token = parts.pop().split(';').shift()
+    if (!token) return null
+    
+    try {
+      const base64Url = token.split('.')[1]
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+      const payload = JSON.parse(decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+      }).join('')))
+      return payload.idx
+    } catch (e) {
+      console.error('JWT 파싱 실패:', e)
+      return null
+    }
+  }
+  return null
+}
 
-const messagesByRoom = ref({})
-const activeRoomId = ref(null)
-const searchQuery = ref('')
-const messageInput = ref('')
-const messageArea = ref(null)
-const textareaRef = ref(null)
+// userId 변수에 저장
+const myUserId = getIdxFromJwtCookie('ATOKEN')
 
-/* 명함 및 메뉴 관련 상태 */
-const isCardOpen = ref(false)
-const isFlipped = ref(false)
-const isMenuOpen = ref(false)
-
-/* 유틸리티 & 설정 */
-const myUserId =
-  localStorage.getItem('chatUserId') ||
-  (crypto.randomUUID ? crypto.randomUUID() : 'idx-' + Date.now())
-localStorage.setItem('chatUserId', myUserId)
-
-const myUserName =
-  sessionStorage.getItem('chatUserName') || 'Guest-' + Math.floor(1000 + Math.random() * 9000)
-sessionStorage.setItem('chatUserName', myUserName)
-
-let ws = null
 
 /* 계산된 속성 */
 const filteredRooms = computed(() => {
@@ -63,58 +82,68 @@ const scrollBottom = async () => {
   }
 }
 
-const wsConnect = () => {
-  const scheme = location.protocol === 'https:' ? 'wss' : 'ws'
-  const WS_URL = `${scheme}://${location.host}/chat-ws`
-  ws = new WebSocket(WS_URL)
+const wsConnect = (roomId) => {
+  const socket = new SockJS('/ws')
+  stompClient = Stomp.over(socket)
+  stompClient.debug = null
 
-  ws.onopen = () => {
-    if (activeRoomId.value) wsJoin(activeRoomId.value)
-  }
+  stompClient.connect({}, () => {
+    // 채팅방 구독: /sub/chat/room/{roomId}
+    stompClient.subscribe(`/sub/chat/room/${roomId}`, (tick) => {
+      const recv = JSON.parse(tick.body)
+      
+      // 백엔드 응답 형식: { idx, roomIdx, senderIdx, senderName, contents, isRead, createdAt, updatedAt }
+      const receivedRoomId = Number(recv.roomIdx)
+      const isMe = Number(recv.senderIdx) === Number(myUserId)
 
-  ws.onmessage = (e) => {
-    let msg
-    try {
-      msg = JSON.parse(e.data)
-    } catch {
-      return
-    }
-
-    if (msg.type === 'chat') {
-      const roomId = Number(msg.roomId)
-      const isMe = String(msg.userId) === String(myUserId)
-
-      if (!messagesByRoom.value[roomId]) messagesByRoom.value[roomId] = []
-      messagesByRoom.value[roomId].push({
+      if (!messagesByRoom.value[receivedRoomId]) {
+        messagesByRoom.value[receivedRoomId] = []
+      }
+      
+      messagesByRoom.value[receivedRoomId].push({
         who: isMe ? 'me' : 'them',
-        text: msg.text,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        text: recv.contents,
+        time: formatMessageTime(recv.createdAt),
+        messageId: recv.idx,
+        isRead: recv.isRead
       })
 
-      const r = rooms.find((x) => x.id === roomId)
-      if (r) r.last = msg.text.length > 30 ? msg.text.slice(0, 30) + '...' : msg.text
-      if (roomId === activeRoomId.value) scrollBottom()
-    }
-  }
-
-  ws.onclose = () => setTimeout(wsConnect, 1000)
-}
-
-const wsJoin = (roomId) => {
-  if (!ws || ws.readyState !== WebSocket.OPEN) return
-  ws.send(JSON.stringify({ type: 'join', roomId, userId: myUserId, userName: myUserName }))
+      const r = rooms.find((x) => x.id === receivedRoomId)
+      if (r) {
+        r.content = recv.contents.length > 30 ? recv.contents.slice(0, 30) + '...' : recv.contents
+      }
+      
+      if (receivedRoomId === activeRoomId.value) {
+        scrollBottom()
+      }
+    })
+  })
 }
 
 // ActiveRoom 설정
 const setActiveRoom = async (roomId) => {
+  // 같은 방이면 무시
+  if(activeRoomId.value === roomId) return
+
+  // 기존 WebSocket 연결 끊기
+  if (stompClient && stompClient.connected) {
+    stompClient.disconnect()
+    stompClient = null
+  }
+
+  // 방 이동
   activeRoomId.value = roomId
+  console.log('방 이동 성공')
   const room = rooms.find((r) => r.id === roomId)
   if (room) room.unread = 0
   isMenuOpen.value = false
-  wsJoin(roomId)
+  
+  // 새로운 방으로 웹소켓 새로 연결
+  wsConnect(roomId)
+
   // 채팅방 메시지 불러오기
   await loadChatMessages(roomId)
-  scrollBottom()
+  scrollBottom() 
 }
 
 // 날짜 포맷팅 함수
@@ -144,39 +173,29 @@ const formatMessageTime = (dateString) => {
 const loadChatMessages = async (roomId) => {
   try {
     const res = await chatApi.getChatMessages(roomId)
-    if (res && res.data && res.data.messages) {
-      const formattedMessages = res.data.messages.map(msg => {
-        const isMe = msg.senderId === 1 || String(msg.senderId) === String(myUserId)
-        return {
-          who: isMe ? "me" : "them",
-          text: msg.content,
-          time: formatMessageTime(msg.createdAt),
-          messageId: msg.messageId,
-          isRead: msg.isRead
-        }
-      })
+    console.log(res);
 
-      // messagesByRoom에 저장
-      messagesByRoom.value[roomId] = formattedMessages
-
-      console.log(`방 ${roomId}의 메시지 로드 완료:`, formattedMessages)
+    let messages = []
+    if (res && res.data && Array.isArray(res.data)) {
+      messages = res.data
     } else if (res && Array.isArray(res)) {
-      const formattedMessages = res.map(msg => {
-        const isMe = msg.senderId === 1 || String(msg.senderId) === String(myUserId)
-        return {
-          who: isMe ? "me" : "them",
-          text: msg.content,
-          time: formatMessageTime(msg.createdAt),
-          messageId: msg.messageId,
-          isRead: msg.isRead
-        }
-      })
-      messagesByRoom.value[roomId] = formattedMessages
-      console.log(`방 ${roomId}의 메시지 로드 완료 (배열 형식):`, formattedMessages)
-    } else {
-      messagesByRoom.value[roomId] = []
-      console.log(`방 ${roomId}의 메시지가 없습니다.`)
+      messages = res
     }
+    
+    const formattedMessages = messages.map(msg => {
+      // 백엔드 필드명: senderIdx, contents, idx, isRead
+      const isMe = Number(msg.senderIdx) === Number(myUserId)
+      return {
+        who: isMe ? "me" : "them",
+        text: msg.contents,
+        time: formatMessageTime(msg.createdAt),
+        messageId: msg.idx,
+        isRead: msg.isRead || false
+      }
+    })
+    
+    messagesByRoom.value[roomId] = formattedMessages
+    console.log(`방 ${roomId}의 메시지 로드 완료:`, formattedMessages)
   } catch (error) {
     console.error(`방 ${roomId}의 메시지 로드 실패:`, error)
     messagesByRoom.value[roomId] = []
@@ -215,24 +234,19 @@ const sendMessage = () => {
   if (!activeRoomId.value) return alert('채팅방을 먼저 선택해주세요!')
   if (!text) return
 
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(
-      JSON.stringify({
-        type: 'chat',
-        roomId: activeRoomId.value,
-        userId: myUserId,
-        userName: myUserName,
-        text,
-      }),
-    )
-  } else {
-    if (!messagesByRoom.value[activeRoomId.value]) messagesByRoom.value[activeRoomId.value] = []
-    messagesByRoom.value[activeRoomId.value].push({ who: 'me', text, time: '방금' })
-    scrollBottom()
+  try {
+    const message = {
+      roomIdx: activeRoomId.value,
+      contents: text,
+    }
+    console.log('메시지 전송:', message)
+    stompClient.send('/pub/chat/message', {}, JSON.stringify(message))
+    messageInput.value = ''
+    nextTick(() => autosize())
+  } catch (error) {
+    console.error('메시지 전송 실패:', error)
+    alert('메시지 전송에 실패했습니다.')
   }
-
-  messageInput.value = ''
-  nextTick(() => autosize())
 }
 
 const autosize = () => {
@@ -264,7 +278,6 @@ const startVideoCall = () => {
 
 onMounted(() => {
   getChatRoomList();
-  wsConnect()
   if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark')
 })
 </script>
