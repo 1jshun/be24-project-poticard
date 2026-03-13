@@ -42,4 +42,18 @@ const checkEmailDuplicate = async (email) => {
   return res
 }
 
-export default { login, signup, profile, checkEmailDuplicate }
+const subscribePush = async (subscription, userIdx) => {
+  return await apiFetch('/push/sub', {
+    method: 'POST',
+    body: {
+      userIdx: userIdx,
+      endpoint: subscription.endpoint,
+      keys: {
+        p256dh: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('p256dh')))),
+        auth: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('auth'))))
+      }
+    }
+  });
+};
+
+export default { login, signup, profile, checkEmailDuplicate, subscribePush }

@@ -6,14 +6,27 @@ import portfolioApi from '@/api/portfolio/index';
 
 const router = useRouter();
 
-
 const title = ref('');
 const period = ref('');
 const role = ref('');
+const heroImage = ref(null);
+const imagePreview = ref(null);
 const sections = ref([
     { sectionTitle: '', contents: '', sectionOrder: 1, isVisible: true }
 ]);
 const currentSectionIndex = ref(0);
+
+const handleImageChange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+        heroImage.value = file;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            imagePreview.value = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+};
 
 // 3. 섹션 추가 함수 (+)
 const addSection = () => {
@@ -39,7 +52,11 @@ const submitPortfolio = async () => {
     }
 
     try {
-        const payload = {
+        // 1. FormData 객체 생성
+        const formData = new FormData();
+
+        // 2. 텍스트 데이터를 별도의 객체로 분리
+        const dataPayload = {
             title: title.value,
             period: period.value,
             role: role.value,
@@ -49,15 +66,27 @@ const submitPortfolio = async () => {
             layoutType: null
         };
 
-        const response = await portfolioApi.createPortfolio(payload);
+        // 3. 'data' 키에 JSON Blob 추가 (타입을 application/json으로 명시하여 415 에러 방지)
+        formData.append('data', new Blob([JSON.stringify(dataPayload)], {
+            type: 'application/json'
+        }));
+
+        // 4. 'image' 키에 파일 객체 추가
+        if (heroImage.value) {
+            formData.append('image', heroImage.value);
+        }
+
+        // 5. 수정된 formData를 API로 전송
+        const response = await portfolioApi.createPortfolio(formData);
         
         alert('성공적으로 저장되었습니다.');
   
-        const newPortfolioIdx = response.data; // BaseResponse.success(newIdx) 로 보낸 데이터
+        const newPortfolioIdx = response.data; 
         
         router.push({ path: '/portfolio-update-n-check', query: { idx: newPortfolioIdx } }); 
         
     } catch (error) {
+        //
         console.error('포트폴리오 생성 실패:', error);
         alert('저장 중 오류가 발생했습니다.');
     }
@@ -116,9 +145,20 @@ onMounted(async () => {
                                         class="w-full px-4 py-3 rounded-xl bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 focus:border-point-yellow outline-none text-gray-900 dark:text-white">
                                 </div>
                                 <div class="space-y-1">
-                                    <label class="text-xs font-bold text-gray-500 dark:text-gray-400">참여도 / 역할</label>
-                                    <input v-model="role" type="text" placeholder="기여도 100% (Solo)"
+                                    <label class="text-xs font-bold text-gray-500 dark:text-gray-400">한 줄 소개</label>
+                                    <input v-model="role" type="text" placeholder="예: UI/UX 디자이너로 참여하여 사용자 흐름 개선 및 인터페이스 리디자인 담당"
                                         class="w-full px-4 py-3 rounded-xl bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 focus:border-point-yellow outline-none text-gray-900 dark:text-white">
+                                </div>
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-xs font-bold text-gray-500 dark:text-gray-400">대표 이미지</label>
+                                <div class="flex items-center gap-4">
+                                    <input type="file" accept="image/*" @change="handleImageChange"
+                                        class="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-yellow-50 file:text-yellow-700 hover:file:bg-yellow-100 dark:file:bg-yellow-900/30 dark:file:text-yellow-500 dark:hover:file:bg-yellow-800/40 transition-all border border-gray-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800 focus:border-point-yellow focus:outline-none focus:ring-1 focus:ring-point-yellow">
+                                    <div v-if="imagePreview" class="w-16 h-16 shrink-0 rounded-lg overflow-hidden border border-gray-200 dark:border-zinc-700">
+                                        <img :src="imagePreview" alt="Preview" class="w-full h-full object-cover">
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -182,7 +222,6 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-/* 기존 스타일 코드는 그대로 유지합니다 */
 :deep(body) {
     font-family: 'Noto Sans KR', sans-serif;
 }

@@ -14,4 +14,14 @@ const authStore = useAuthStore()
 authStore.init()
 
 app.use(router)
+
+// 서비스 워커 등록
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/service-worker.js')
+        .then(reg => console.log('ServiceWorker registration success : ', reg.scope))
+        .catch(error => console.log('ServiceWorker registration failed: ', error));
+    });
+}
+
 app.mount('#app')

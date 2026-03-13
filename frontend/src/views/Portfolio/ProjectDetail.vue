@@ -19,14 +19,10 @@ const projectInfo = ref({
 
 const fetchProjectDetail = async () => {
   try {
-    // params.id가 아닌 query.idx를 사용합니다.
     const portfolioIdx = route.query.idx;
-    
     if (!portfolioIdx) return;
 
     const res = await portfolioApi.getProjectDetail(portfolioIdx);
-    
-    // BaseResponse의 data 구조에 맞춰 매핑합니다.
     const data = res.data || res;
     
     if (data) {
@@ -34,7 +30,7 @@ const fetchProjectDetail = async () => {
         name: data.title || '제목 없음',
         period: data.period || '',
         tags: data.keywords || [],
-        heroImage: '', 
+        heroImage: data.image || '', // 서버의 Image 필드를 heroImage에 매핑
         fullStory: data.sectionList ? data.sectionList.map(sec => ({
           title: sec.sectionTitle,
           content: sec.contents

@@ -1,30 +1,33 @@
 const BASE_URL = '/api' // local
 // const BASE_URL = 'http://192.100.200.10:8080/' // tomcat
 // const BASE_URL = 'https://www.beyond24lsj.kro.kr/api/' // aws
+// const BASE_URL = 'https://www.sspam.kro.kr/api/'
 
 export async function apiFetch(url, options = {}) {
-  //요청 인터셉터
+  const isFormData = options.body instanceof FormData;
 
   const config = {
     method: options.method || 'GET',
     headers: {
-      'Content-Type': 'application/json',
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...(options.headers || {}),
     },
-    body: options.body ? JSON.stringify(options.body) : undefined,
+    body: isFormData ? options.body : (options.body ? JSON.stringify(options.body) : undefined),
+    credentials: 'include',
   }
 
   let response
 
   try {
-    response = await fetch(BASE_URL + url, config)
+    const finalUrl = BASE_URL + (url.startsWith('/') ? '' : '/') + url;
+    
+    response = await fetch(finalUrl, config)
   } catch (error) {
     console.log('요청 보낼 때 네트워크 에러')
     throw error
   }
 
   //응답 인터셉터
-
   const body = await response.json().catch(() => null)
 
   if (!response.ok) {
