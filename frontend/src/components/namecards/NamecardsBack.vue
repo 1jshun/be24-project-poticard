@@ -1,49 +1,17 @@
 <script setup>
-import { onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import { storeToRefs } from 'pinia'
-import { useNamecardStore } from '@/stores/namecardStore'
 
 const props = defineProps({
-  userId: {
-    type: [String, Number],
-    required: false,
-  },
-})
-
-const route = useRoute()
-const store = useNamecardStore()
-
-// 스토어의 state를 반응형으로 가져오기
-const { cardData, isLoading } = storeToRefs(store)
-
-// 데이터 로드 트리거 함수
-const loadData = async () => {
-  const targetId = props.userId || route.query.userId
-
-  if (targetId) {
-    await store.getUser(targetId)
-  } else {
-    console.log('ID가 제공되지 않았습니다.')
+  cardInfo:{
+    type: Object,
+    required: true
   }
-}
-
-// 컴포넌트 마운트 시 실행
-onMounted(() => {
-  loadData()
 })
 
-watch(() => [props.userId, route.query.userId], () => {
-  loadData()
-})
 </script>
 
 <template>
-  <div v-if="isLoading" class="flex justify-center items-center w-full max-w-md aspect-[1.58/1] mx-auto text-gray-400">
-    Loading Info...
-  </div>
 
-  <div v-else-if="cardData" class="relative w-full max-w-md aspect-[1.58/1] mx-auto">
+  <div v-if="cardInfo" class="relative w-full max-w-md aspect-[1.58/1] mx-auto">
     <div
       class="card-face card-back absolute inset-0 w-full h-full bg-zinc-900 text-white rounded-2xl border border-zinc-700 p-6 sm:p-8 flex flex-col overflow-hidden shadow-lg">
       <div class="absolute bottom-0 left-0 w-24 h-24 bg-zinc-800 rounded-tr-full opacity-50 pointer-events-none"></div>
@@ -55,34 +23,34 @@ watch(() => [props.userId, route.query.userId], () => {
         </h3>
 
         <div class="space-y-4 flex-1 text-sm text-gray-300">
-          <div v-if="cardData.phone" class="flex items-center gap-3">
+          <div v-if="cardInfo.phone" class="flex items-center gap-3">
             <div class="w-8 flex justify-center">
               <i class="fa-solid fa-phone text-lg"></i>
             </div>
-            <span>{{ cardData.phone }}</span>
+            <span>{{ cardInfo.phone }}</span>
           </div>
 
-          <div v-if="cardData.address" class="flex items-center gap-3">
+          <div v-if="cardInfo.address" class="flex items-center gap-3">
             <div class="w-8 flex justify-center">
               <i class="fa-solid fa-location-dot text-lg"></i>
             </div>
-            <span>{{ cardData.address }}</span>
+            <span>{{ cardInfo.address }}</span>
           </div>
 
-          <a v-if="cardData.email" :href="`mailto:${cardData.email}`"
+          <a v-if="cardInfo.email" :href="`mailto:${cardInfo.email}`"
             class="flex items-center gap-3 hover:text-yellow-400 transition-colors">
             <div class="w-8 flex justify-center">
               <i class="fa-solid fa-envelope text-lg"></i>
             </div>
-            <span>{{ cardData.email }}</span>
+            <span>{{ cardInfo.email }}</span>
           </a>
 
-          <a v-if="cardData.website" :href="`https://${cardData.website}`" target="_blank"
+          <a v-if="cardInfo.website" :href="`https://${cardInfo.website}`" target="_blank"
             class="flex items-center gap-3 hover:text-yellow-400 transition-colors">
             <div class="w-8 flex justify-center">
               <i class="fa-solid fa-link text-lg"></i>
             </div>
-            <span class="truncate">{{ cardData.website }}</span>
+            <span class="truncate">{{ cardInfo.website }}</span>
           </a>
         </div>
 
