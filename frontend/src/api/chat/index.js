@@ -3,25 +3,22 @@ import { apiFetch } from '../../plugins/interceptor.js'
 // 채팅방 목록
 const chatRoomList = async () => {
   try {
-    const res = await apiFetch('/json/chat/chat-room-list')
-    console.log('res fetch성공', res)
+    const res = await apiFetch('/chat/room/list')
+   
+    if (res && res.data && Array.isArray(res.data)) {
+      const mappedData = res.data.map(room => ({
+        id: room.idx,
+        name: room.opponentUserName || '',
+        avatar: room.opponentUserProfileImage || '',
+        role: room.opponentUserCareer || '',
+        content: room.lastContents || '',
+      }))
+      return { ...res, data: mappedData }
+    }
+    
     return res
   } catch (error) {
-    console.error('API 호출 실패:', error.message)
-    throw error
-  }
-}
-
-// 채팅 메시지 목록
-const chatMessageList = async (roomId) => {
-  try {
-    const url = roomId ? `/chat/chat-messages.json?roomId=${roomId}` : '/json/chat/chat-messages'
-    console.log(url)
-    const res = await apiFetch(url)
-    console.log(`방 ${roomId}의 메시지:`, res)
-    return res
-  } catch (error) {
-    console.error('API 호출 실패:', error.message)
+    console.error('채팅방 목록 호출 실패:', error.message)
     throw error
   }
 }
@@ -29,11 +26,11 @@ const chatMessageList = async (roomId) => {
 // 특정 채팅방의 메시지 가져오기
 const getChatMessages = async (roomId) => {
   try {
-    const res = await apiFetch(`/json/chat/chat-messages-${roomId}`)
-    console.log(`방 ${roomId}의 메시지:`, res)
+    const res = await apiFetch(`/chat/room/${roomId}/messages`)
+    console.log(res)
     return res
   } catch (error) {
-    console.error('API 호출 실패:', error.message)
+    console.error(`${roomId}번 방 이전 채팅 내역 조회 실패`, error.message)
     throw error
   }
 }
@@ -52,7 +49,6 @@ const loadPortfolios = async () => {
 
 export default {
   chatRoomList,
-  chatMessageList,
   getChatMessages,
   loadPortfolios,
 }

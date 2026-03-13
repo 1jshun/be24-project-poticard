@@ -10,7 +10,7 @@ const getNamecardsInfo = async () => {
   }
 }
 
-const getUserInfo = async (userId) => {
+const getSingleNamecard = async (userId) => {
   try {
     const res = await apiFetch(`/namecard/singleUser?userId=${userId}`)
     return res
@@ -30,7 +30,7 @@ const getNamecardList = async (page, size) => {
 
 
 export default {
-  getUserInfo,
+  getSingleNamecard,
   getNamecardsInfo,
   getNamecardList
 }

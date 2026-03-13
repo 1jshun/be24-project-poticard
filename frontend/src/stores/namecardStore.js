@@ -6,7 +6,7 @@ export const useNamecardStore = defineStore('namecard', () => {
   const cardData = ref(null)
 
   // async 함수가 데이터를 반환하도록 수정
-  const getUser = async (userId) => {
+  const getNamecard = async (userId) => {
     if (!userId) return null
 
     const storageKey = `user_card_${userId}`
@@ -21,7 +21,7 @@ export const useNamecardStore = defineStore('namecard', () => {
       }
 
       // API 호출
-      const res = await api.getUserInfo(userId)
+      const res = await api.getSingleNamecard(userId)
 
       if (res && res.data) {
         const mappedData = {
@@ -47,5 +47,5 @@ export const useNamecardStore = defineStore('namecard', () => {
     }
   }
 
-  return { cardData, getUser }
+  return { cardData, getNamecard }
 })

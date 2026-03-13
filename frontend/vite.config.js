@@ -10,6 +10,9 @@ export default defineConfig({
     vue(),
     vueDevTools(),
   ],
+    define: {
+    global: 'window',
+  },
   server: {
     host: true,
     port: 5173,
@@ -21,7 +24,7 @@ export default defineConfig({
       },
 
       '/ws': {
-        target: 'ws://localhost:8080',
+        target: 'http://localhost:8080',
         ws: true,
         changeOrigin: true,
       },

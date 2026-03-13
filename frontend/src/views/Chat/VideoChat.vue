@@ -606,11 +606,12 @@ onBeforeUnmount(() => {
   try {
     if (localStream) localStream.getTracks().forEach((t) => t.stop())
   } catch { }
-
+  /*
   ws = null
   pc = null
   localStream = null
   screenStream = null
+  */
 })
 </script>
 
