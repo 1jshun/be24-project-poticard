@@ -2,6 +2,7 @@
   <div class="min-h-screen bg-[#f8fafc] p-10 font-sans text-[#333] overflow-x-hidden">
     <div class="max-w-[1280px] mx-auto">
       <div class="grid grid-cols-12 gap-8 items-start">
+
         <div
           class="col-span-4 bg-white rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-200 p-10 flex flex-col relative overflow-hidden h-[750px]">
           <div class="absolute top-10 right-10 z-30">
@@ -10,15 +11,14 @@
 
           <div class="flex-1 relative flex items-center justify-center" @wheel.prevent="handleScroll">
             <div class="stack-wrapper">
-              <div v-for="(userId, idx) in stackUserIds" :key="userId"
+              <div v-for="(card, idx) in cardList" :key="card.idx"
                 class="mini-card-container transition-all duration-700 ease-out" :style="getMiniCardStyle(idx)">
                 <div class="w-full h-full rounded-2xl overflow-hidden transition-all"
                   :class="{ 'ring-4 ring-yellow-400': idx === selectedIdx }">
-                  <NamecardsMini :userId="userId" />
+                   <NamecardsMini
+                   :cardInfo="card" />
                 </div>
-
               </div>
-
             </div>
           </div>
         </div>
@@ -31,7 +31,6 @@
                 class="text-[10px] font-black bg-slate-50 border border-slate-100 shadow-sm text-gray-400 px-5 py-2 rounded-full uppercase tracking-[0.3em]">Business
                 Card View</span>
             </div>
-
             <transition name="card-switch" mode="out-in">
 
               <div :key="selectedIdx"
@@ -42,7 +41,8 @@
                   :class="{ 'is-flipped': isFlipped }">
 
                   <div class="card-face card-front">
-                    <NamecardsFront :userId="userCards[selectedIdx].id" />
+                    <NamecardsFront :cardInfo="cardList[selectedIdx]" />
+                    
 
                     <div class="absolute bottom-4 right-4 z-20 text-xs text-gray-400 animate-pulse pointer-events-none">
                       Click to flip <i class="fa-solid fa-rotate ml-1"></i>
@@ -50,7 +50,7 @@
                   </div>
 
                   <div class="card-face card-back">
-                    <NamecardsBack :userId="userCards[selectedIdx].id" />
+                    <NamecardsBack :cardInfo="cardList[selectedIdx]" />
                   </div>
 
                 </div>
@@ -127,18 +127,38 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import NamecardsMini from '@/components/namecards/MiniNamecards.vue'
 import NamecardsFront from '@/components/namecards/NamecardsFront.vue'
 import NamecardsBack from '@/components/namecards/NamecardsBack.vue'
+import { namecardListStore } from '@/stores/namecardListStore.js'
+
+const store = namecardListStore()
+
+const cardList = ref([])
+const isLoading = ref(true)
+
+const loadMyCardList = async () => {
+  isLoading.value=true
+  const response = await store.namecardList(0,10)
+
+  if (response){
+    cardList.value = response.namecardList
+  }
+  isLoading.value = false
+}
+
+onMounted(()=>{
+  loadMyCardList()
+})
 
 // 45부터 55까지 숫자가 담긴 배열 생성
-const stackUserIds = Array.from({ length: 11 }, (_, i) => 45 + i)
+const stackUserIds = Array.from({ length: 10 }, (_, i) => 45 + i)
 
 // 통합 데이터 생성 (45 ~ 55번 유저)
 // Array.from을 사용해 ID 객체 배열
 const userCards = ref(
-  Array.from({ length: 11 }, (_, i) => ({
+  Array.from({ length: 10 }, (_, i) => ({
     id: 45 + i
   }))
 )
