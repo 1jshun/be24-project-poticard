@@ -6,7 +6,6 @@
       </header>
 
       <div class="grid">
-        <!-- Left: Plans -->
         <section class="card">
           <div class="cardHead">
             <h2 class="cardTitle">요금제</h2>
@@ -43,7 +42,6 @@
           </div>
         </section>
 
-        <!-- Right: Payment -->
         <section class="card">
           <h2 class="cardTitle">결제 정보</h2>
 
@@ -60,9 +58,6 @@
                 {{ m.label }}
               </button>
             </div>
-            <p class="hint">
-              ※ 실제 결제 연동(토스/카카오/스트라이프 등)은 “결제하기” 클릭 시 처리
-            </p>
           </div>
 
           <div class="line"></div>
@@ -113,27 +108,16 @@
         </section>
       </div>
     </div>
-
-    <!-- Fake modal -->
-    <div v-if="modal.open" class="modal" @click.self="modal.open = false">
-      <div class="modalBox">
-        <h3 class="modalTitle">결제 요청</h3>
-        <p class="modalDesc">
-          지금은 UI만 구현된 상태야.<br />
-          여기서 실제 PG 결제창을 띄우거나(redirect/SDK) 결제 API를 호출하면 돼.
-        </p>
-        <pre class="code">{{ modal.payload }}</pre>
-        <button class="modalBtn" type="button" @click="modal.open = false">닫기</button>
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup>
-import { computed, reactive, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
+import planApi from '@/api/plan'
+import ordersApi from '@/api/orders'
 
 const billingCycle = ref('monthly')
-const planId = ref('pro')
+const planId = ref('')
 const email = ref('')
 const payMethod = ref('card')
 const agreeTerms = ref(false)
@@ -146,34 +130,47 @@ const payMethods = [
   { key: 'bank', label: '계좌이체' },
 ]
 
-const plans = [
-  {
-    id: 'basic',
-    name: 'Basic',
-    monthly: 1900,
-    yearly: 1900 * 12 * 0.85,
-    benefits: ['명함 생성', '명함 커스터마이징', 'ㅋ'],
-    highlight: false,
-  },
-  {
-    id: 'pro',
-    name: 'Pro',
-    monthly: 4900,
-    yearly: 4900 * 12 * 0.8,
-    benefits: [
-      'Basic 포함',
-      '포트폴리오 프로젝트 무제한 등록',
-      '포트폴리오 섹션/블록 무제한',
-      'AI 첨삭(맞춤 피드백) 제공',
-    ],
-    highlight: true,
-  },
-]
+const plans = ref([])
+
+onMounted(async () => {
+  try {
+    const data = await planApi.getPlanList()
+    console.log('요금제 API 전체 응답:', data)
+    
+    let planArray = []
+    if (Array.isArray(data)) {
+      planArray = data
+    } else if (data && Array.isArray(data.result)) {
+      planArray = data.result
+    } else if (data && Array.isArray(data.data)) {
+      planArray = data.data
+    }
+
+    if (planArray.length > 0) {
+      plans.value = planArray.map(p => ({
+        id: (p.name || '').toLowerCase(), // 'Basic' -> 'basic'
+        name: p.name,
+        monthly: p.monthlyPrice,
+        yearly: p.yearlyPrice,
+        benefits: p.benefits || [],
+        highlight: (p.name || '').toLowerCase() === 'pro'
+      }))
+      
+      // 요금제 기본 선택
+      const defaultPlan = plans.value.find(p => p.id === 'pro') || plans.value[0]
+      if (defaultPlan) planId.value = defaultPlan.id
+    } else {
+      console.warn('데이터에서 요금제 배열을 찾을 수 없습니다.', data)
+    }
+  } catch (error) {
+    console.error('요금제 로딩 에러:', error)
+  }
+})
 
 const displayPlans = computed(() =>
-  plans.map((p) => ({
+  plans.value.map((p) => ({
     ...p,
-    price: billingCycle.value === 'monthly' ? Math.round(p.monthly) : Math.round(p.yearly),
+    price: billingCycle.value === 'monthly' ? p.monthly : p.yearly,
   })),
 )
 
@@ -182,7 +179,7 @@ const selectedPlan = computed(() => displayPlans.value.find((p) => p.id === plan
 const discount = computed(() => {
   if (!selectedPlan.value) return 0
   if (billingCycle.value === 'yearly') {
-    const original = Math.round(selectedPlan.value.monthly * 12)
+    const original = selectedPlan.value.monthly * 12
     return Math.max(0, original - selectedPlan.value.price)
   }
   return 0
@@ -199,7 +196,7 @@ const canPay = computed(() => {
 })
 
 const payButtonText = computed(() => {
-  if (!selectedPlan.value) return '요금제를 선택하세요'
+  if (!selectedPlan.value) return '요금제를 불러오는 중...'
   return `${formatWon(total.value)} 결제하고 구독 시작`
 })
 
@@ -208,19 +205,54 @@ function formatWon(v) {
   return n.toLocaleString('ko-KR') + '원'
 }
 
-const modal = reactive({ open: false, payload: '' })
-
 function onPay() {
-  const payload = {
-    email: email.value,
-    planId: planId.value,
-    billingCycle: billingCycle.value,
-    amount: total.value,
-    payMethod: payMethod.value,
+  if (!window.IMP) {
+    alert('결제 모듈을 불러올 수 없습니다.');
+    return;
   }
+  
+  const IMP = window.IMP;
+  
+  // 주의: 'imp71852863'가 본인의 포트원 가맹점 식별코드가 맞는지 확인하세요!
+  IMP.init('imp71852863'); 
 
-  modal.payload = JSON.stringify(payload, null, 2)
-  modal.open = true
+  const merchant_uid = `mid_${new Date().getTime()}`;
+
+  const data = {
+    pg: 'tosspayments', // 변경: 채널명 명시
+    pay_method: 'card', 
+    merchant_uid: merchant_uid,
+    name: `Poticard ${selectedPlan.value.name} 구독`,
+    amount: Number(total.value), // 변경: 확실한 숫자형으로 전달
+    buyer_email: email.value,
+    buyer_name: '테스트유저',     // 추가: 토스페이먼츠 필수값 (이름)
+    buyer_tel: '010-1234-5678', // 추가: 토스페이먼츠 필수값 (전화번호)
+  };
+
+  IMP.request_pay(data, async (response) => {
+    if (response.success) {
+      try {
+        const verifyResult = await ordersApi.verifyPayment({
+          impUid: response.imp_uid,
+          merchantUid: merchant_uid,
+          planCode: planId.value,
+          email: email.value,
+          amount: total.value
+        });
+        
+        if (verifyResult.isSuccess || verifyResult.code === 1000) {
+          alert('결제가 성공적으로 완료되었습니다!');
+          // TODO: 결제 완료 페이지로 이동 로직 추가
+        } else {
+          alert(`결제 검증 실패: ${verifyResult.message || '금액이 일치하지 않습니다.'}`);
+        }
+      } catch (error) {
+        alert('백엔드 서버와 통신 중 오류가 발생했습니다.');
+      }
+    } else {
+      alert(`결제 실패: ${response.error_msg}`);
+    }
+  });
 }
 </script>
 
@@ -330,10 +362,7 @@ function onPay() {
   padding: 16px;
   background: #fff;
   cursor: pointer;
-  transition:
-    transform 0.12s ease,
-    border-color 0.12s ease,
-    box-shadow 0.12s ease;
+  transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
 }
 
 .plan:hover {
@@ -517,55 +546,5 @@ function onPay() {
   margin: 10px 0 0;
   font-size: 11px;
   color: #6b7280;
-}
-
-.modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  display: grid;
-  place-items: center;
-  padding: 16px;
-}
-
-.modalBox {
-  width: 100%;
-  max-width: 520px;
-  background: #fff;
-  border-radius: 18px;
-  padding: 18px;
-  border: 1px solid #e5e7eb;
-}
-
-.modalTitle {
-  margin: 0 0 6px;
-  font-weight: 900;
-}
-
-.modalDesc {
-  margin: 0 0 12px;
-  color: #6b7280;
-  font-size: 13px;
-}
-
-.code {
-  background: #0b1020;
-  color: #e5e7eb;
-  padding: 12px;
-  border-radius: 14px;
-  overflow: auto;
-  font-size: 12px;
-}
-
-.modalBtn {
-  margin-top: 12px;
-  width: 100%;
-  border: 0;
-  padding: 12px;
-  border-radius: 12px;
-  background: #111827;
-  color: #fff;
-  font-weight: 900;
-  cursor: pointer;
 }
 </style>
