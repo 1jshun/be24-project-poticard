@@ -3,35 +3,67 @@ import { onMounted, ref, onUnmounted } from 'vue'
 import NamecardsFront from '@/components/namecards/NamecardsFront.vue'
 import NamecardsBack from '@/components/namecards/NamecardsBack.vue'
 import MiniNamecards from '@/components/namecards/MiniNamecards.vue'
+import { namecardListStore } from '@/stores/namecardListStore'
 
-// 유저 ID 리스트 관리 (데이터 객체가 아니라 ID 숫자만 관리)
-const userIds = ref([])
-const isLoading = ref(false)
-const loadTrigger = ref(null)
-let currentPage = 1
-const itemsPerPage = 50
+const currentPage = ref(1)
+const isLoadingMore = ref(false)
+const isLastPage = ref(false)
+const cardList = ref([])
+const store = namecardListStore()
+const size = 100
 
-// ID 생성 함수
-const loadMoreIds = () => {
-  if (isLoading.value) return
-  isLoading.value = true
+const bottomSensor = ref(null)
+let observer = null
 
-  setTimeout(() => {
-    const start = (currentPage - 1) * itemsPerPage + 1
-    const end = Math.min(currentPage * itemsPerPage, 100) // 최대 100명까지만
+const loadMoreCards = async () => {
+  if (isLoadingMore.value || isLastPage.value) return
+  
+  isLoadingMore.value=true;
 
-    if (start > 100) {
-      isLoading.value = false
-      return
+  try {
+    const response = await store.namecardList(currentPage.value, size)
+
+    if (response){
+      const newCards = response.namecardList
+
+      cardList.value = [...cardList.value, ...newCards]
+
+      if (newCards.length < size){
+        isLastPage.value=true
+      }else{
+        currentPage.value++
+      }
+    }else{
+      isLastPage.value=true
     }
-
-    const newIds = Array.from({ length: end - start + 1 }, (_, i) => start + i)
-    userIds.value.push(...newIds)
-
-    currentPage++
-    isLoading.value = false
-  }, 500)
+  }catch(error){
+    console.error(error)
+  }finally{
+    isLoadingMore.value=false
+  }
 }
+
+onMounted(()=>{
+  loadMoreCards()
+
+  observer = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting){
+      loadMoreCards()
+    }
+  }, {
+      threshold: 0.1
+    })
+
+  if (bottomSensor.value){
+    observer.observe(bottomSensor.value)
+  }
+})
+
+onUnmounted(()=>{
+  if (observer && bottomSensor.value){
+    observer.unobserve(bottomSensor.value)
+  }
+})
 
 // 모달 관련 로직
 const selectedUserId = ref(null)
@@ -51,27 +83,6 @@ const closeModal = () => {
 const toggleModalCardFlip = () => {
   isModalCardFlipped.value = !isModalCardFlipped.value
 }
-
-// 무한 스크롤 옵저버
-let observer
-onMounted(() => {
-  loadMoreIds()
-
-  observer = new IntersectionObserver(
-    (entries) => {
-      if (entries[0].isIntersecting && !isLoading.value) {
-        loadMoreIds()
-      }
-    },
-    { threshold: 0.1 },
-  )
-
-  if (loadTrigger.value) observer.observe(loadTrigger.value)
-})
-
-onUnmounted(() => {
-  if (observer) observer.disconnect()
-})
 </script>
 
 <template>
@@ -154,11 +165,11 @@ onUnmounted(() => {
 
       <main class="flex-1 lg:ml-64 p-8 overflow-y-auto h-full scrollbar-hide">
         <div class="grid grid-cols-[repeat(auto-fill,280px)] justify-center gap-8 pb-10">
-          <div v-for="id in userIds" :key="id" class="group cursor-pointer perspective-container"
-            @click="openModal(id)">
+          <div v-for="(card, i) in cardList" :key="card.idx" class="group cursor-pointer perspective-container"
+            @click="openModal(i)">
             <div
               class="relative w-full aspect-[1.58/1] transition-transform duration-300 hover:scale-105 hover:-translate-y-2 hover:shadow-xl rounded-2xl">
-              <MiniNamecards :userId="id" />
+              <MiniNamecards :cardInfo="card" />
             </div>
           </div>
         </div>
@@ -185,19 +196,20 @@ onUnmounted(() => {
                 <div class="card-object w-full h-full relative cursor-pointer shadow-2xl rounded-2xl"
                   :class="{ 'is-flipped': isModalCardFlipped }" @click="toggleModalCardFlip">
                   <div class="card-face card-front">
-                    <NamecardsFront :userId="selectedUserId" />
+                    <NamecardsFront :cardInfo="cardList[selectedUserId]" />
                     <div class="absolute bottom-4 right-4 z-20 text-xs text-gray-400 animate-pulse pointer-events-none">
                       Click to flip <i class="fa-solid fa-rotate ml-1"></i>
                     </div>
                   </div>
                   <div class="card-face card-back">
-                    <NamecardsBack :userId="selectedUserId" />
+                    <NamecardsBack :cardInfo="cardList[selectedUserId]" />
                   </div>
                 </div>
               </div>
             </div>
           </Transition>
         </Teleport>
+        <div ref="bottomSensor" style="height: 20px;"></div>
       </main>
     </div>
   </div>

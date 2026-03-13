@@ -6,8 +6,8 @@ export const namecardListStore = defineStore('namecardList', () => {
   const listData = ref(null)
 
   // page, size에 기본값을 설정해두면 호출할 때 편합니다.
-  const namecardList = async (page = 0, size = 20) => {
-    const pageKey = `namecardList_${page}`
+  const namecardList = async (page = 1, size = 20) => {
+    const pageKey = `namecardList_${page}_${size}`
 
     try {
       // 1. 캐시 확인

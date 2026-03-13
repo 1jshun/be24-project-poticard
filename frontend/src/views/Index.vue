@@ -15,7 +15,7 @@
                 class="mini-card-container transition-all duration-700 ease-out" :style="getMiniCardStyle(idx)">
                 <div class="w-full h-full rounded-2xl overflow-hidden transition-all"
                   :class="{ 'ring-4 ring-yellow-400': idx === selectedIdx }">
-                   <NamecardsMini
+                   <MiniNamecards
                    :cardInfo="card" />
                 </div>
               </div>
@@ -128,10 +128,12 @@
 
 <script setup>
 import { onMounted, ref } from 'vue'
-import NamecardsMini from '@/components/namecards/MiniNamecards.vue'
+import MiniNamecards from '@/components/namecards/MiniNamecards.vue'
 import NamecardsFront from '@/components/namecards/NamecardsFront.vue'
 import NamecardsBack from '@/components/namecards/NamecardsBack.vue'
 import { namecardListStore } from '@/stores/namecardListStore.js'
+
+const pageOfToday = 45;
 
 const store = namecardListStore()
 
@@ -140,7 +142,7 @@ const isLoading = ref(true)
 
 const loadMyCardList = async () => {
   isLoading.value=true
-  const response = await store.namecardList(0,10)
+  const response = await store.namecardList(pageOfToday,10)
 
   if (response){
     cardList.value = response.namecardList
