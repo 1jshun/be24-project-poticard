@@ -276,6 +276,37 @@ const startVideoCall = () => {
   window.location.href = `/video-chat?id=${activeRoom.value.id}&name=${encodeURIComponent(activeRoom.value.name)}`
 }
 
+const createNewChat = async () => {
+  const guestUserId = prompt('채팅을 시작할 사용자의 ID를 입력해주세요:')
+  if (!guestUserId || guestUserId == myUserId) return
+  
+  const guestId = Number(guestUserId)
+  if (isNaN(guestId)) {
+    alert('올바른 사용자 ID를 입력해주세요.')
+    return
+  }
+
+  try {
+    const res = await chatApi.createChatRoom(guestId)
+    console.log('채팅방 생성 성공:', res)
+    
+    // 채팅방 목록 새로고침
+    await getChatRoomList()
+    
+    // 생성된 채팅방으로 이동
+    if (res && res.data && res.data.idx) {
+      await setActiveRoom(res.data.idx)
+    } else if (res && res.idx) {
+      await setActiveRoom(res.idx)
+    } else {
+      alert('채팅방이 생성되었습니다.')
+    }
+  } catch (error) {
+    console.error('채팅방 생성 실패:', error)
+    alert('채팅방 생성에 실패했습니다: ' + (error.message || '알 수 없는 오류'))
+  }
+}
+
 onMounted(() => {
   getChatRoomList();
   if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark')
@@ -363,7 +394,7 @@ onMounted(() => {
     <header class="flex items-center justify-between mb-6 shrink-0">
       <h1 class="text-3xl font-black tracking-tight text-slate-900 dark:text-white">채팅</h1>
       <div class="flex gap-2">
-        <button @click="alert('준비 중입니다.')" class="btn-icon bg-amber-400 hover:scale-105 transition-transform"
+        <button @click="createNewChat" class="btn-icon bg-amber-400 hover:scale-105 transition-transform"
           title="새 채팅">
           <i class="fa-solid fa-plus text-amber-950"></i>
         </button>
