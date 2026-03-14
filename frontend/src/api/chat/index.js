@@ -6,12 +6,15 @@ const chatRoomList = async () => {
     const res = await apiFetch('/chat/room/list')
    
     if (res && res.data && Array.isArray(res.data)) {
-      const mappedData = res.data.map(room => ({
+      const mappedData = res.data.map((room) => ({
         id: room.idx,
+        opponentIdx: room.opponentUserIdx,
         name: room.opponentUserName || '',
         avatar: room.opponentUserProfileImage || '',
         role: room.opponentUserCareer || '',
         content: room.lastContents || '',
+        time: room.lastContentsTime || null,
+        unread: room.unreadCount || 0,
       }))
       return { ...res, data: mappedData }
     }
