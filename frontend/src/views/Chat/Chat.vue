@@ -23,6 +23,10 @@ const currentUploadType = ref(null) // 'IMAGE' 또는 'DOC'
 const imageInput = ref(null)
 const docInput = ref(null)
 
+const isNewChatModalOpen = ref(false)
+const newChatTargetId = ref('')
+const errorMessage = ref('')
+
 let stompClient = null
 
 const getChatRoomList = async () => {
@@ -130,6 +134,7 @@ const wsConnect = (roomId) => {
       messagesByRoom.value[receivedRoomId].push({
         who: isMe ? 'me' : 'them',
         text: recv.contents,
+        attachments: recv.attachments || [],
         time: formatMessageTime(recv.createdAt),
         messageId: recv.idx,
         isRead: !!isRead,
@@ -341,6 +346,8 @@ const handleSend = async () => {
       // 전송 후 초기화
       selectedFiles.value = []
       currentUploadType.value = null
+      if (imageInput.value) imageInput.value.value = ''
+      if (docInput.value) docInput.value.value = ''
     } catch (error) {
       alert('파일 전송에 실패했습니다.')
       return
@@ -353,51 +360,48 @@ const handleSend = async () => {
   }
 }
 
-const handleKeydown = (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault()
-    sendMessage()
-  }
-}
-
 const startVideoCall = () => {
   if (!activeRoomId.value) return alert('대상을 선택해주세요.')
   window.location.href = `/video-chat?id=${activeRoom.value.id}&name=${encodeURIComponent(activeRoom.value.name)}`
 }
 
-const createNewChat = async () => {
-  const guestUserId = prompt('채팅을 시작할 사용자의 ID를 입력해주세요:')
-  if (!guestUserId || guestUserId == myUserId) return
+const confirmCreateChat = async () => {
+  errorMessage.value = ''
+  const guestId = Number(newChatTargetId.value)
 
-  const guestId = Number(guestUserId)
-  if (isNaN(guestId)) {
-    alert('올바른 사용자 ID를 입력해주세요.')
+  if (!newChatTargetId.value || isNaN(guestId)) {
+    errorMessage.value = '올바른 사용자 ID(숫자)를 입력해주세요.'
+    return
+  }
+
+  if (guestId === Number(myUserId)) {
+    errorMessage.value = '자기 자신과는 채팅할 수 없습니다.'
     return
   }
 
   try {
     const res = await chatApi.createChatRoom(guestId)
-    console.log('채팅방 생성 성공:', res)
-
-    // 채팅방 목록 새로고침
+    isNewChatModalOpen.value = false
     await getChatRoomList()
 
-    // 생성된 채팅방으로 이동
-    if (res && res.data && res.data.idx) {
-      await setActiveRoom(res.data.idx)
-    } else if (res && res.idx) {
-      await setActiveRoom(res.idx)
-    } else {
-      alert('채팅방이 생성되었습니다.')
+    if (res?.data?.idx || res?.idx) {
+      await setActiveRoom(res?.data?.idx || res?.idx)
     }
   } catch (error) {
     console.error('채팅방 생성 실패:', error)
-    alert('채팅방 생성에 실패했습니다: ' + (error.message || '알 수 없는 오류'))
+    errorMessage.value = '존재하지 않는 사용자이거나 생성에 실패했습니다.'
   }
 }
 
+const openNewChatModal = () => {
+  newChatTargetId.value = ''
+  errorMessage.value = ''
+  isNewChatModalOpen.value = true
+}
+
 const totalUnreadCount = computed(() => {
-  return rooms.reduce((acc, room) => acc + (room.unread || 0), 0)
+  const count = rooms.reduce((acc, room) => acc + (room.unread || 0), 0)
+  return count > 300 ? '300+' : count
 })
 
 onMounted(() => {
@@ -530,12 +534,66 @@ onUnmounted(() => {
       <h1 class="text-3xl font-black tracking-tight text-slate-900 dark:text-white">채팅</h1>
       <div class="flex gap-2">
         <button
-          @click="createNewChat"
+          @click="openNewChatModal"
           class="btn-icon bg-amber-400 hover:scale-105 transition-transform"
-          title="새 채팅"
         >
           <i class="fa-solid fa-plus text-amber-950"></i>
         </button>
+        <transition name="fade">
+          <div
+            v-if="isNewChatModalOpen"
+            @click.self="isNewChatModalOpen = false"
+            class="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          >
+            <transition name="card-pop" appear>
+              <div
+                class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[2rem] shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-800"
+              >
+                <div class="p-8 pb-4 text-center">
+                  <div
+                    class="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-amber-600"
+                  >
+                    <i class="fa-solid fa-comments text-2xl"></i>
+                  </div>
+                  <h3 class="text-xl font-black text-slate-900 dark:text-white">새 채팅 시작</h3>
+                  <p class="text-sm text-slate-500 dark:text-slate-400 mt-2">
+                    대화하고 싶은 사용자의 고유 ID를<br />입력하여 연결해보세요.
+                  </p>
+                </div>
+
+                <div class="p-8 pt-0">
+                  <div class="relative group mb-6">
+                    <i
+                      class="fa-solid fa-fingerprint absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-amber-500 transition-colors"
+                    ></i>
+                    <input
+                      v-model="newChatTargetId"
+                      type="text"
+                      placeholder="사용자 ID (숫자)"
+                      @keyup.enter="confirmCreateChat"
+                      class="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl py-4 pl-12 pr-4 text-sm focus:border-amber-400 dark:focus:border-amber-400 transition-all outline-none dark:text-white"
+                    />
+                  </div>
+
+                  <div class="flex gap-3">
+                    <button
+                      @click="isNewChatModalOpen = false"
+                      class="flex-1 py-4 px-6 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                    >
+                      취소
+                    </button>
+                    <button
+                      @click="confirmCreateChat"
+                      class="flex-[2] py-4 px-6 bg-amber-400 text-amber-950 font-black rounded-2xl hover:bg-amber-500 hover:shadow-lg hover:shadow-amber-400/20 transition-all active:scale-95"
+                    >
+                      대화 시작하기
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </transition>
+          </div>
+        </transition>
       </div>
     </header>
 
@@ -546,13 +604,21 @@ onUnmounted(() => {
         >
           <div class="p-5 border-b border-slate-100 dark:border-slate-800">
             <div class="flex items-center justify-between mb-4">
-              <span class="font-bold text-slate-400 uppercase text-[10px] tracking-widest"
-                >Chat List</span
-              >
+              <div>
+                <span class="font-bold text-slate-400 uppercase text-[10px] tracking-widest"
+                  >Chat List</span
+                >
+                <span
+                  class="px-2 py-0.5 ml-2 bg-slate-100 dark:bg-slate-800 rounded-full text-xs font-bold"
+                  >{{ filteredRooms.length }}</span
+                >
+              </div>
               <span
-                class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded-full text-xs font-bold"
-                >{{ filteredRooms.length }}</span
+                v-if="totalUnreadCount !== 0"
+                class="px-1.5 py-0.5 bg-rose-500 text-white rounded-md text-[10px] font-black"
               >
+                {{ totalUnreadCount }}
+              </span>
             </div>
             <div class="relative">
               <i
@@ -808,7 +874,7 @@ onUnmounted(() => {
                 type="file"
                 ref="docInput"
                 class="hidden"
-                accept=".pdf, .doc, .docx, .txt"
+                accept=".pdf, .doc, .docx, .txt, .hwpx, .hwp"
                 multiple
                 @change="handleFileChange($event, 'DOC')"
               />
