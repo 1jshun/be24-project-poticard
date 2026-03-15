@@ -99,7 +99,19 @@ const wsConnect = (roomId) => {
     stompClient.subscribe(`/sub/chat/room/${roomId}`, (tick) => {
       const recv = JSON.parse(tick.body)
 
-      // 백엔드 응답 형식: { idx, roomIdx, senderIdx, senderName, contents, isRead, createdAt, updatedAt }
+      // 읽음 처리 이벤트: 상대가 채팅방 입장 시 백엔드가 전송. 해당 방의 내 메시지를 모두 읽음으로 갱신
+      if (recv.type === 'READ_RECEIPT') {
+        const roomIdx = Number(recv.roomIdx)
+        const list = messagesByRoom.value[roomIdx]
+        if (list && list.length) {
+          messagesByRoom.value[roomIdx] = list.map((m) =>
+            m.who === 'me' ? { ...m, isRead: true } : m,
+          )
+        }
+        return
+      }
+
+      // 일반 메시지: 백엔드 응답 형식 { idx, roomIdx, senderIdx, senderName, contents, isRead, createdAt, updatedAt }
       const receivedRoomId = Number(recv.roomIdx)
       const isMe = Number(recv.senderIdx) === Number(myUserId)
 
@@ -107,12 +119,14 @@ const wsConnect = (roomId) => {
         messagesByRoom.value[receivedRoomId] = []
       }
 
+      // STOMP 응답도 동일하게 read 필드로 올 수 있음
+      const isRead = recv.isRead ?? recv.read ?? false
       messagesByRoom.value[receivedRoomId].push({
         who: isMe ? 'me' : 'them',
         text: recv.contents,
         time: formatMessageTime(recv.createdAt),
         messageId: recv.idx,
-        isRead: recv.isRead,
+        isRead: !!isRead,
       })
 
       const r = rooms.find((x) => x.id === receivedRoomId)
@@ -190,14 +204,15 @@ const loadChatMessages = async (roomId) => {
     }
 
     const formattedMessages = messages.map((msg) => {
-      // 백엔드 필드명: senderIdx, contents, idx, isRead
+      // 백엔드 Res DTO는 boolean isRead인데 Jackson 직렬화 시 "read"로 내려옴
       const isMe = Number(msg.senderIdx) === Number(myUserId)
+      const isRead = msg.isRead ?? msg.read ?? false
       return {
         who: isMe ? 'me' : 'them',
         text: msg.contents,
         time: formatMessageTime(msg.createdAt),
         messageId: msg.idx,
-        isRead: msg.isRead || false,
+        isRead: !!isRead,
       }
     })
 
@@ -614,9 +629,12 @@ onUnmounted(() => {
                 <div :class="['bubble', m.who === 'me' ? 'bubble-me' : 'bubble-them']">
                   {{ m.text }}
                 </div>
-                <span class="text-[10px] mt-1.5 text-slate-400 font-bold px-1 uppercase">{{
-                  m.time
-                }}</span>
+                <span class="text-[10px] mt-1.5 text-slate-400 font-bold px-1 uppercase">
+                  {{ m.time }}
+                  <template v-if="m.who === 'me'">
+                    · {{ m.isRead ? '읽음' : '안읽음' }}
+                  </template>
+                </span>
               </div>
             </div>
           </div>
