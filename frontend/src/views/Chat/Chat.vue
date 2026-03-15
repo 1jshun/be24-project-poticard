@@ -18,6 +18,11 @@ const isCardOpen = ref(false)
 const isFlipped = ref(false)
 const isMenuOpen = ref(false)
 
+const selectedFiles = ref([])
+const currentUploadType = ref(null) // 'IMAGE' 또는 'DOC'
+const imageInput = ref(null)
+const docInput = ref(null)
+
 let stompClient = null
 
 const getChatRoomList = async () => {
@@ -121,6 +126,7 @@ const wsConnect = (roomId) => {
 
       // STOMP 응답도 동일하게 read 필드로 올 수 있음
       const isRead = recv.isRead ?? recv.read ?? false
+
       messagesByRoom.value[receivedRoomId].push({
         who: isMe ? 'me' : 'them',
         text: recv.contents,
@@ -210,6 +216,7 @@ const loadChatMessages = async (roomId) => {
       return {
         who: isMe ? 'me' : 'them',
         text: msg.contents,
+        attachments: msg.attachments,
         time: formatMessageTime(msg.createdAt),
         messageId: msg.idx,
         isRead: !!isRead,
@@ -287,6 +294,65 @@ const quickReply = (text) => {
   })
 }
 
+/* 파일 선택 핸들러 */
+const handleFileChange = (event, type) => {
+  const files = Array.from(event.target.files)
+  if (files.length === 0) return
+
+  // 타입이 바뀌면 기존 선택 초기화 (섞어서 보내기 방지용)
+  if (currentUploadType.value !== type) {
+    selectedFiles.value = []
+  }
+
+  currentUploadType.value = type
+  selectedFiles.value.push(...files)
+
+  // input 초기화 (같은 파일 다시 올릴 수 있도록)
+  event.target.value = ''
+}
+
+/* 파일 제거 */
+const removeFile = (index) => {
+  selectedFiles.value.splice(index, 1)
+  if (selectedFiles.value.length === 0) currentUploadType.value = null
+}
+
+/* 파일 아이콘 결정 */
+const getFileIcon = (file) => {
+  if (file.type.startsWith('image/')) return 'fa-solid fa-image'
+  if (file.name.endsWith('.pdf')) return 'fa-solid fa-file-pdf'
+  return 'fa-solid fa-file-lines'
+}
+
+/* 통합 전송 핸들러 */
+const handleSend = async () => {
+  // 1. 파일이 있는 경우 파일 업로드 먼저 수행
+  if (selectedFiles.value.length > 0) {
+    try {
+      const formData = new FormData()
+      selectedFiles.value.forEach((file) => formData.append('files', file))
+
+      const res = await chatApi.uploadChatFiles(
+        activeRoomId.value,
+        formData,
+        currentUploadType.value,
+      )
+
+      // 전송 후 초기화
+      selectedFiles.value = []
+      currentUploadType.value = null
+    } catch (error) {
+      alert('파일 전송에 실패했습니다.')
+      return
+    }
+  }
+
+  // 2. 텍스트 메시지가 있는 경우 기존 로직 수행
+  if (messageInput.value.trim()) {
+    sendMessage() // 기존에 구현된 WebSocket 전송 함수
+  }
+}
+
 const handleKeydown = (e) => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault()
@@ -345,7 +411,8 @@ onMounted(() => {
         )
         if (room && activeRoomId.value !== room.id) {
           room.unread = (room.unread || 0) + 1
-          room.content = contents?.length > 30 ? contents.slice(0, 30) + '...' : contents || room.content
+          room.content =
+            contents?.length > 30 ? contents.slice(0, 30) + '...' : contents || room.content
           room.time = contentsTime ?? room.timententsCreatedAt
         }
       }
@@ -627,13 +694,46 @@ onUnmounted(() => {
                 :class="['max-w-[75%] flex flex-col', m.who === 'me' ? 'items-end' : 'items-start']"
               >
                 <div :class="['bubble', m.who === 'me' ? 'bubble-me' : 'bubble-them']">
-                  {{ m.text }}
+                  <p v-if="m.text" class="whitespace-pre-wrap">{{ m.text }}</p>
+
+                  <div
+                    v-if="m.attachments && m.attachments.length > 0"
+                    class="mt-2 flex flex-col gap-2"
+                  >
+                    <div v-for="file in m.attachments" :key="file.idx">
+                      <template v-if="file.fileType && file.fileType.startsWith('image/')">
+                        <img
+                          :src="file.filePath"
+                          class="max-w-xs rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                          @click="window.open(file.filePath, '_blank')"
+                        />
+                      </template>
+
+                      <template v-else>
+                        <a
+                          :href="file.filePath"
+                          target="_blank"
+                          class="flex items-center gap-2 p-2 bg-black/5 dark:bg-white/10 rounded-lg hover:bg-black/10 transition-colors no-underline"
+                        >
+                          <i class="fa-solid fa-file-arrow-down text-lg text-slate-500"></i>
+                          <div class="flex flex-col overflow-hidden text-left">
+                            <span
+                              class="text-xs font-medium truncate max-w-[150px] dark:text-slate-200 text-slate-700"
+                            >
+                              {{ file.fileName }}
+                            </span>
+                            <span class="text-[10px] opacity-60 dark:text-slate-400 text-slate-500">
+                              {{ (file.fileSize / 1024).toFixed(1) }} KB
+                            </span>
+                          </div>
+                        </a>
+                      </template>
+                    </div>
+                  </div>
                 </div>
                 <span class="text-[10px] mt-1.5 text-slate-400 font-bold px-1 uppercase">
                   {{ m.time }}
-                  <template v-if="m.who === 'me'">
-                    · {{ m.isRead ? '읽음' : '안읽음' }}
-                  </template>
+                  <template v-if="m.who === 'me'"> · {{ m.isRead ? '읽음' : '안읽음' }} </template>
                 </span>
               </div>
             </div>
@@ -659,24 +759,72 @@ onUnmounted(() => {
             </div>
 
             <div
+              v-if="selectedFiles.length > 0"
+              class="flex flex-wrap gap-2 mb-2 p-2 bg-slate-100 dark:bg-slate-800/80 rounded-xl border border-dashed border-slate-300 dark:border-slate-600"
+            >
+              <div v-for="(file, index) in selectedFiles" :key="index" class="relative group">
+                <div
+                  class="flex items-center gap-2 px-2 py-1 bg-white dark:bg-slate-700 rounded-md border border-slate-200 dark:border-slate-600 shadow-sm text-[11px]"
+                >
+                  <i :class="getFileIcon(file)" class="text-amber-500"></i>
+                  <span class="max-w-[80px] truncate dark:text-slate-200">{{ file.name }}</span>
+                  <button @click="removeFile(index)" class="text-slate-400 hover:text-red-500">
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div
               class="flex items-end gap-3 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-2xl border border-slate-200 dark:border-slate-700/50 focus-within:border-amber-400 transition-all"
             >
-              <button
-                class="w-10 h-10 flex-shrink-0 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-              >
-                <i class="fa-solid fa-paperclip"></i>
-              </button>
+              <div class="flex items-center">
+                <button
+                  @click="$refs.docInput.click()"
+                  class="w-10 h-10 flex-shrink-0 flex items-center justify-center text-slate-400 hover:text-blue-500 transition-colors"
+                  title="문서 추가"
+                >
+                  <i class="fa-solid fa-file-lines"></i>
+                </button>
+                <div class="w-[1px] h-4 bg-slate-300 dark:bg-slate-600 mx-0.5"></div>
+                <button
+                  @click="$refs.imageInput.click()"
+                  class="w-10 h-10 flex-shrink-0 flex items-center justify-center text-slate-400 hover:text-amber-500 transition-colors"
+                  title="이미지 추가"
+                >
+                  <i class="fa-solid fa-image"></i>
+                </button>
+              </div>
+
+              <input
+                type="file"
+                ref="imageInput"
+                class="hidden"
+                accept="image/*"
+                multiple
+                @change="handleFileChange($event, 'IMAGE')"
+              />
+              <input
+                type="file"
+                ref="docInput"
+                class="hidden"
+                accept=".pdf, .doc, .docx, .txt"
+                multiple
+                @change="handleFileChange($event, 'DOC')"
+              />
+
               <textarea
                 ref="textareaRef"
                 v-model="messageInput"
-                @input="autosize"
-                @keydown="handleKeydown"
+                @input="adjustTextareaHeight"
+                @keydown.enter.prevent="handleSend"
                 rows="1"
                 class="flex-1 bg-transparent border-none focus:ring-0 text-sm py-2.5 resize-none max-h-32 dark:text-slate-200 outline-none"
                 placeholder="메시지를 입력하세요..."
               ></textarea>
+
               <button
-                @click="sendMessage"
+                @click="handleSend"
                 class="w-10 h-10 flex-shrink-0 bg-amber-400 hover:bg-amber-500 rounded-xl flex items-center justify-center text-amber-950 transition-all active:scale-95 shadow-sm"
               >
                 <i class="fa-solid fa-paper-plane"></i>
