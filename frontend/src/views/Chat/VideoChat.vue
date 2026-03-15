@@ -240,7 +240,11 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import SockJS from 'sockjs-client'
+import Stomp from 'stompjs'
 import chatApi from '@/api/chat/index.js'
+
+const senderId = Math.random().toString(36).substring(2, 9)
 
 /* refs */
 const remoteVideoRef = ref(null)
@@ -316,49 +320,45 @@ function log(m) {
 const localStream = ref(null)
 const screenStream = ref(null)
 
-const ws = ref(null)
+const stompClientRef = ref(null)
 const pc = ref(null)
 
 const wsOpen = ref(false)
 
+const roomIdx = computed(() => (route.query.id ? Number(route.query.id) : null))
 // google STUN서버
 const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
 
-const callDisabled = computed(() => !localStream.value || !wsOpen.value)
+const callDisabled = computed(() => !wsOpen.value || roomIdx.value == null)
 
 function initWebSocket() {
-  if (
-    ws.value &&
-    (ws.value.readyState === WebSocket.OPEN || ws.value.readyState === WebSocket.CONNECTING)
-  )
-    return
+  if (stompClientRef.value?.connected) return
+  if (roomIdx.value == null) return
 
-  const scheme = location.protocol === 'https:' ? 'wss' : 'ws'
-  const wsUrl = `${scheme}://${location.host}/ws`
+  const socket = new SockJS('/ws')
+  const stomp = Stomp.over(socket)
+  stomp.debug = null
+  stompClientRef.value = stomp
 
-  ws.value = new WebSocket(wsUrl)
-
-  ws.value.onopen = () => {
+  stomp.connect({}, () => {
     wsOpen.value = true
-    log(`WS connected: ${wsUrl}`)
-  }
-  ws.value.onerror = () => log('WS error')
-  ws.value.onclose = () => {
-    wsOpen.value = false
-    log('WS closed')
-  }
+    log(`STOMP connected (room ${roomIdx.value} /sub/webrtc)`)
 
-  ws.value.onmessage = async (e) => {
-    const msg = JSON.parse(e.data)
-    try {
-      if (msg.type === 'offer') await handleOffer(msg.offer)
-      if (msg.type === 'answer') await handleAnswer(msg.answer)
-      if (msg.type === 'candidate') await handleCandidate(msg.candidate)
-    } catch (err) {
-      console.error(err)
-      log(`Signal handle error: ${err?.message || err}`)
-    }
-  }
+    stomp.subscribe('/sub/webrtc', async (message) => {
+      const data = JSON.parse(message.body)
+      if (data.senderId === senderId) return
+      if (Number(data.roomIdx) !== Number(roomIdx.value)) return
+
+      try {
+        if (data.type === 'offer') await handleOffer(data.offer)
+        else if (data.type === 'answer') await handleAnswer(data.answer)
+        else if (data.type === 'candidate') await handleCandidate(data.candidate)
+      } catch (err) {
+        console.error(err)
+        log(`Signal handle error: ${err?.message || err}`)
+      }
+    })
+  })
 }
 
 function createPeerConnectionIfNeeded() {
@@ -366,8 +366,10 @@ function createPeerConnectionIfNeeded() {
 
   pc.value = new RTCPeerConnection(rtcConfig)
 
-  // 로컬 트랙 추가
-  localStream.value.getTracks().forEach((track) => pc.value.addTrack(track, localStream.value))
+  // 로컬 트랙 추가 (없으면 수신 전용)
+  if (localStream.value) {
+    localStream.value.getTracks().forEach((track) => pc.value.addTrack(track, localStream.value))
+  }
 
   // 상대방 트랙 수신
   pc.value.ontrack = (e) => {
@@ -378,8 +380,17 @@ function createPeerConnectionIfNeeded() {
 
   // ICE 후보 전달
   pc.value.onicecandidate = (e) => {
-    if (e.candidate && ws.value?.readyState === WebSocket.OPEN) {
-      ws.value.send(JSON.stringify({ type: 'candidate', candidate: e.candidate }))
+    if (e.candidate && stompClientRef.value?.connected && roomIdx.value != null) {
+      stompClientRef.value.send(
+        `/pub/${roomIdx.value}/webrtc`,
+        {},
+        JSON.stringify({
+          type: 'candidate',
+          candidate: e.candidate,
+          senderId,
+          roomIdx: roomIdx.value,
+        }),
+      )
     }
   }
 
@@ -388,8 +399,21 @@ function createPeerConnectionIfNeeded() {
 
 async function makeCall() {
   if (!localStream.value) {
-    alert('카메라/마이크 권한이 먼저 필요해요.')
-    return
+    try {
+      await startLocalMedia()
+    } catch (e) {
+      console.error(e)
+      const isPermissionDenied =
+        e?.name === 'NotAllowedError' || e?.message?.includes('Permission denied')
+      if (isPermissionDenied) {
+        alert('카메라/마이크 권한을 허용해주세요.')
+      } else {
+        alert(
+          '카메라/마이크에 접근할 수 없습니다. 다른 탭이나 앱에서 사용 중이 아닌지 확인한 뒤 다시 시도해 주세요.',
+        )
+      }
+      return
+    }
   }
   initWebSocket()
   createPeerConnectionIfNeeded()
@@ -397,13 +421,22 @@ async function makeCall() {
   const offer = await pc.value.createOffer()
   await pc.value.setLocalDescription(offer)
 
-  ws.value.send(JSON.stringify({ type: 'offer', offer }))
+  stompClientRef.value.send(
+    `/pub/${roomIdx.value}/webrtc`,
+    {},
+    JSON.stringify({ type: 'offer', offer, senderId, roomIdx: roomIdx.value }),
+  )
   log('Offer sent')
 }
 
 async function handleOffer(offer) {
   if (!localStream.value) {
-    await startLocalMedia()
+    try {
+      await startLocalMedia()
+    } catch (e) {
+      console.warn('로컬 미디어 없이 수신 전용으로 연결합니다.', e)
+      log('수신 전용 모드 (카메라 없이 상대 영상만 수신)')
+    }
   }
 
   initWebSocket()
@@ -413,7 +446,11 @@ async function handleOffer(offer) {
   const answer = await pc.value.createAnswer()
   await pc.value.setLocalDescription(answer)
 
-  ws.value.send(JSON.stringify({ type: 'answer', answer }))
+  stompClientRef.value.send(
+    `/pub/${roomIdx.value}/webrtc`,
+    {},
+    JSON.stringify({ type: 'answer', answer, senderId, roomIdx: roomIdx.value }),
+  )
   log('Offer received → Answer sent')
 }
 
@@ -584,34 +621,23 @@ onMounted(async () => {
   await loadPartnerInfo()
 
   initWebSocket()
-  try {
-    await startLocalMedia()
-  } catch (e) {
-    console.error(e)
-    alert('카메라/마이크 권한을 허용해주세요.')
-  }
+  // 카메라/마이크는 CALL 버튼 클릭 시 요청 (사용자 동작 후에 요청)
 })
 
 onBeforeUnmount(() => {
   try {
-    if (ws) ws.close()
+    if (stompClientRef.value?.connected) stompClientRef.value.disconnect()
   } catch { }
   try {
-    if (pc) pc.close()
+    if (pc.value) pc.value.close()
   } catch { }
 
   try {
-    if (screenStream) screenStream.getTracks().forEach((t) => t.stop())
+    if (screenStream.value) screenStream.value.getTracks().forEach((t) => t.stop())
   } catch { }
   try {
-    if (localStream) localStream.getTracks().forEach((t) => t.stop())
+    if (localStream.value) localStream.value.getTracks().forEach((t) => t.stop())
   } catch { }
-  /*
-  ws = null
-  pc = null
-  localStream = null
-  screenStream = null
-  */
 })
 </script>
 
