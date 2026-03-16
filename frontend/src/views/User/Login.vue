@@ -238,7 +238,8 @@ const login = async () => {
             로그인
           </button>
         </form>
-
+        <button type="button" onclick="location.href='http://localhost:5173/api/oauth2/authorization/kakao'">카카오 로그인</button>
+        <button type="button" onclick="location.href='http://localhost:5173/api/oauth2/authorization/google'">구글 로그인</button>
         <p class="text-center mt-6 text-sm text-gray-400">
           로그인 정보를 잊어버리셨나요?
           <router-link
