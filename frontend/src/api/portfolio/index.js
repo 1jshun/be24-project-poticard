@@ -58,6 +58,13 @@ export const updateKeywords = async (portfolioIdx, keywords) => {
   })
 }
 
+export const getAiReview = async (contents) => {
+  return await apiFetch('portfolio/ai-review', {
+    method: 'POST',
+    body: { contents }
+  })
+}
+
 export default {
   getProjects,
   createPortfolio,
@@ -66,5 +73,6 @@ export default {
   updateStyle,
   getPortfolioList,
   updateKeywords,
-  getProjectDetail
+  getProjectDetail,
+  getAiReview
 }

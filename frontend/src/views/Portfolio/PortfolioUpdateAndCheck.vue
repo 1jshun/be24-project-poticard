@@ -1,15 +1,45 @@
 <script setup>
 import { onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter, useRoute, RouterLink } from 'vue-router'
-import portfolioApi from '@/api/portfolio/index' // API 임포트
+import portfolioApi from '@/api/portfolio/index'
 import SectionEditor from '@/components/SectionEditor.vue'
 
 const router = useRouter()
 const route = useRoute()
 
 const extractedKeywords = ref(['Java', 'Spring', 'AWS'])
+const projects = ref([])
+const isAiLoading = ref(false)
 
-/* 기존 키워드 추출 로직 수정 */
+const ui = reactive({
+  open: false,
+  projectIndex: 0,
+})
+
+const toast = reactive({
+  open: false,
+  message: '',
+  timer: null,
+})
+
+const circledNums = [
+  '①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩',
+  '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳',
+]
+
+const getCircled = (n) => circledNums[n - 1] || String(n)
+
+const showToast = (message) => {
+  toast.message = message
+  toast.open = true
+
+  if (toast.timer) clearTimeout(toast.timer)
+
+  toast.timer = setTimeout(() => {
+    toast.open = false
+  }, 2000)
+}
+
 function extractKeywords() {
   const loadingBtn = document.getElementById('extract-btn')
   const tagSection = document.getElementById('keyword-result-section')
@@ -21,23 +51,23 @@ function extractKeywords() {
   loadingBtn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> 키워드 분석 중...'
   loadingBtn.disabled = true
 
-  // 실제 API 통신 처리 및 UI 업데이트
   setTimeout(async () => {
     try {
-      const portfolioIdx = route.query.idx || 1 // 현재 포트폴리오 ID
+      const portfolioIdx = route.query.idx || 1
 
-      // ✨ 백엔드로 키워드 저장 API 호출
       await portfolioApi.updateKeywords(portfolioIdx, extractedKeywords.value)
 
       tagSection.classList.remove('hidden')
       tagSection.classList.add('animate-fade-in')
       loadingBtn.classList.add('hidden')
       nextStepBtn.classList.remove('hidden')
-      if (editBtn) editBtn.style.display = 'none'
-      tagSection.scrollIntoView({ behavior: 'smooth', block: 'center' })
 
-      showToast('키워드가 성공적으로 저장되었습니다.') // 저장 완료 알림
+      if (editBtn) editBtn.style.display = 'none'
+
+      tagSection.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      showToast('키워드가 성공적으로 저장되었습니다.')
     } catch (error) {
+      console.error('키워드 저장 실패:', error)
       alert('키워드 저장에 실패했습니다.')
       loadingBtn.innerHTML =
         '내용 확정 및 키워드 추출 <i class="fa-solid fa-wand-sparkles text-point-yellow"></i>'
@@ -46,64 +76,86 @@ function extractKeywords() {
   }, 1200)
 }
 
-/* AI 첨삭 팝업 관련 */
-const circledNums = [
-  '①',
-  '②',
-  '③',
-  '④',
-  '⑤',
-  '⑥',
-  '⑦',
-  '⑧',
-  '⑨',
-  '⑩',
-  '⑪',
-  '⑫',
-  '⑬',
-  '⑭',
-  '⑮',
-  '⑯',
-  '⑰',
-  '⑱',
-  '⑲',
-  '⑳',
-]
-const getCircled = (n) => circledNums[n - 1] || String(n)
-
-// 🌟 API에서 받아올 빈 배열로 초기화
-const projects = ref([])
-
-const makeVariants = (original) => {
+const makeReview = async (original) => {
   const o = (original || '').trim()
-  return [
-    `📌 (핵심 요약형)\n${o}\n\n- 역할/기여/성과를 한 줄로 요약해 보세요.`,
-    `✨ (스토리텔링형)\n${o}\n\n- 문제 → 접근 → 결과 흐름으로 읽히게 다듬어 보세요.`,
-    `🧩 (수치 강조형)\n${o}\n\n- 수치/지표(%, ms, 건수 등)를 넣으면 설득력이 크게 올라갑니다.`,
-  ]
+
+  if (!o) return ''
+
+  isAiLoading.value = true
+
+  try {
+    const data = await portfolioApi.getAiReview(o)
+    console.log('AI review response:', data)
+
+    if (data?.isSuccess && typeof data.data === 'string') {
+      return data.data
+    }
+
+    return o
+  } catch (error) {
+    console.error('AI 첨삭 호출 실패:', error)
+    return o
+  } finally {
+    isAiLoading.value = false
+  }
 }
 
-// 🌟 컴포넌트 마운트 시 API 호출 (데이터 연동)
+const loadAiReviewForProject = async (idx) => {
+  const p = projects.value[idx]
+  if (!p) return
+
+  const generatedReview = await makeReview(p.original)
+  p.review = generatedReview
+  p.reviewDraft = generatedReview
+}
+
+const openEval = async () => {
+  ui.open = true
+  ui.projectIndex = 0
+  await loadAiReviewForProject(0)
+}
+
+const closeEval = () => {
+  ui.open = false
+}
+
+const selectProject = async (idx) => {
+  ui.projectIndex = idx
+  await loadAiReviewForProject(idx)
+}
+
+const applyReview = () => {
+  const p = projects.value[ui.projectIndex]
+  if (!p) return
+
+  const edited = (p.reviewDraft || '').trim()
+  if (!edited) return
+
+  p.original = edited
+  p.review = ''
+  p.reviewDraft = ''
+
+  showToast('적용했습니다!')
+}
+
+const activeProject = () => projects.value[ui.projectIndex]
+const goBack = () => router.back()
+
 onMounted(async () => {
-  // 이전 화면에서 쿼리 파라미터로 넘겨준 idx 값을 사용 (예: /portfolio-update-n-check?idx=1)
-  // 만약 값이 없다면 기본값이나 테스트용 번호 설정
   const portfolioIdx = route.query.idx || 1
 
   try {
     const response = await portfolioApi.getPortfolioSections(portfolioIdx)
+    console.log('portfolio sections response:', response)
 
-    if (response.isSuccess && response.data) {
-      // 서버에서 넘어온 데이터(SectionDto.Res) 형태를 프론트 UI에 맞게 매핑
-      projects.value = response.data.map((section) => {
-        const variants = makeVariants(section.contents)
-        return {
-          idx: section.idx, // 추후 수정 API에 쓸 수 있도록 ID 저장
-          title: section.sectionTitle,
-          original: section.contents, // 내용
-          variants,
-          variantsDraft: [...variants],
-        }
-      })
+    if (response?.isSuccess && response?.data) {
+      projects.value = response.data.map((section) => ({
+        idx: section.idx,
+        title: section.sectionTitle,
+        original: section.contents,
+        review: '',
+        reviewDraft: '',
+      }))
     }
   } catch (error) {
     console.error('섹션 데이터를 불러오는 중 에러 발생:', error)
@@ -111,78 +163,6 @@ onMounted(async () => {
   }
 })
 
-// UI 상태
-const ui = reactive({
-  open: false,
-  projectIndex: 0,
-  activeVariant: null,
-})
-
-const toast = reactive({
-  open: false,
-  message: '',
-  timer: null,
-})
-
-const showToast = (message) => {
-  toast.message = message
-  toast.open = true
-  if (toast.timer) clearTimeout(toast.timer)
-  toast.timer = setTimeout(() => {
-    toast.open = false
-  }, 2000)
-}
-
-const openEval = () => {
-  ui.open = true
-  ui.projectIndex = 0
-  ui.activeVariant = null
-}
-
-const closeEval = () => {
-  ui.open = false
-  ui.activeVariant = null
-}
-
-const selectProject = (idx) => {
-  ui.projectIndex = idx
-  ui.activeVariant = null
-}
-
-const selectVariant = (i) => {
-  ui.activeVariant = i
-
-  const p = projects.value[ui.projectIndex]
-  if (p && (!p.variantsDraft || p.variantsDraft.length !== 3)) {
-    p.variantsDraft = [...(p.variants || makeVariants(p.original))]
-  }
-}
-
-const closeVariant = () => {
-  ui.activeVariant = null
-}
-
-// 사용자가 수정한 내용을 본문에 반영
-const applyVariant = () => {
-  if (ui.activeVariant === null) return
-
-  const p = projects.value[ui.projectIndex]
-  if (!p) return
-
-  const edited = (p.variantsDraft?.[ui.activeVariant] || '').trim()
-  if (!edited) return
-
-  p.original = edited
-
-  const nextVariants = makeVariants(edited)
-  p.variants = nextVariants
-  p.variantsDraft = [...nextVariants]
-
-  ui.activeVariant = null
-  showToast('적용했습니다!')
-}
-
-// 팝업 열리면 스크롤 잠금
 watch(
   () => ui.open,
   (v) => {
@@ -193,11 +173,11 @@ watch(
 
 onBeforeUnmount(() => {
   document.documentElement.classList.remove('eval-open')
-  if (toast.timer) clearTimeout(toast.timer)
-})
 
-const activeProject = () => projects.value[ui.projectIndex]
-const goBack = () => router.back()
+  if (toast.timer) {
+    clearTimeout(toast.timer)
+  }
+})
 </script>
 
 <template>
@@ -234,13 +214,12 @@ const goBack = () => router.back()
               </h2>
               <p class="text-gray-500 dark:text-gray-400 leading-relaxed text-sm md:text-base">
                 내용이 확정되면 키워드를 추출해 주세요.<br />
-                <span class="text-point-yellow font-bold"
-                  >키워드 추출 후에는 내용 수정이 불가능합니다.</span
-                >
+                <span class="text-point-yellow font-bold">
+                  키워드 추출 후에는 내용 수정이 불가능합니다.
+                </span>
               </p>
             </div>
 
-            <!-- 이름 변경 + id 유지 -->
             <button
               id="top-edit-btn"
               type="button"
@@ -250,6 +229,7 @@ const goBack = () => router.back()
               <i class="fa-solid fa-wand-sparkles text-point-yellow"></i> AI 첨삭
             </button>
           </div>
+
           <div class="space-y-16 mb-20">
             <div v-for="(project, index) in projects" :key="index">
               <h3
@@ -271,8 +251,8 @@ const goBack = () => router.back()
             <h4
               class="text-sm font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2"
             >
-              <i class="fa-solid fa-check-circle text-green-500"></i> 내용 확정 및 키워드 추출이
-              완료되었습니다.
+              <i class="fa-solid fa-check-circle text-green-500"></i>
+              내용 확정 및 키워드 추출이 완료되었습니다.
             </h4>
 
             <div class="flex flex-wrap gap-3">
@@ -280,8 +260,9 @@ const goBack = () => router.back()
                 v-for="(keyword, idx) in extractedKeywords"
                 :key="idx"
                 class="px-5 py-2.5 bg-white dark:bg-zinc-800 border-2 border-point-yellow/20 text-gray-700 dark:text-gray-300 text-sm rounded-2xl font-bold shadow-sm"
-                >#{{ keyword }}</span
               >
+                #{{ keyword }}
+              </span>
             </div>
           </div>
 
@@ -310,7 +291,8 @@ const goBack = () => router.back()
                 class="flex-1 md:flex-none px-10 py-3 bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-2xl font-bold shadow-xl hover:bg-black dark:hover:bg-white transform hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
                 @click="extractKeywords()"
               >
-                내용 확정 및 키워드 추출 <i class="fa-solid fa-wand-sparkles text-point-yellow"></i>
+                내용 확정 및 키워드 추출
+                <i class="fa-solid fa-wand-sparkles text-point-yellow"></i>
               </button>
 
               <RouterLink
@@ -326,7 +308,6 @@ const goBack = () => router.back()
       </div>
     </main>
 
-    <!-- AI 첨삭 팝업 여기서 수정도 가능 -->
     <div class="eval-overlay" :class="ui.open ? 'eval-open' : ''" aria-hidden="true">
       <div class="eval-dim" @click="closeEval"></div>
 
@@ -371,39 +352,28 @@ const goBack = () => router.back()
 
             <section class="eval-card">
               <div class="eval-card-head">
-                <h3>추천 첨삭본</h3>
-                <span class="eval-chip">3 variants</span>
+                <h3>AI 첨삭본</h3>
+                <span class="eval-chip">1 review</span>
               </div>
 
-              <!-- 첨삭본 1/2/3 탭 유지 -->
-              <div class="eval-tabs">
-                <button
-                  v-for="i in 3"
-                  :key="i"
-                  type="button"
-                  class="eval-tab"
-                  :class="ui.activeVariant === i - 1 ? 'active' : ''"
-                  @click="selectVariant(i - 1)"
-                >
-                  첨삭본 {{ i }}
-                </button>
+              <div v-if="isAiLoading" class="py-10 text-center text-gray-500 font-bold">
+                <i class="fa-solid fa-spinner animate-spin text-point-yellow text-2xl mb-2"></i>
+                <p>AI가 포트폴리오를 첨삭하고 있습니다...</p>
               </div>
 
-              <!-- 같은 팝업에서 바로 수정 -->
-              <div v-if="ui.activeVariant !== null" class="eval-variant">
+              <div v-else class="eval-variant">
                 <SectionEditor
-                  :key="`${ui.projectIndex}-${ui.activeVariant}`"
-                  v-model="projects[ui.projectIndex].variantsDraft[ui.activeVariant]"
+                  v-if="projects[ui.projectIndex]"
+                  :key="ui.projectIndex"
+                  v-model="projects[ui.projectIndex].reviewDraft"
                   class="w-full bg-white dark:bg-zinc-800 rounded-xl min-h-[170px]"
                 ></SectionEditor>
 
                 <div class="eval-actions mt-4">
-                  <button type="button" class="eval-btn ghost" @click="closeVariant">닫기</button>
-                  <button type="button" class="eval-btn" @click="applyVariant">적용</button>
+                  <button type="button" class="eval-btn ghost" @click="closeEval">닫기</button>
+                  <button type="button" class="eval-btn" @click="applyReview">적용</button>
                 </div>
               </div>
-
-              <div v-else class="eval-empty">원하는 첨삭본 탭을 선택하세요.</div>
             </section>
           </main>
         </div>
@@ -435,7 +405,6 @@ const goBack = () => router.back()
     opacity: 0;
     transform: translateY(10px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
@@ -447,7 +416,6 @@ const goBack = () => router.back()
 }
 </style>
 
-<!-- 전역 스타일 -->
 <style>
 html.eval-open,
 html.eval-open body {
@@ -646,43 +614,11 @@ html.dark .eval-side {
   white-space: pre-line;
 }
 
-.eval-tabs {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
-}
-
-.eval-tab {
-  padding: 10px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--border, #e5e7eb);
-  background: transparent;
-  cursor: pointer;
-  font-weight: 900;
-  font-size: 12px;
-}
-
-.eval-tab:hover {
-  background: rgba(0, 0, 0, 0.03);
-}
-
-.eval-tab.active {
-  border-color: rgba(250, 204, 21, 0.55);
-  background: rgba(250, 204, 21, 0.16);
-}
-
 .eval-variant {
   border: 1px dashed rgba(250, 204, 21, 0.55);
   border-radius: 16px;
   padding: 12px;
   background: rgba(250, 204, 21, 0.08);
-}
-
-.eval-variant-text {
-  font-size: 14px;
-  line-height: 1.7;
-  white-space: pre-line;
 }
 
 .eval-actions {
@@ -714,15 +650,6 @@ html.dark .eval-side {
 
 .eval-btn:hover {
   filter: brightness(0.98);
-}
-
-.eval-empty {
-  padding: 16px;
-  border-radius: 16px;
-  border: 1px dashed var(--border, #e5e7eb);
-  color: rgba(107, 114, 128, 1);
-  font-weight: 800;
-  font-size: 13px;
 }
 
 .eval-toast {
