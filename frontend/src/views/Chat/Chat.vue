@@ -570,9 +570,24 @@ onUnmounted(() => {
                       v-model="newChatTargetId"
                       type="text"
                       placeholder="사용자 ID (숫자)"
+                      @input="errorMessage = ''"
                       @keyup.enter="confirmCreateChat"
-                      class="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl py-4 pl-12 pr-4 text-sm focus:border-amber-400 dark:focus:border-amber-400 transition-all outline-none dark:text-white"
+                      :class="[
+                        'w-full bg-slate-50 dark:bg-slate-800 border-2 rounded-2xl py-4 pl-12 pr-4 text-sm transition-all outline-none dark:text-white',
+                        errorMessage
+                          ? 'border-rose-400 focus:border-rose-500'
+                          : 'border-slate-100 dark:border-slate-700 focus:border-amber-400',
+                      ]"
                     />
+                  </div>
+
+                  <div class="h-6 mb-4">
+                    <transition name="fade">
+                      <p v-if="errorMessage" class="text-xs text-rose-500 font-bold flex items-center gap-1.5 px-1">
+                        <i class="fa-solid fa-circle-exclamation"></i>
+                        {{ errorMessage }}
+                      </p>
+                    </transition>
                   </div>
 
                   <div class="flex gap-3">
