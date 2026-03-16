@@ -1,64 +1,59 @@
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import api from '@/api/community/index'
 
+const router = useRouter()
 const posts = ref([])
+const isLoading = ref(false)
 
-/* 날짜 문자열(YYYY-MM-DD-HH:mm:ss)을 "방금 전", "N시간 전"으로 변환하는 함수 */
 const formatTimeAgo = (dateString) => {
-  const parts = dateString.split(/[-:]/);
-  const targetDate = new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5]);
+  if (!dateString) return '-'
 
-  const now = new Date();
-  const diff = (now - targetDate) / 1000;
+  const parts = dateString.split(/[-:]/)
+  const targetDate = new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5])
 
-  if (diff < 60) return '방금 전';
-  if (diff < 3600) return `${Math.floor(diff / 60)}분 전`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}시간 전`;
-  if (diff < 604800) return `${Math.floor(diff / 86400)}일 전`;
-  return `${targetDate.getFullYear()}.${targetDate.getMonth() + 1}.${targetDate.getDate()}`;
-};
+  const now = new Date()
+  const diff = (now - targetDate) / 1000
+
+  if (diff < 60) return '방금 전'
+  if (diff < 3600) return `${Math.floor(diff / 60)}분 전`
+  if (diff < 86400) return `${Math.floor(diff / 3600)}시간 전`
+  if (diff < 604800) return `${Math.floor(diff / 86400)}일 전`
+  return `${targetDate.getFullYear()}.${targetDate.getMonth() + 1}.${targetDate.getDate()}`
+}
+
+const mapPost = (item) => ({
+  id: item.postId,
+  cat: item.category,
+  solved: item.isSolved,
+  title: item.title,
+  author: item.author,
+  tags: Array.isArray(item.tags) ? item.tags : [],
+  like: Number(item.likes ?? 0),
+  comment: Number(item.replys ?? 0),
+  time: formatTimeAgo(item.createdAt),
+})
 
 const fetchAllPosts = async () => {
+  isLoading.value = true
+
   try {
-    const promises = [];
-    for (let i = 1; i <= 30; i++) {
-      promises.push(api.getPostList(i));
-    }
+    const res = await api.getPosts(0, 100)
+    const communityList = res?.data?.communityList || []
 
-    // 모든 요청이 완료될 때까지 대기
-    const results = await Promise.all(promises);
-
-    // 결과 데이터 가공 및 할당
-    posts.value = results
-      .filter(res => res && res.data)
-      .map((res, index) => {
-        const item = res.data
-
-        return {
-          id: item.postId,
-          cat: item.category,
-          solved: item.isSolved,
-          title: item.title,
-          author: item.author,
-          tags: item.tags,
-          like: Number(item.likes),
-          comment: Number(item.replys),
-          time: formatTimeAgo(item.createdAt)
-        }
-      });
-
-    console.log('불러온 전체 게시글:', posts.value);
-
+    posts.value = communityList.map(mapPost)
   } catch (error) {
-    console.error('전체 게시글 로딩 중 오류 발생:', error);
+    console.error('전체 게시글 로딩 중 오류 발생:', error)
+    posts.value = []
+  } finally {
+    isLoading.value = false
   }
-};
+}
 
-// 컴포넌트가 마운트(화면 로드)될 때 데이터 불러오기
 onMounted(() => {
-  posts.value = fetchAllPosts();
-});
+  fetchAllPosts()
+})
 
 const state = reactive({
   cat: 'ALL',
@@ -71,17 +66,13 @@ const state = reactive({
   pageSize: 4,
 })
 
-// 필터링 로직
 const filteredPosts = computed(() => {
   let list = [...posts.value]
 
-  // 카테고리 필터
   if (state.cat !== 'ALL') list = list.filter((p) => p.cat === state.cat)
 
-  // 해결됨 필터
   if (state.onlySolved) list = list.filter((p) => p.solved)
 
-  // 검색어 필터
   const q = state.search.trim().toLowerCase()
   if (q) {
     list = list.filter(
@@ -92,7 +83,6 @@ const filteredPosts = computed(() => {
     )
   }
 
-  // 태그 필터
   const tagSet = state.tags
     .split(',')
     .map((s) => s.trim().toLowerCase())
@@ -101,7 +91,6 @@ const filteredPosts = computed(() => {
     list = list.filter((p) => tagSet.every((t) => p.tags.map((pt) => pt.toLowerCase()).includes(t)))
   }
 
-  // 정렬
   if (state.sort === 'HOT') list.sort((a, b) => b.like * 2 + b.comment - (a.like * 2 + a.comment))
   if (state.sort === 'COMMENT') list.sort((a, b) => b.comment - a.comment)
   if (state.sort === 'NEW') list.sort((a, b) => b.id - a.id)
@@ -109,12 +98,10 @@ const filteredPosts = computed(() => {
   return list
 })
 
-// 페이지네이션 적용된 리스트
 const pagedPosts = computed(() => {
   return filteredPosts.value.slice(0, state.page * state.pageSize)
 })
 
-// 액션 함수들
 const resetFilters = () => {
   state.cat = 'ALL'
   state.search = ''
@@ -126,7 +113,21 @@ const resetFilters = () => {
 
 const loadMore = () => state.page++
 
+const goEdit = (postId) => {
+  router.push({ path: '/community-write', query: { postId } })
+}
 
+const removePost = async (postId) => {
+  const confirmed = window.confirm('이 게시글을 삭제할까요?')
+  if (!confirmed) return
+
+  try {
+    await api.deletePost(postId)
+    await fetchAllPosts()
+  } catch (error) {
+    alert(error.message || '게시글 삭제에 실패했습니다.')
+  }
+}
 </script>
 
 <template>
@@ -229,9 +230,9 @@ const loadMore = () => state.page++
             <div class="flex items-center justify-between text-sm">
               <span class="text-zinc-500 font-medium"><b class="text-zinc-900 dark:text-zinc-100">{{
                 filteredPosts.length }}</b>개의 포스트</span>
-              <button @click="state.page = 1"
+              <button @click="fetchAllPosts"
                 class="text-zinc-500 hover:text-zinc-900 font-bold flex items-center gap-1">
-                <span>새로고침</span>
+                <span>{{ isLoading ? '불러오는 중...' : '새로고침' }}</span>
               </button>
             </div>
           </div>
@@ -273,13 +274,16 @@ const loadMore = () => state.page++
                 </div>
 
                 <div class="flex flex-col items-end gap-3">
-                  <button
-                    class="p-2.5 rounded-xl border border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
-                    <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                    </svg>
-                  </button>
+                  <div class="flex items-center gap-2">
+                    <button @click="goEdit(post.id)"
+                      class="px-3 py-2 rounded-xl border border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-xs font-bold">
+                      수정
+                    </button>
+                    <button @click="removePost(post.id)"
+                      class="px-3 py-2 rounded-xl border border-rose-200 text-rose-500 hover:bg-rose-50 transition-colors text-xs font-bold">
+                      삭제
+                    </button>
+                  </div>
                   <div class="flex items-center gap-3 text-xs font-bold">
                     <span class="flex items-center gap-1">❤️ {{ post.like }}</span>
                     <span class="flex items-center gap-1">💬 {{ post.comment }}</span>
@@ -287,6 +291,11 @@ const loadMore = () => state.page++
                 </div>
               </div>
             </article>
+
+            <div v-if="!isLoading && pagedPosts.length === 0"
+              class="p-8 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[24px] text-center text-zinc-500 font-medium">
+              조건에 맞는 게시글이 없습니다.
+            </div>
           </div>
 
           <button v-if="filteredPosts.length > pagedPosts.length" @click="loadMore"
@@ -340,7 +349,6 @@ const loadMore = () => state.page++
 </template>
 
 <style scoped>
-/* 배경 패턴 클래스 추가 */
 .bg-pattern {
   background-color: #f8fafc;
 }
@@ -349,7 +357,6 @@ const loadMore = () => state.page++
   background-color: #18181b;
 }
 
-/* @apply 없이 필요한 최소한의 CSS */
 input::placeholder {
   @supports not (-webkit-hyphens: none) {
     color: rgba(161, 161, 170, 0.6);
