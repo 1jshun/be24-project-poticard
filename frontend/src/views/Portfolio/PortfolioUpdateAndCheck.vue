@@ -7,7 +7,7 @@ import SectionEditor from '@/components/SectionEditor.vue'
 const router = useRouter()
 const route = useRoute()
 
-const extractedKeywords = ref(['Java', 'Spring', 'AWS'])
+const extractedKeywords = ref([])
 const projects = ref([])
 const isAiLoading = ref(false)
 
@@ -40,7 +40,8 @@ const showToast = (message) => {
   }, 2000)
 }
 
-function extractKeywords() {
+// 🌟 수정된 부분: 불필요한 래퍼 함수를 지우고 깔끔하게 하나로 통일했습니다.
+const extractKeywords = async () => {
   const loadingBtn = document.getElementById('extract-btn')
   const tagSection = document.getElementById('keyword-result-section')
   const nextStepBtn = document.getElementById('next-step-btn')
@@ -48,32 +49,50 @@ function extractKeywords() {
 
   if (!loadingBtn || !tagSection || !nextStepBtn) return
 
-  loadingBtn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> 키워드 분석 중...'
+  // 로딩 상태 시작
+  loadingBtn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> AI가 내용을 읽고 키워드를 분석 중입니다...'
   loadingBtn.disabled = true
 
-  setTimeout(async () => {
-    try {
-      const portfolioIdx = route.query.idx || 1
+  try {
+    const portfolioIdx = route.query.idx || 1
 
-      await portfolioApi.updateKeywords(portfolioIdx, extractedKeywords.value)
+    // 1. 화면에 있는 모든 섹션의 내용을 하나의 텍스트로 합치기
+    const allContents = projects.value
+      .map((p) => `[${p.title}]\n${p.original}`)
+      .join('\n\n')
 
-      tagSection.classList.remove('hidden')
-      tagSection.classList.add('animate-fade-in')
-      loadingBtn.classList.add('hidden')
-      nextStepBtn.classList.remove('hidden')
-
-      if (editBtn) editBtn.style.display = 'none'
-
-      tagSection.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      showToast('키워드가 성공적으로 저장되었습니다.')
-    } catch (error) {
-      console.error('키워드 저장 실패:', error)
-      alert('키워드 저장에 실패했습니다.')
-      loadingBtn.innerHTML =
-        '내용 확정 및 키워드 추출 <i class="fa-solid fa-wand-sparkles text-point-yellow"></i>'
-      loadingBtn.disabled = false
+    // 2. 백엔드 AI 분석 API 호출
+    const aiRes = await portfolioApi.extractKeywordsAi(allContents)
+    
+    // AI가 반환한 키워드 배열을 ref에 저장
+    if (aiRes.isSuccess && aiRes.data) {
+      extractedKeywords.value = aiRes.data
+    } else {
+      extractedKeywords.value = ['분석 결과 없음']
     }
-  }, 1200)
+
+    // 3. 추출된 키워드를 백엔드 DB(Portfolio 엔티티의 keywords 필드)에 업데이트
+    await portfolioApi.updateKeywords(portfolioIdx, extractedKeywords.value)
+
+    // 4. 성공 시 UI 전환
+    tagSection.classList.remove('hidden')
+    tagSection.classList.add('animate-fade-in')
+    loadingBtn.classList.add('hidden')
+    nextStepBtn.classList.remove('hidden')
+    
+    if (editBtn) editBtn.style.display = 'none'
+    
+    tagSection.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    showToast('AI 키워드 추출 및 저장이 완료되었습니다.')
+
+  } catch (error) {
+    console.error('키워드 추출 실패:', error)
+    alert('AI 키워드 추출에 실패했습니다. 다시 시도해 주세요.')
+    
+    // 실패 시 버튼 원상복구
+    loadingBtn.innerHTML = '내용 확정 및 키워드 추출 <i class="fa-solid fa-wand-sparkles text-point-yellow"></i>'
+    loadingBtn.disabled = false
+  }
 }
 
 const makeReview = async (original) => {
