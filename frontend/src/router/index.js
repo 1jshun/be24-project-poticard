@@ -182,7 +182,6 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
-  console.log('vue에서 링크를 이동할 때 매번 실행되는 함수')
 
   const authStore = useAuthStore()
   if (
