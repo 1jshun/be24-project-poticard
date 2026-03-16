@@ -142,6 +142,12 @@ const login = async () => {
     serverError.value = e?.userMessage || '로그인 실패'
   }
 }
+
+// 소셜 로그인 리다이렉트 함수
+const socialLogin = (provider) => {
+  const baseUrl = 'http://localhost:5173/api/oauth2/authorization/'
+  window.location.href = `${baseUrl}${provider}`
+}
 </script>
 
 <template>
@@ -238,8 +244,49 @@ const login = async () => {
             로그인
           </button>
         </form>
-        <button type="button" onclick="location.href='http://localhost:5173/api/oauth2/authorization/kakao'">카카오 로그인</button>
-        <button type="button" onclick="location.href='http://localhost:5173/api/oauth2/authorization/google'">구글 로그인</button>
+                <!-- SNS 로그인 섹션 -->
+        <div class="mt-10">
+          <div class="relative flex items-center justify-center mb-8">
+            <div class="flex-grow border-t border-gray-200 dark:border-zinc-800"></div>
+            <span class="flex-shrink mx-4 text-[11px] font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-widest">
+              SNS Quick Login
+            </span>
+            <div class="flex-grow border-t border-gray-200 dark:border-zinc-800"></div>
+          </div>
+
+          <div class="flex justify-center items-center gap-6">
+            <!-- 카카오 버튼 -->
+            <button 
+              type="button" 
+              @click="socialLogin('kakao')"
+              class="group flex flex-col items-center gap-2 outline-none"
+            >
+              <div class="w-14 h-14 bg-[#FEE500] rounded-full flex items-center justify-center shadow-md group-hover:shadow-lg group-hover:scale-110 group-active:scale-95 transition-all">
+                <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 3C7.029 3 3 6.129 3 10C3 12.48 4.632 14.671 7.148 15.939L6.11 19.749C6.056 19.949 6.175 20.151 6.372 20.203C6.441 20.221 6.513 20.218 6.58 20.194L11.021 17.21C11.343 17.243 11.668 17.26 12 17.26C16.971 17.26 21 14.131 21 10.26C21 6.389 16.971 3.26 12 3.26V3Z" fill="#3C1E1E"/>
+                </svg>
+              </div>
+              <span class="text-[10px] font-bold text-gray-400 group-hover:text-gray-600 transition-colors">카카오</span>
+            </button>
+
+            <!-- 구글 버튼 -->
+            <button 
+              type="button" 
+              @click="socialLogin('google')"
+              class="group flex flex-col items-center gap-2 outline-none"
+            >
+              <div class="w-14 h-14 bg-white border border-gray-100 rounded-full flex items-center justify-center shadow-md group-hover:shadow-lg group-hover:scale-110 group-active:scale-95 transition-all">
+                <svg class="w-6 h-6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-1 .67-2.28 1.07-3.71 1.07-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                  <path d="M5.84 14.11c-.22-.67-.35-1.38-.35-2.11s.13-1.44.35-2.11V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.83z" fill="#FBBC05"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.83c.87-2.6 3.3-4.51 6.16-4.51z" fill="#EA4335"/>
+                </svg>
+              </div>
+              <span class="text-[10px] font-bold text-gray-400 group-hover:text-gray-600 transition-colors">구글</span>
+            </button>
+          </div>
+        </div>
         <p class="text-center mt-6 text-sm text-gray-400">
           로그인 정보를 잊어버리셨나요?
           <router-link
