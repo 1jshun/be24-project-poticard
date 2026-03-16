@@ -49,32 +49,41 @@ const extractKeywords = async () => {
 
   if (!loadingBtn || !tagSection || !nextStepBtn) return
 
-  // 로딩 상태 시작
-  loadingBtn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> AI가 내용을 읽고 키워드를 분석 중입니다...'
+  loadingBtn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> 수정된 내용 저장 및 키워드 분석 중...'
   loadingBtn.disabled = true
 
   try {
     const portfolioIdx = route.query.idx || 1
 
-    // 1. 화면에 있는 모든 섹션의 내용을 하나의 텍스트로 합치기
+    // 1. 화면에서 수정된 각 섹션의 내용을 백엔드 DB에 진짜로 업데이트 (반복문 사용)
+    for (const p of projects.value) {
+      if (p.idx) {
+        await portfolioApi.updateSection(p.idx, {
+          idx: p.idx,
+          sectionTitle: p.title,
+          contents: p.original // AI로 교정했거나 수동 수정한 최신 텍스트
+        })
+      }
+    }
+
+    // 2. 화면에 있는 모든 섹션의 내용을 하나의 텍스트로 합치기
     const allContents = projects.value
       .map((p) => `[${p.title}]\n${p.original}`)
       .join('\n\n')
 
-    // 2. 백엔드 AI 분석 API 호출
+    // 3. 백엔드 AI 분석 API 호출 (키워드 추출)
     const aiRes = await portfolioApi.extractKeywordsAi(allContents)
     
-    // AI가 반환한 키워드 배열을 ref에 저장
     if (aiRes.isSuccess && aiRes.data) {
       extractedKeywords.value = aiRes.data
     } else {
       extractedKeywords.value = ['분석 결과 없음']
     }
 
-    // 3. 추출된 키워드를 백엔드 DB(Portfolio 엔티티의 keywords 필드)에 업데이트
+    // 4. 추출된 키워드를 백엔드 DB(Portfolio)에 업데이트
     await portfolioApi.updateKeywords(portfolioIdx, extractedKeywords.value)
 
-    // 4. 성공 시 UI 전환
+    // 5. 성공 시 UI 전환 (스타일 설정 버튼 나타남)
     tagSection.classList.remove('hidden')
     tagSection.classList.add('animate-fade-in')
     loadingBtn.classList.add('hidden')
@@ -83,13 +92,12 @@ const extractKeywords = async () => {
     if (editBtn) editBtn.style.display = 'none'
     
     tagSection.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    showToast('AI 키워드 추출 및 저장이 완료되었습니다.')
+    showToast('내용 저장 및 AI 키워드 추출이 완료되었습니다.')
 
   } catch (error) {
-    console.error('키워드 추출 실패:', error)
-    alert('AI 키워드 추출에 실패했습니다. 다시 시도해 주세요.')
+    console.error('내용 및 키워드 저장 실패:', error)
+    alert('작업에 실패했습니다. 다시 시도해 주세요.')
     
-    // 실패 시 버튼 원상복구
     loadingBtn.innerHTML = '내용 확정 및 키워드 추출 <i class="fa-solid fa-wand-sparkles text-point-yellow"></i>'
     loadingBtn.disabled = false
   }

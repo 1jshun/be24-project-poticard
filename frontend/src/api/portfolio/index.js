@@ -58,6 +58,7 @@ export const updateKeywords = async (portfolioIdx, keywords) => {
   })
 }
 
+// AI 첨삭 API
 export const getAiReview = async (contents) => {
   return await apiFetch('portfolio/ai-review', {
     method: 'POST',
@@ -65,6 +66,7 @@ export const getAiReview = async (contents) => {
   })
 }
 
+// AI 키워드 추출 API
 export const extractKeywordsAi = async (contents) => {
   return await apiFetch('portfolio/ai-keywords', {
     method: 'POST',
@@ -72,8 +74,24 @@ export const extractKeywordsAi = async (contents) => {
   })
 }
 
+// 포트폴리오 섹션 업데이트 API
+export const updateSection = async (sectionIdx, updateReq) => {
+  return await apiFetch(`section/update/${sectionIdx}`, {
+    method: 'PATCH',
+    body: updateReq
+  })
+}
+
+// 포트폴리오 삭제 API
+export const deletePortfolio = async (portfolioIdx, title) => {
+  return await apiFetch(`portfolio/delete/${portfolioIdx}`, {
+    method: 'POST',
+    body: { title }
+  })
+}
+
 export default {
-  getProjects,
+  getProjects,  
   createPortfolio,
   getPortfolioSections,
   savePortfolioProgress,
@@ -82,5 +100,7 @@ export default {
   updateKeywords,
   getProjectDetail,
   getAiReview,
-  extractKeywordsAi
+  extractKeywordsAi,
+  updateSection,
+  deletePortfolio,
 }
