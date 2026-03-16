@@ -65,6 +65,13 @@ export const getAiReview = async (contents) => {
   })
 }
 
+export const extractKeywordsAi = async (contents) => {
+  return await apiFetch('portfolio/ai-keywords', {
+    method: 'POST',
+    body: { contents }
+  })
+}
+
 export default {
   getProjects,
   createPortfolio,
@@ -74,5 +81,6 @@ export default {
   getPortfolioList,
   updateKeywords,
   getProjectDetail,
-  getAiReview
+  getAiReview,
+  extractKeywordsAi
 }
