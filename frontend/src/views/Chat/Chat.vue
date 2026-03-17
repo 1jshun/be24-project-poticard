@@ -310,10 +310,19 @@ const quickReply = (text) => {
   })
 }
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+
 /* 파일 선택 핸들러 */
 const handleFileChange = (event, type) => {
   const files = Array.from(event.target.files)
   if (files.length === 0) return
+
+  const oversized = files.filter((f) => f.size > MAX_FILE_SIZE)
+  if (oversized.length) {
+    alert(`파일 크기는 최대 10MB까지 가능합니다.\n초과된 파일: ${oversized.map((f) => f.name).join(', ')}`)
+    event.target.value = ''
+    return
+  }
 
   // 타입이 바뀌면 기존 선택 초기화 (섞어서 보내기 방지용)
   if (currentUploadType.value !== type) {
