@@ -137,6 +137,19 @@ const goToChatRoom = (senderIdx) => {
   router.push({ path: '/chat', query: { senderId: senderIdx } })
 }
 
+// 채팅방 입장 시 해당 sender의 알림 제거
+const clearNotificationsBySender = (senderId) => {
+  const sid = Number(senderId)
+  if (isNaN(sid)) return
+  notifications.value = notifications.value.filter((n) => n.senderIdx !== sid)
+  if (notifications.value.length === 0) hasUnread.value = false
+}
+
+const handleChatRoomEntered = (e) => {
+  const senderId = e?.detail?.senderId
+  if (senderId) clearNotificationsBySender(senderId)
+}
+
 const onNotiClick = (e) => {
   e?.stopPropagation?.()
 
@@ -197,6 +210,7 @@ onMounted(() => {
   initHeader()
   document.addEventListener('click', onDocClick)
   document.addEventListener('keydown', onKeyDown)
+  window.addEventListener('chat-room-entered', handleChatRoomEntered)
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('message', handlePushNotification)
   }
@@ -204,6 +218,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('click', onDocClick)
   document.removeEventListener('keydown', onKeyDown)
+  window.removeEventListener('chat-room-entered', handleChatRoomEntered)
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.removeEventListener('message', handlePushNotification)
   }

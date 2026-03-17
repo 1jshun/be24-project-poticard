@@ -184,6 +184,8 @@ const setActiveRoom = async (roomId) => {
   // URL을 현재 방과 동기화 (알림 클릭 시 라우트 반영)
   if (room) {
     router.replace({ path: '/chat', query: { senderId: room.opponentIdx } })
+    // 해당 방(sender)의 헤더 알림 제거
+    window.dispatchEvent(new CustomEvent('chat-room-entered', { detail: { senderId: room.opponentIdx } }))
   }
 }
 
