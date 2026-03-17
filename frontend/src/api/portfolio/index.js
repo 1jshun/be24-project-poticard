@@ -90,6 +90,16 @@ export const deletePortfolio = async (portfolioIdx, title) => {
   })
 }
 
+// 키워드 호출 API
+const getAllKeywords = async () => {
+  try {
+    const res = await apiFetch('/portfolio/keywords')
+    return res
+  } catch (error) {
+    console.error('포트폴리오 키워드 호출 실패:', error.message)
+  }
+}
+
 export default {
   getProjects,  
   createPortfolio,
@@ -103,4 +113,5 @@ export default {
   extractKeywordsAi,
   updateSection,
   deletePortfolio,
+  getAllKeywords,
 }

@@ -1,16 +1,22 @@
 <script setup>
 import { onMounted, ref, reactive, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import NamecardsFront from '@/components/namecards/NamecardsFront.vue'
 import NamecardsBack from '@/components/namecards/NamecardsBack.vue'
 import { useNamecardStore } from '@/stores/namecardStore'
 import api from '@/api/namecard'
+import portfolioApi from '@/api/portfolio'
+
+const router = useRouter()
 
 const edit = async (cardData) => {
   try {
-    const res = await api.editNamcard(cardData)
+    await api.editNamcard(cardData)
+    alert('명함이 성공적으로 저장되었습니다.')
+    // router.push('/namecard/search') // 필요시 주석 해제하여 이동
   } catch (error){
     console.error(error.message)
+    alert('저장 중 오류가 발생했습니다.')
   }
 }
 
@@ -19,8 +25,8 @@ const dummy = {
   email: "example@example.com",
   title: "제목",
   description: "설명",
-  layout: "Type A", // Typography 관련
-  color: "YELLOW",  // Accent Color 관련
+  layout: "Type A",
+  color: "YELLOW",
   affiliation: "포티 컴퍼니",
   name: "홍길동",
   avatar: "http://cdn.testprofileimage.api/0100",
@@ -28,15 +34,18 @@ const dummy = {
   url: "https://porti.example.com/user100",
   address: "서울특별시 강남구 테헤란로 100",
   phone: "010-0000-0100",
-  keywords: ["Java", "Spring", "Backend"]
+  keywords: []
 }
 
-// 2. 상태 관리 (reactive를 사용하여 내부 속성 변경 감지)
-const cardData = ref({ ...dummy }) // 초기값은 dummy 복사
+// 2. 상태 관리
+const cardData = ref({ ...dummy }) 
 const isLoading = ref(true)
 const isFlipped = ref(false)
 
-// JWT 로직 (기존 유지)
+// 포트폴리오에서 가져온 중복 제거된 키워드 목록
+const availableKeywords = ref([])
+
+// JWT 로직
 let currentUserId = 1
 const getCookie = (name) => {
   const value = `; ${document.cookie}`;
@@ -57,8 +66,13 @@ const loadMyCard = async () => {
       
       const response = await api.getSingleNamecard(currentUserId)
       if (response) {
-        // 서버 데이터가 있으면 덮어쓰기 (기존 dummy 구조 유지하며 합침)
-        cardData.value = { ...dummy, ...response.data }
+        // null 방어 로직 추가: response.data.keywords가 null이면 빈 배열 유지
+        const responseData = response.data || response
+        cardData.value = { 
+          ...dummy, 
+          ...responseData,
+          keywords: responseData.keywords || [] 
+        }
       }
     } catch (e) {
       console.error("데이터 로드 실패, 기본값 사용", e);
@@ -67,8 +81,43 @@ const loadMyCard = async () => {
   isLoading.value = false
 }
 
+// 포트폴리오 키워드 불러오기 로직
+const loadPortfolioKeywords = async () => {
+  try {
+    const response = await portfolioApi.getAllKeywords();
+    const fetchedKeywords = response.data || response; 
+
+    if (fetchedKeywords && Array.isArray(fetchedKeywords)) {
+      availableKeywords.value = [...new Set(fetchedKeywords)];
+    }
+  } catch (error) {
+    console.error("키워드 로드 실패", error);
+  }
+}
+
+// 키워드 선택/해제 토글 (최대 8개 제한)
+const toggleKeyword = (keyword) => {
+  // 안전장치: keywords가 배열인지 한번 더 확인
+  if (!cardData.value.keywords) {
+    cardData.value.keywords = [];
+  }
+
+  const index = cardData.value.keywords.indexOf(keyword);
+  
+  if (index > -1) {
+    cardData.value.keywords.splice(index, 1);
+  } else {
+    if (cardData.value.keywords.length < 8) {
+      cardData.value.keywords.push(keyword);
+    } else {
+      alert("키워드는 최대 8개까지만 선택할 수 있습니다.");
+    }
+  }
+}
+
 onMounted(async () => {
   await loadMyCard()
+  await loadPortfolioKeywords()
 })
 
 // 카드 조작 함수
@@ -88,14 +137,12 @@ const updateColor = (color) => {
       <div class="max-w-6xl mx-auto">
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
-          <!-- 왼쪽: 커스터마이징 패널 -->
           <div class="lg:col-span-5 space-y-6">
             <div class="bg-white dark:bg-zinc-900 rounded-3xl shadow-xl border border-gray-100 dark:border-zinc-800 p-6 md:p-8">
               <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                <i class="fa-solid fa-paintbrush text-point-yellow"></i> 스타일 커스터마이징
+                <i class="fa-solid fa-paintbrush text-yellow-400"></i> 스타일 커스터마이징
               </h2>
 
-              <!-- 1. 색상 선택 (cardData.color와 연동) -->
               <div class="mb-8">
                 <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase block mb-3">Accent Color</label>
                 <div class="flex flex-wrap gap-3">
@@ -118,7 +165,6 @@ const updateColor = (color) => {
                 </div>
               </div>
 
-              <!-- 2. 타이포그래피 (cardData.layout과 연동) -->
               <div class="mb-8">
                 <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase block mb-3">Typography</label>
                 <div class="grid grid-cols-2 gap-3">
@@ -137,7 +183,29 @@ const updateColor = (color) => {
                 </div>
               </div>
 
-              <!-- 4. 실시간 텍스트 수정 (추가 예시) -->
+              <div class="mb-8">
+                <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase block mb-3">Keywords (최대 8개)</label>
+                <div class="flex flex-wrap gap-2">
+                  <button 
+                    v-for="keyword in availableKeywords" 
+                    :key="keyword"
+                    @click="toggleKeyword(keyword)"
+                    :class="[
+                      cardData.keywords?.includes(keyword) 
+                        ? 'bg-yellow-400 text-gray-900 border-yellow-400 font-bold shadow-sm' 
+                        : 'bg-gray-50 dark:bg-zinc-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-zinc-700 hover:bg-gray-100 dark:hover:bg-zinc-700'
+                    ]"
+                    class="px-3 py-1.5 text-sm rounded-xl border transition-all cursor-pointer">
+                    {{ keyword }}
+                  </button>
+                </div>
+                <div class="mt-2 text-right">
+                  <span class="text-xs font-medium" :class="(cardData.keywords?.length || 0) >= 8 ? 'text-red-500' : 'text-gray-400'">
+                    선택된 키워드: {{ cardData.keywords?.length || 0 }} / 8
+                  </span>
+                </div>
+              </div>
+
               <div class="mt-8 pt-8 border-t border-gray-100 dark:border-zinc-800">
                 <label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase block mb-3">title</label>
                 <div class="space-y-4">
@@ -162,7 +230,6 @@ const updateColor = (color) => {
             </div>
           </div>
 
-          <!-- 오른쪽: 라이브 프리뷰 (cardData를 Props로 전달) -->
           <div class="lg:col-span-7 flex flex-col">
             <div class="sticky top-24">
               <div class="flex justify-between items-center mb-4">
@@ -183,7 +250,6 @@ const updateColor = (color) => {
                 <div class="card-object w-full max-w-md aspect-[1.58/1] shadow-2xl rounded-2xl cursor-pointer"
                   :class="{ 'is-flipped': isFlipped }" @click="toggleFlip">
 
-                  <!-- 앞면 컴포넌트 -->
                   <div class="card-face card-front">
                     <NamecardsFront :cardInfo="cardData" class="w-full h-full" />
                     <div class="absolute bottom-4 right-4 z-20 text-xs text-gray-400 animate-pulse pointer-events-none">
@@ -191,7 +257,6 @@ const updateColor = (color) => {
                     </div>
                   </div>
 
-                  <!-- 뒷면 컴포넌트 -->
                   <div class="card-face card-back">
                     <NamecardsBack :cardInfo="cardData" class="w-full h-full" />
                     <div class="absolute bottom-4 right-4 z-20 text-xs text-gray-400 animate-pulse pointer-events-none">
@@ -201,7 +266,6 @@ const updateColor = (color) => {
                 </div>
               </div>
 
-              <!-- 하단 버튼 -->
               <div class="mt-8 grid grid-cols-2 md:grid-cols-3 gap-4">
                 <button class="col-span-1 py-4 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-gray-200 rounded-2xl font-bold hover:bg-gray-50 transition-all flex flex-col items-center justify-center gap-1">
                   <i class="fa-solid fa-image text-xl mb-1"></i>
@@ -222,7 +286,6 @@ const updateColor = (color) => {
 </template>
 
 <style scoped>
-/* 카드 애니메이션 CSS (기존 유지) */
 .perspective-container { perspective: 1000px; }
 .card-object {
   position: relative;
