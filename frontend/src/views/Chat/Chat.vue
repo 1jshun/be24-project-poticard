@@ -1,8 +1,12 @@
 <script setup>
-import { ref, reactive, onMounted, computed, nextTick, onUnmounted } from 'vue'
+import { ref, reactive, onMounted, computed, nextTick, onUnmounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import chatApi from '@/api/chat/index.js'
 import SockJS from 'sockjs-client'
 import Stomp from 'stompjs'
+
+const route = useRoute()
+const router = useRouter()
 
 /* 상태 관리 */
 const rooms = reactive([])
@@ -176,6 +180,11 @@ const setActiveRoom = async (roomId) => {
   // 채팅방 메시지 불러오기
   await loadChatMessages(roomId)
   scrollBottom()
+
+  // URL을 현재 방과 동기화 (알림 클릭 시 라우트 반영)
+  if (room) {
+    router.replace({ path: '/chat', query: { senderId: room.opponentIdx } })
+  }
 }
 
 // 날짜 포맷팅 함수
@@ -404,7 +413,23 @@ const totalUnreadCount = computed(() => {
   return count > 300 ? '300+' : count
 })
 
-onMounted(() => {
+// URL의 senderId로 해당 유저와의 채팅방 열기
+const openRoomFromSenderId = async () => {
+  const sid = Number(route.query.senderId)
+  if (!sid || isNaN(sid)) return
+
+  const room = rooms.find((r) => r.opponentIdx === sid)
+  if (room) await setActiveRoom(room.id)
+}
+
+watch(
+  () => route.query.senderId,
+  (senderId) => {
+    if (senderId && rooms.length) openRoomFromSenderId()
+  },
+)
+
+onMounted(async () => {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('message', (event) => {
       if (event.data && event.data.type === 'PUSH_RECEIVED') {
@@ -417,12 +442,13 @@ onMounted(() => {
           room.unread = (room.unread || 0) + 1
           room.content =
             contents?.length > 30 ? contents.slice(0, 30) + '...' : contents || room.content
-          room.time = contentsTime ?? room.timententsCreatedAt
+          room.time = contentsTime ?? room.time ?? room.lastContentsTime
         }
       }
     })
   }
-  getChatRoomList()
+  await getChatRoomList()
+  await openRoomFromSenderId()
 })
 onUnmounted(() => {
   if (stompClient) {
