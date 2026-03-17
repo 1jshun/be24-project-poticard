@@ -47,6 +47,7 @@ self.addEventListener('push', (event) => {
             roomIdx: payload.roomIdx,
             senderIdx: payload.senderIdx,
             senderEmail: payload.senderEmail,
+            senderName: payload.senderName,
             contents: payload.contents,
             contentsTime: payload.contentsTime,
           },

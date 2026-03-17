@@ -26,7 +26,10 @@ const router = useRouter()
 
 const showAuthModal = ref(false)
 const showNotiPopup = ref(false)
-const hasUnread = ref(true)
+const hasUnread = ref(false)
+
+// 알림 목록 (푸시 수신 시 추가)
+const notifications = ref([])
 
 const userMenuOpen = ref(false)
 const showLogoutConfirm = ref(false)
@@ -107,7 +110,44 @@ const onKeyDown = (e) => {
 const markAllReadAndClose = (e) => {
   e?.stopPropagation?.()
   hasUnread.value = false
+  notifications.value = []
   showNotiPopup.value = false
+}
+
+const addNotificationFromPush = (payload) => {
+  const { senderIdx, senderEmail, senderName, contents } = payload || {}
+  if (senderIdx == null) return
+  notifications.value.unshift({
+    id: Date.now() + Math.random(),
+    senderIdx: Number(senderIdx),
+    senderUsername: senderName || senderEmail || '알 수 없음',
+    content: contents || '',
+  })
+  hasUnread.value = true
+}
+
+const handlePushNotification = (event) => {
+  if (event.data?.type === 'PUSH_RECEIVED') {
+    addNotificationFromPush(event.data.payload ?? event.data)
+  }
+}
+
+const goToChatRoom = (senderIdx) => {
+  showNotiPopup.value = false
+  router.push({ path: '/chat', query: { senderId: senderIdx } })
+}
+
+// 채팅방 입장 시 해당 sender의 알림 제거
+const clearNotificationsBySender = (senderId) => {
+  const sid = Number(senderId)
+  if (isNaN(sid)) return
+  notifications.value = notifications.value.filter((n) => n.senderIdx !== sid)
+  if (notifications.value.length === 0) hasUnread.value = false
+}
+
+const handleChatRoomEntered = (e) => {
+  const senderId = e?.detail?.senderId
+  if (senderId) clearNotificationsBySender(senderId)
 }
 
 const onNotiClick = (e) => {
@@ -170,10 +210,18 @@ onMounted(() => {
   initHeader()
   document.addEventListener('click', onDocClick)
   document.addEventListener('keydown', onKeyDown)
+  window.addEventListener('chat-room-entered', handleChatRoomEntered)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', handlePushNotification)
+  }
 })
 onBeforeUnmount(() => {
   document.removeEventListener('click', onDocClick)
   document.removeEventListener('keydown', onKeyDown)
+  window.removeEventListener('chat-room-entered', handleChatRoomEntered)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.removeEventListener('message', handlePushNotification)
+  }
   document.documentElement.classList.remove('user-open')
 })
 </script>
@@ -364,10 +412,17 @@ onBeforeUnmount(() => {
                   </button>
                 </div>
                 <div class="max-h-80 overflow-y-auto">
+                  <div v-if="notifications.length === 0" class="p-8 text-center text-sm text-gray-400">
+                    알림이 없습니다
+                  </div>
                   <div
-                    class="p-4 hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition border-b border-gray-50 dark:border-zinc-800/50">
-                    <p class="text-sm font-bold">💬 새 메시지</p>
-                    <p class="text-xs text-gray-500 mt-1">김채용님이 메시지를 보냈습니다.</p>
+                    v-for="noti in notifications"
+                    :key="noti.id"
+                    class="p-4 hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition border-b border-gray-50 dark:border-zinc-800/50 cursor-pointer"
+                    @click="goToChatRoom(noti.senderIdx)"
+                  >
+                    <p class="text-sm font-bold">새 메시지 * {{ noti.senderUsername }}</p>
+                    <p class="text-xs text-gray-500 mt-1 line-clamp-2">{{ noti.content }}</p>
                   </div>
                 </div>
               </div>
