@@ -1,76 +1,127 @@
 <script setup>
-import { ref, computed } from 'vue'
-import { useRouter, RouterLink } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
+import { RouterLink, useRouter } from 'vue-router'
+import { apiFetch } from '@/plugins/interceptor'
 
 const router = useRouter()
-
-// 공고 상태 필터
 const currentFilter = ref('ALL')
+const isLoading = ref(false)
 
-// 공고 목록 데이터 (샘플)
-const jobs = ref([
-  {
-    id: 1,
-    title: '[플랫폼본부] 프렌차이즈시너지그룹 AI 에이전트 엔지니어 (AI 어시스턴트)',
-    category: 'AI',
-    employmentType: '정규직',
-    applicants: 42,
-    newApplicants: 8,
-    deadline: '2026-03-31',
-    status: 'RECRUITING',
-    createdAt: '2026-01-10',
-  },
-  {
-    id: 2,
-    title: '[메이플스토리 PC] 2D 애니메이션 아티스트',
-    category: 'Adobe',
-    employmentType: '계약직',
-    applicants: 15,
-    newApplicants: 3,
-    deadline: '2026-02-15',
-    status: 'RECRUITING',
-    createdAt: '2026-01-12',
-  },
-  {
-    id: 3,
-    title: '[기술본부] DATABASE 엔지니어',
-    category: 'Database',
-    employmentType: '정규직',
-    applicants: 28,
-    newApplicants: 1,
-    deadline: '2026-01-20',
-    status: 'RECRUITING',
-    createdAt: '2026-01-05',
-  },
-  {
-    id: 4,
-    title: '백엔드 개발자 인턴십 (Spring Boot)',
-    category: 'Backend',
-    employmentType: '인턴',
-    applicants: 156,
-    newApplicants: 0,
-    deadline: '2025-12-31',
-    status: 'CLOSED',
-    createdAt: '2025-12-01',
-  },
-])
+const jobs = ref([])
 
-// 통계 데이터
+const listInfo = ref({
+  totalCount: 0,
+  recruitingCount: 0,
+  totalApplicants: 0,
+})
+
+const getEmploymentTypeLabel = (type) => {
+  if (type === 'FULL_TIME') return '정규직'
+  if (type === 'CONTRACT') return '계약직'
+  if (type === 'INTERN') return '인턴'
+  if (type === 'PART_TIME') return '파트타임'
+  return type || '-'
+}
+
+const formatCreatedAt = (value) => {
+  if (!value) return '-'
+
+  const parts = value.split('-')
+  if (parts.length >= 3) {
+    return `${parts[0]}-${parts[1]}-${parts[2]}`
+  }
+
+  return value
+}
+
+const fetchJobs = async () => {
+  isLoading.value = true
+
+  try {
+    const res = await apiFetch('/company/list?page=0&size=10')
+    const data = res?.data || {}
+
+    jobs.value = (data.companyList || []).map((item) => ({
+      id: item.idx,
+      title: item.title,
+      category: item.category,
+      employmentType: getEmploymentTypeLabel(item.employmentType),
+      applicants: Number(item.applicants ?? 0),
+      newApplicants: Number(item.newApplicants ?? 0),
+      deadline: item.deadline || '-',
+      status: item.status,
+      createdAt: formatCreatedAt(item.createdAt),
+    }))
+
+    listInfo.value = {
+      totalCount: Number(data.totalCount ?? 0),
+      recruitingCount: Number(data.recruitingCount ?? 0),
+      totalApplicants: Number(data.totalApplicants ?? 0),
+    }
+  } catch (error) {
+    console.error('공고 목록 조회 실패:', error)
+
+    jobs.value = []
+    listInfo.value = {
+      totalCount: 0,
+      recruitingCount: 0,
+      totalApplicants: 0,
+    }
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchJobs()
+})
+
 const stats = computed(() => {
   return {
-    total: jobs.value.length,
-    active: jobs.value.filter((j) => j.status === 'RECRUITING').length,
-    totalApplicants: jobs.value.reduce((acc, cur) => acc + cur.applicants, 0),
+    total: listInfo.value.totalCount,
+    active: listInfo.value.recruitingCount,
+    totalApplicants: listInfo.value.totalApplicants,
   }
 })
 
-// 필터링된 목록
 const filteredJobs = computed(() => {
   if (currentFilter.value === 'ALL') return jobs.value
   return jobs.value.filter((j) => j.status === currentFilter.value)
 })
 
 const getStatusLabel = (status) => (status === 'RECRUITING' ? '채용 중' : '마감됨')
+
+const goEdit = (jobId) => {
+  router.push({ path: '/company/jobcreate', query: { jobId } })
+}
+
+const closeJob = async (jobId) => {
+  const confirmed = window.confirm('이 공고를 마감할까요?')
+  if (!confirmed) return
+
+  try {
+    await apiFetch(`/company/close/${jobId}`, {
+      method: 'PATCH',
+    })
+    await fetchJobs()
+  } catch (error) {
+    alert(error.message || '공고 마감 처리에 실패했습니다.')
+  }
+}
+
+const deleteJob = async (jobId) => {
+  const confirmed = window.confirm('이 공고를 삭제할까요?')
+  if (!confirmed) return
+
+  try {
+    await apiFetch(`/company/delete/${jobId}`, {
+      method: 'DELETE',
+    })
+    await fetchJobs()
+  } catch (error) {
+    alert(error.message || '공고 삭제에 실패했습니다.')
+  }
+}
 </script>
 
 <template>
@@ -176,14 +227,22 @@ const getStatusLabel = (status) => (status === 'RECRUITING' ? '채용 중' : '�
                     {{ job.applicants }}
                   </p>
                 </div>
-                <div class="flex items-center gap-2">
-                  <button
+                <div class="flex items-center gap-2 flex-wrap justify-end">
+                  <button @click="goEdit(job.id)"
                     class="p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-white dark:hover:bg-zinc-900 transition shadow-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-zinc-500" fill="none"
                       viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                     </svg>
+                  </button>
+                  <button v-if="job.status === 'RECRUITING'" @click="closeJob(job.id)"
+                    class="px-4 py-3 rounded-xl border border-amber-200 text-amber-600 hover:bg-amber-50 transition text-sm font-bold">
+                    마감
+                  </button>
+                  <button @click="deleteJob(job.id)"
+                    class="px-4 py-3 rounded-xl border border-rose-200 text-rose-500 hover:bg-rose-50 transition text-sm font-bold">
+                    삭제
                   </button>
                   <RouterLink :to="`/company/applicantlist`"
                     class="inline-flex items-center justify-center px-6 py-3 rounded-xl font-bold bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:opacity-90 transition shadow-md">
@@ -194,7 +253,7 @@ const getStatusLabel = (status) => (status === 'RECRUITING' ? '채용 중' : '�
             </div>
           </div>
 
-          <div v-if="filteredJobs.length === 0" class="py-20 text-center">
+          <div v-if="!isLoading && filteredJobs.length === 0" class="py-20 text-center">
             <div class="text-4xl mb-4 text-zinc-300">🔍</div>
             <p class="text-zinc-500 font-medium">해당 조건에 맞는 공고가 없습니다.</p>
           </div>
@@ -205,7 +264,6 @@ const getStatusLabel = (status) => (status === 'RECRUITING' ? '채용 중' : '�
 </template>
 
 <style scoped>
-/* 일관된 부드러운 전환 효과 */
 button,
 a,
 div {

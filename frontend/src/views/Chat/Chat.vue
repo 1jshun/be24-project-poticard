@@ -5,7 +5,7 @@ import SockJS from 'sockjs-client'
 import Stomp from 'stompjs'
 
 /* 상태 관리 */
-const rooms = reactive([]);
+const rooms = reactive([])
 const messagesByRoom = ref({})
 const activeRoomId = ref(null)
 const searchQuery = ref('')
@@ -18,8 +18,16 @@ const isCardOpen = ref(false)
 const isFlipped = ref(false)
 const isMenuOpen = ref(false)
 
-let stompClient = null
+const selectedFiles = ref([])
+const currentUploadType = ref(null) // 'IMAGE' 또는 'DOC'
+const imageInput = ref(null)
+const docInput = ref(null)
 
+const isNewChatModalOpen = ref(false)
+const newChatTargetId = ref('')
+const errorMessage = ref('')
+
+let stompClient = null
 
 const getChatRoomList = async () => {
   try {
@@ -42,13 +50,20 @@ const getIdxFromJwtCookie = (cookieName) => {
   if (parts.length === 2) {
     const token = parts.pop().split(';').shift()
     if (!token) return null
-    
+
     try {
       const base64Url = token.split('.')[1]
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
-      const payload = JSON.parse(decodeURIComponent(atob(base64).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
-      }).join('')))
+      const payload = JSON.parse(
+        decodeURIComponent(
+          atob(base64)
+            .split('')
+            .map(function (c) {
+              return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+            })
+            .join(''),
+        ),
+      )
       return payload.idx
     } catch (e) {
       console.error('JWT 파싱 실패:', e)
@@ -61,13 +76,14 @@ const getIdxFromJwtCookie = (cookieName) => {
 // userId 변수에 저장
 const myUserId = getIdxFromJwtCookie('ATOKEN')
 
-
 /* 계산된 속성 */
 const filteredRooms = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
   if (!q) return rooms
   return rooms.filter((r) =>
-    (r.name + ' ' + r.company + ' ' + r.role + ' ' + (r.tags?.join(' ') || '')).toLowerCase().includes(q),
+    (r.name + ' ' + r.company + ' ' + r.role + ' ' + (r.tags?.join(' ') || ''))
+      .toLowerCase()
+      .includes(q),
   )
 })
 
@@ -91,28 +107,44 @@ const wsConnect = (roomId) => {
     // 채팅방 구독: /sub/chat/room/{roomId}
     stompClient.subscribe(`/sub/chat/room/${roomId}`, (tick) => {
       const recv = JSON.parse(tick.body)
-      
-      // 백엔드 응답 형식: { idx, roomIdx, senderIdx, senderName, contents, isRead, createdAt, updatedAt }
+
+      // 읽음 처리 이벤트: 상대가 채팅방 입장 시 백엔드가 전송. 해당 방의 내 메시지를 모두 읽음으로 갱신
+      if (recv.type === 'READ_RECEIPT') {
+        const roomIdx = Number(recv.roomIdx)
+        const list = messagesByRoom.value[roomIdx]
+        if (list && list.length) {
+          messagesByRoom.value[roomIdx] = list.map((m) =>
+            m.who === 'me' ? { ...m, isRead: true } : m,
+          )
+        }
+        return
+      }
+
+      // 일반 메시지: 백엔드 응답 형식 { idx, roomIdx, senderIdx, senderName, contents, isRead, createdAt, updatedAt }
       const receivedRoomId = Number(recv.roomIdx)
       const isMe = Number(recv.senderIdx) === Number(myUserId)
 
       if (!messagesByRoom.value[receivedRoomId]) {
         messagesByRoom.value[receivedRoomId] = []
       }
-      
+
+      // STOMP 응답도 동일하게 read 필드로 올 수 있음
+      const isRead = recv.isRead ?? recv.read ?? false
+
       messagesByRoom.value[receivedRoomId].push({
         who: isMe ? 'me' : 'them',
         text: recv.contents,
+        attachments: recv.attachments || [],
         time: formatMessageTime(recv.createdAt),
         messageId: recv.idx,
-        isRead: recv.isRead
+        isRead: !!isRead,
       })
 
       const r = rooms.find((x) => x.id === receivedRoomId)
       if (r) {
         r.content = recv.contents.length > 30 ? recv.contents.slice(0, 30) + '...' : recv.contents
       }
-      
+
       if (receivedRoomId === activeRoomId.value) {
         scrollBottom()
       }
@@ -123,7 +155,7 @@ const wsConnect = (roomId) => {
 // ActiveRoom 설정
 const setActiveRoom = async (roomId) => {
   // 같은 방이면 무시
-  if(activeRoomId.value === roomId) return
+  if (activeRoomId.value === roomId) return
 
   // 기존 WebSocket 연결 끊기
   if (stompClient && stompClient.connected) {
@@ -137,43 +169,43 @@ const setActiveRoom = async (roomId) => {
   const room = rooms.find((r) => r.id === roomId)
   if (room) room.unread = 0
   isMenuOpen.value = false
-  
+
   // 새로운 방으로 웹소켓 새로 연결
   wsConnect(roomId)
 
   // 채팅방 메시지 불러오기
   await loadChatMessages(roomId)
-  scrollBottom() 
+  scrollBottom()
 }
 
 // 날짜 포맷팅 함수
 const formatMessageTime = (dateString) => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now - date;
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffMs = now - date
+  const diffMins = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMs / 3600000)
+  const diffDays = Math.floor(diffMs / 86400000)
 
-  if (diffMins < 1) return "방금";
-  if (diffMins < 60) return `${diffMins}분 전`;
-  if (diffHours < 24) return `${diffHours}시간 전`;
-  if (diffDays === 1) return "어제";
-  if (diffDays < 7) return `${diffDays}일 전`;
+  if (diffMins < 1) return '방금'
+  if (diffMins < 60) return `${diffMins}분 전`
+  if (diffHours < 24) return `${diffHours}시간 전`
+  if (diffDays === 1) return '어제'
+  if (diffDays < 7) return `${diffDays}일 전`
 
   // 오늘 날짜와 비교하여 오전/오후 표시
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
-  const ampm = hours >= 12 ? "오후" : "오전";
-  const displayHours = hours % 12 || 12;
-  return `${ampm} ${displayHours}:${String(minutes).padStart(2, '0')}`;
+  const hours = date.getHours()
+  const minutes = date.getMinutes()
+  const ampm = hours >= 12 ? '오후' : '오전'
+  const displayHours = hours % 12 || 12
+  return `${ampm} ${displayHours}:${String(minutes).padStart(2, '0')}`
 }
 
 // 채팅방 메시지 불러오기
 const loadChatMessages = async (roomId) => {
   try {
     const res = await chatApi.getChatMessages(roomId)
-    console.log(res);
+    console.log(res)
 
     let messages = []
     if (res && res.data && Array.isArray(res.data)) {
@@ -181,25 +213,28 @@ const loadChatMessages = async (roomId) => {
     } else if (res && Array.isArray(res)) {
       messages = res
     }
-    
-    const formattedMessages = messages.map(msg => {
-      // 백엔드 필드명: senderIdx, contents, idx, isRead
+
+    const formattedMessages = messages.map((msg) => {
+      // 백엔드 Res DTO는 boolean isRead인데 Jackson 직렬화 시 "read"로 내려옴
       const isMe = Number(msg.senderIdx) === Number(myUserId)
+      const isRead = msg.isRead ?? msg.read ?? false
       return {
-        who: isMe ? "me" : "them",
+        who: isMe ? 'me' : 'them',
         text: msg.contents,
+        attachments: msg.attachments,
         time: formatMessageTime(msg.createdAt),
         messageId: msg.idx,
-        isRead: msg.isRead || false
+        isRead: !!isRead,
       }
     })
-    
+
     messagesByRoom.value[roomId] = formattedMessages
     console.log(`방 ${roomId}의 메시지 로드 완료:`, formattedMessages)
   } catch (error) {
     console.error(`방 ${roomId}의 메시지 로드 실패:`, error)
     messagesByRoom.value[roomId] = []
   }
+  scrollBottom()
 }
 
 const toggleCard = () => {
@@ -264,10 +299,64 @@ const quickReply = (text) => {
   })
 }
 
-const handleKeydown = (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault()
-    sendMessage()
+/* 파일 선택 핸들러 */
+const handleFileChange = (event, type) => {
+  const files = Array.from(event.target.files)
+  if (files.length === 0) return
+
+  // 타입이 바뀌면 기존 선택 초기화 (섞어서 보내기 방지용)
+  if (currentUploadType.value !== type) {
+    selectedFiles.value = []
+  }
+
+  currentUploadType.value = type
+  selectedFiles.value.push(...files)
+
+  // input 초기화 (같은 파일 다시 올릴 수 있도록)
+  event.target.value = ''
+}
+
+/* 파일 제거 */
+const removeFile = (index) => {
+  selectedFiles.value.splice(index, 1)
+  if (selectedFiles.value.length === 0) currentUploadType.value = null
+}
+
+/* 파일 아이콘 결정 */
+const getFileIcon = (file) => {
+  if (file.type.startsWith('image/')) return 'fa-solid fa-image'
+  if (file.name.endsWith('.pdf')) return 'fa-solid fa-file-pdf'
+  return 'fa-solid fa-file-lines'
+}
+
+/* 통합 전송 핸들러 */
+const handleSend = async () => {
+  // 1. 파일이 있는 경우 파일 업로드 먼저 수행
+  if (selectedFiles.value.length > 0) {
+    try {
+      const formData = new FormData()
+      selectedFiles.value.forEach((file) => formData.append('files', file))
+
+      const res = await chatApi.uploadChatFiles(
+        activeRoomId.value,
+        formData,
+        currentUploadType.value,
+      )
+
+      // 전송 후 초기화
+      selectedFiles.value = []
+      currentUploadType.value = null
+      if (imageInput.value) imageInput.value.value = ''
+      if (docInput.value) docInput.value.value = ''
+    } catch (error) {
+      alert('파일 전송에 실패했습니다.')
+      return
+    }
+  }
+
+  // 2. 텍스트 메시지가 있는 경우 기존 로직 수행
+  if (messageInput.value.trim()) {
+    sendMessage() // 기존에 구현된 WebSocket 전송 함수
   }
 }
 
@@ -276,57 +365,96 @@ const startVideoCall = () => {
   window.location.href = `/video-chat?id=${activeRoom.value.id}&name=${encodeURIComponent(activeRoom.value.name)}`
 }
 
-const createNewChat = async () => {
-  const guestUserId = prompt('채팅을 시작할 사용자의 ID를 입력해주세요:')
-  if (!guestUserId || guestUserId == myUserId) return
-  
-  const guestId = Number(guestUserId)
-  if (isNaN(guestId)) {
-    alert('올바른 사용자 ID를 입력해주세요.')
+const confirmCreateChat = async () => {
+  errorMessage.value = ''
+  const guestId = Number(newChatTargetId.value)
+
+  if (!newChatTargetId.value || isNaN(guestId)) {
+    errorMessage.value = '올바른 사용자 ID(숫자)를 입력해주세요.'
+    return
+  }
+
+  if (guestId === Number(myUserId)) {
+    errorMessage.value = '자기 자신과는 채팅할 수 없습니다.'
     return
   }
 
   try {
     const res = await chatApi.createChatRoom(guestId)
-    console.log('채팅방 생성 성공:', res)
-    
-    // 채팅방 목록 새로고침
+    isNewChatModalOpen.value = false
     await getChatRoomList()
-    
-    // 생성된 채팅방으로 이동
-    if (res && res.data && res.data.idx) {
-      await setActiveRoom(res.data.idx)
-    } else if (res && res.idx) {
-      await setActiveRoom(res.idx)
-    } else {
-      alert('채팅방이 생성되었습니다.')
+
+    if (res?.data?.idx || res?.idx) {
+      await setActiveRoom(res?.data?.idx || res?.idx)
     }
   } catch (error) {
     console.error('채팅방 생성 실패:', error)
-    alert('채팅방 생성에 실패했습니다: ' + (error.message || '알 수 없는 오류'))
+    errorMessage.value = '존재하지 않는 사용자이거나 생성에 실패했습니다.'
   }
 }
 
+const openNewChatModal = () => {
+  newChatTargetId.value = ''
+  errorMessage.value = ''
+  isNewChatModalOpen.value = true
+}
+
+const totalUnreadCount = computed(() => {
+  const count = rooms.reduce((acc, room) => acc + (room.unread || 0), 0)
+  return count > 300 ? '300+' : count
+})
+
 onMounted(() => {
-  getChatRoomList();
-  if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark')
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      if (event.data && event.data.type === 'PUSH_RECEIVED') {
+        const { roomIdx, senderIdx, contents, contentsTime } = event.data.payload ?? event.data
+
+        const room = rooms.find(
+          (r) => r.id === Number(roomIdx) || r.opponentIdx === Number(senderIdx),
+        )
+        if (room && activeRoomId.value !== room.id) {
+          room.unread = (room.unread || 0) + 1
+          room.content =
+            contents?.length > 30 ? contents.slice(0, 30) + '...' : contents || room.content
+          room.time = contentsTime ?? room.timententsCreatedAt
+        }
+      }
+    })
+  }
+  getChatRoomList()
+})
+onUnmounted(() => {
+  if (stompClient) {
+    stompClient.disconnect()
+  }
 })
 </script>
 
 <template>
   <div
-    class="chat-app bg-pattern max-w-7xl mx-auto px-4 py-8 h-[calc(100vh-40px)] flex flex-col relative overflow-hidden font-sans transition-colors">
+    class="chat-app bg-pattern max-w-7xl mx-auto px-4 py-8 h-[calc(100vh-40px)] flex flex-col relative overflow-hidden font-sans transition-colors"
+  >
     <transition name="fade">
-      <div v-if="isCardOpen" @click.self="toggleCard"
-        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div
+        v-if="isCardOpen"
+        @click.self="toggleCard"
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      >
         <transition name="card-pop" appear>
-          <div class="relative w-full max-w-md aspect-[1.58/1] perspective-1000" @click="isFlipped = !isFlipped">
-            <div :class="[
-              'relative w-full h-full transform-style-3d shadow-2xl rounded-2xl duration-700 cursor-pointer',
-              isFlipped ? 'flipped' : '',
-            ]">
+          <div
+            class="relative w-full max-w-md aspect-[1.58/1] perspective-1000"
+            @click="isFlipped = !isFlipped"
+          >
+            <div
+              :class="[
+                'relative w-full h-full transform-style-3d shadow-2xl rounded-2xl duration-700 cursor-pointer',
+                isFlipped ? 'flipped' : '',
+              ]"
+            >
               <div
-                class="absolute inset-0 w-full h-full bg-white rounded-2xl border border-slate-100 p-8 backface-hidden overflow-hidden">
+                class="absolute inset-0 w-full h-full bg-white rounded-2xl border border-slate-100 p-8 backface-hidden overflow-hidden"
+              >
                 <div class="absolute top-0 right-0 w-32 h-32 bg-amber-400/20 rounded-bl-full"></div>
                 <div class="flex flex-col justify-between h-full relative z-10 text-left">
                   <div class="flex justify-between items-start">
@@ -342,20 +470,28 @@ onMounted(() => {
                       </p>
                     </div>
                     <div
-                      class="w-20 h-20 rounded-full border-4 border-slate-50 shadow-md overflow-hidden bg-slate-100 flex-shrink-0">
+                      class="w-20 h-20 rounded-full border-4 border-slate-50 shadow-md overflow-hidden bg-slate-100 flex-shrink-0"
+                    >
                       <img :src="activeRoom.avatar" class="w-full h-full object-cover" />
                     </div>
                   </div>
                   <div class="space-y-4">
                     <div class="flex flex-wrap gap-2">
-                      <span v-for="tag in activeRoom.tags" :key="tag"
-                        class="px-2.5 py-1 bg-slate-50 border border-slate-100 text-slate-600 text-[10px] font-bold rounded-md">#{{
-                          tag }}</span>
+                      <span
+                        v-for="tag in activeRoom.tags"
+                        :key="tag"
+                        class="px-2.5 py-1 bg-slate-50 border border-slate-100 text-slate-600 text-[10px] font-bold rounded-md"
+                        >#{{ tag }}</span
+                      >
                     </div>
                     <div class="pt-4 border-t border-slate-100 flex justify-between items-center">
                       <div class="flex gap-3 text-slate-400">
-                        <i class="fa-brands fa-github text-xl hover:text-slate-900 transition-colors"></i>
-                        <i class="fa-solid fa-envelope text-xl hover:text-slate-900 transition-colors"></i>
+                        <i
+                          class="fa-brands fa-github text-xl hover:text-slate-900 transition-colors"
+                        ></i>
+                        <i
+                          class="fa-solid fa-envelope text-xl hover:text-slate-900 transition-colors"
+                        ></i>
                       </div>
                       <i class="fa-solid fa-qrcode text-3xl text-slate-800 opacity-80"></i>
                     </div>
@@ -363,7 +499,8 @@ onMounted(() => {
                 </div>
               </div>
               <div
-                class="absolute inset-0 w-full h-full bg-slate-900 rounded-2xl p-8 backface-hidden rotate-y-180 text-white flex flex-col justify-center shadow-2xl">
+                class="absolute inset-0 w-full h-full bg-slate-900 rounded-2xl p-8 backface-hidden rotate-y-180 text-white flex flex-col justify-center shadow-2xl"
+              >
                 <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
                   <span class="w-1.5 h-6 bg-amber-400 rounded-full"></span> Contact Info
                 </h3>
@@ -381,7 +518,9 @@ onMounted(() => {
                     <i class="fa-solid fa-location-dot w-5 text-amber-400"></i> Seoul, South Korea
                   </div>
                 </div>
-                <p class="mt-8 text-[10px] uppercase tracking-widest text-slate-500 text-center font-bold">
+                <p
+                  class="mt-8 text-[10px] uppercase tracking-widest text-slate-500 text-center font-bold"
+                >
                   Click to see front side
                 </p>
               </div>
@@ -394,46 +533,144 @@ onMounted(() => {
     <header class="flex items-center justify-between mb-6 shrink-0">
       <h1 class="text-3xl font-black tracking-tight text-slate-900 dark:text-white">채팅</h1>
       <div class="flex gap-2">
-        <button @click="createNewChat" class="btn-icon bg-amber-400 hover:scale-105 transition-transform"
-          title="새 채팅">
+        <button
+          @click="openNewChatModal"
+          class="btn-icon bg-amber-400 hover:scale-105 transition-transform"
+        >
           <i class="fa-solid fa-plus text-amber-950"></i>
         </button>
+        <transition name="fade">
+          <div
+            v-if="isNewChatModalOpen"
+            @click.self="isNewChatModalOpen = false"
+            class="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          >
+            <transition name="card-pop" appear>
+              <div
+                class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[2rem] shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-800"
+              >
+                <div class="p-8 pb-4 text-center">
+                  <div
+                    class="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-amber-600"
+                  >
+                    <i class="fa-solid fa-comments text-2xl"></i>
+                  </div>
+                  <h3 class="text-xl font-black text-slate-900 dark:text-white">새 채팅 시작</h3>
+                  <p class="text-sm text-slate-500 dark:text-slate-400 mt-2">
+                    대화하고 싶은 사용자의 고유 ID를<br />입력하여 연결해보세요.
+                  </p>
+                </div>
+
+                <div class="p-8 pt-0">
+                  <div class="relative group mb-6">
+                    <i
+                      class="fa-solid fa-fingerprint absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-amber-500 transition-colors"
+                    ></i>
+                    <input
+                      v-model="newChatTargetId"
+                      type="text"
+                      placeholder="사용자 ID (숫자)"
+                      @input="errorMessage = ''"
+                      @keyup.enter="confirmCreateChat"
+                      :class="[
+                        'w-full bg-slate-50 dark:bg-slate-800 border-2 rounded-2xl py-4 pl-12 pr-4 text-sm transition-all outline-none dark:text-white',
+                        errorMessage
+                          ? 'border-rose-400 focus:border-rose-500'
+                          : 'border-slate-100 dark:border-slate-700 focus:border-amber-400',
+                      ]"
+                    />
+                  </div>
+
+                  <div class="h-6 mb-4">
+                    <transition name="fade">
+                      <p v-if="errorMessage" class="text-xs text-rose-500 font-bold flex items-center gap-1.5 px-1">
+                        <i class="fa-solid fa-circle-exclamation"></i>
+                        {{ errorMessage }}
+                      </p>
+                    </transition>
+                  </div>
+
+                  <div class="flex gap-3">
+                    <button
+                      @click="isNewChatModalOpen = false"
+                      class="flex-1 py-4 px-6 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                    >
+                      취소
+                    </button>
+                    <button
+                      @click="confirmCreateChat"
+                      class="flex-[2] py-4 px-6 bg-amber-400 text-amber-950 font-black rounded-2xl hover:bg-amber-500 hover:shadow-lg hover:shadow-amber-400/20 transition-all active:scale-95"
+                    >
+                      대화 시작하기
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </transition>
+          </div>
+        </transition>
       </div>
     </header>
 
     <div class="flex-1 grid grid-cols-12 gap-6 min-h-0">
       <aside class="col-span-12 lg:col-span-4 flex flex-col gap-4 min-h-0">
         <div
-          class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col min-h-0">
+          class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col min-h-0"
+        >
           <div class="p-5 border-b border-slate-100 dark:border-slate-800">
             <div class="flex items-center justify-between mb-4">
-              <span class="font-bold text-slate-400 uppercase text-[10px] tracking-widest">Chat List</span>
-              <span class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded-full text-xs font-bold">{{
-                filteredRooms.length }}</span>
+              <div>
+                <span class="font-bold text-slate-400 uppercase text-[10px] tracking-widest"
+                  >Chat List</span
+                >
+                <span
+                  class="px-2 py-0.5 ml-2 bg-slate-100 dark:bg-slate-800 rounded-full text-xs font-bold"
+                  >{{ filteredRooms.length }}</span
+                >
+              </div>
+              <span
+                v-if="totalUnreadCount !== 0"
+                class="px-1.5 py-0.5 bg-rose-500 text-white rounded-md text-[10px] font-black"
+              >
+                {{ totalUnreadCount }}
+              </span>
             </div>
             <div class="relative">
               <i
-                class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
-              <input v-model="searchQuery"
+                class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"
+              ></i>
+              <input
+                v-model="searchQuery"
                 class="w-full bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-amber-400 transition-all outline-none dark:text-white"
-                placeholder="이름, 회사 또는 키워드" />
+                placeholder="이름, 회사 또는 키워드"
+              />
             </div>
           </div>
 
           <div class="flex-1 overflow-y-auto p-3 space-y-2 thin-scroll">
-            <button v-for="room in filteredRooms" :key="room.id" @click="setActiveRoom(room.id)" :class="[
-              'room-card w-full text-left p-4 rounded-2xl transition-all flex items-start gap-4 border',
-              activeRoomId === room.id
-                ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800/50 shadow-md'
-                : 'hover:bg-slate-50 dark:hover:bg-slate-800/50 border-transparent',
-            ]">
+            <button
+              v-for="room in filteredRooms"
+              :key="room.id"
+              @click="setActiveRoom(room.id)"
+              :class="[
+                'room-card w-full text-left p-4 rounded-2xl transition-all flex items-start gap-4 border',
+                activeRoomId === room.id
+                  ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800/50 shadow-md'
+                  : 'hover:bg-slate-50 dark:hover:bg-slate-800/50 border-transparent',
+              ]"
+            >
               <div class="relative shrink-0">
                 <div class="w-12 h-12 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800">
-                  <img :src="room.avatar" class="w-full h-full object-cover" />
+                  <img
+                    :src="room.avatar || '/default-avatar.png'"
+                    class="w-full h-full object-cover"
+                  />
                 </div>
-                <div v-if="room.unread > 0"
-                  class="absolute -top-1 -right-1 bg-amber-400 text-amber-950 text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900">
-                  {{ room.unread }}
+                <div
+                  v-if="room.unread > 0"
+                  class="absolute -top-1 -right-1 bg-amber-400 text-amber-950 text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900"
+                >
+                  {{ room.unread > 99 ? '99+' : room.unread }}
                 </div>
               </div>
               <div class="min-w-0 flex-1">
@@ -441,7 +678,9 @@ onMounted(() => {
                   <h3 class="font-bold truncate text-slate-900 dark:text-slate-100">
                     {{ room.name }}
                   </h3>
-                  <span class="text-[10px] text-slate-400 font-medium">12:34</span>
+                  <span class="text-[10px] text-slate-400 font-medium">
+                    {{ formatMessageTime(room.time) }}
+                  </span>
                 </div>
                 <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate mb-2">
                   {{ room.company }} · {{ room.role }}
@@ -456,10 +695,12 @@ onMounted(() => {
       </aside>
 
       <section
-        class="col-span-12 lg:col-span-8 flex flex-col min-h-0 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        class="col-span-12 lg:col-span-8 flex flex-col min-h-0 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden"
+      >
         <template v-if="activeRoomId">
           <div
-            class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
+            class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0"
+          >
             <div class="flex items-center gap-4">
               <div class="w-10 h-10 rounded-xl overflow-hidden shadow-sm">
                 <img :src="activeRoom.avatar" class="w-full h-full object-cover" />
@@ -478,27 +719,39 @@ onMounted(() => {
               <button @click="startVideoCall" class="btn-action" title="화상 채팅">
                 <i class="fa-solid fa-video"></i>
               </button>
-              <button @click="toggleCard" class="btn-action bg-amber-50 dark:bg-amber-900/20 text-amber-600"
-                title="명함 정보">
+              <button
+                @click="toggleCard"
+                class="btn-action bg-amber-50 dark:bg-amber-900/20 text-amber-600"
+                title="명함 정보"
+              >
                 <i class="fa-solid fa-address-card"></i>
               </button>
 
               <div class="relative">
-                <button @click="isMenuOpen = !isMenuOpen" class="btn-action"
-                  :class="{ 'bg-slate-100 dark:bg-slate-800': isMenuOpen }">
+                <button
+                  @click="isMenuOpen = !isMenuOpen"
+                  class="btn-action"
+                  :class="{ 'bg-slate-100 dark:bg-slate-800': isMenuOpen }"
+                >
                   <i class="fa-solid fa-ellipsis-vertical"></i>
                 </button>
 
                 <transition name="fade-in">
-                  <div v-if="isMenuOpen"
-                    class="absolute right-0 mt-2 w-44 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl z-50 overflow-hidden py-1">
-                    <button @click="reportUser"
-                      class="w-full px-4 py-3 text-left text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-3">
+                  <div
+                    v-if="isMenuOpen"
+                    class="absolute right-0 mt-2 w-44 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl z-50 overflow-hidden py-1"
+                  >
+                    <button
+                      @click="reportUser"
+                      class="w-full px-4 py-3 text-left text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-3"
+                    >
                       <i class="fa-solid fa-triangle-exclamation text-amber-500"></i> 신고하기
                     </button>
                     <div class="border-t border-slate-100 dark:border-slate-700 my-1"></div>
-                    <button @click="leaveChat"
-                      class="w-full px-4 py-3 text-left text-sm text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors flex items-center gap-3">
+                    <button
+                      @click="leaveChat"
+                      class="w-full px-4 py-3 text-left text-sm text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors flex items-center gap-3"
+                    >
                       <i class="fa-solid fa-door-open"></i> 채팅방 나가기
                     </button>
                   </div>
@@ -509,27 +762,75 @@ onMounted(() => {
             </div>
           </div>
 
-          <div ref="messageArea"
-            class="flex-1 overflow-y-auto p-6 space-y-6 thin-scroll bg-slate-50/50 dark:bg-slate-950/20">
-            <div v-for="(m, idx) in currentMessages" :key="idx"
-              :class="['flex w-full', m.who === 'me' ? 'justify-end' : 'justify-start']">
-              <div :class="['max-w-[75%] flex flex-col', m.who === 'me' ? 'items-end' : 'items-start']">
+          <div
+            ref="messageArea"
+            class="flex-1 overflow-y-auto p-6 space-y-6 thin-scroll bg-slate-50/50 dark:bg-slate-950/20"
+          >
+            <div
+              v-for="(m, idx) in currentMessages"
+              :key="idx"
+              :class="['flex w-full', m.who === 'me' ? 'justify-end' : 'justify-start']"
+            >
+              <div
+                :class="['max-w-[75%] flex flex-col', m.who === 'me' ? 'items-end' : 'items-start']"
+              >
                 <div :class="['bubble', m.who === 'me' ? 'bubble-me' : 'bubble-them']">
-                  {{ m.text }}
+                  <p v-if="m.text" class="whitespace-pre-wrap">{{ m.text }}</p>
+
+                  <div
+                    v-if="m.attachments && m.attachments.length > 0"
+                    class="mt-2 flex flex-col gap-2"
+                  >
+                    <div v-for="file in m.attachments" :key="file.idx">
+                      <template v-if="file.fileType && file.fileType.startsWith('image/')">
+                        <img
+                          :src="file.filePath"
+                          class="max-w-xs rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                          @click="window.open(file.filePath, '_blank')"
+                        />
+                      </template>
+
+                      <template v-else>
+                        <a
+                          :href="file.filePath"
+                          target="_blank"
+                          class="flex items-center gap-2 p-2 bg-black/5 dark:bg-white/10 rounded-lg hover:bg-black/10 transition-colors no-underline"
+                        >
+                          <i class="fa-solid fa-file-arrow-down text-lg text-slate-500"></i>
+                          <div class="flex flex-col overflow-hidden text-left">
+                            <span
+                              class="text-xs font-medium truncate max-w-[150px] dark:text-slate-200 text-slate-700"
+                            >
+                              {{ file.fileName }}
+                            </span>
+                            <span class="text-[10px] opacity-60 dark:text-slate-400 text-slate-500">
+                              {{ (file.fileSize / 1024).toFixed(1) }} KB
+                            </span>
+                          </div>
+                        </a>
+                      </template>
+                    </div>
+                  </div>
                 </div>
-                <span class="text-[10px] mt-1.5 text-slate-400 font-bold px-1 uppercase">{{
-                  m.time
-                }}</span>
+                <span class="text-[10px] mt-1.5 text-slate-400 font-bold px-1 uppercase">
+                  {{ m.time }}
+                  <template v-if="m.who === 'me'"> · {{ m.isRead ? '읽음' : '안읽음' }} </template>
+                </span>
               </div>
             </div>
           </div>
 
-          <div class="p-5 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 shrink-0">
+          <div
+            class="p-5 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 shrink-0"
+          >
             <div class="flex gap-2 mb-4 overflow-x-auto pb-2 no-scrollbar">
               <button @click="quickReply('안녕하세요! 반갑습니다 👋')" class="btn-tag">
                 👋 인사
               </button>
-              <button @click="quickReply('포트폴리오 내용에 대해 궁금한 점이 있어요.')" class="btn-tag">
+              <button
+                @click="quickReply('포트폴리오 내용에 대해 궁금한 점이 있어요.')"
+                class="btn-tag"
+              >
                 ❓ 질문
               </button>
               <button @click="quickReply('편하신 시간에 대화 가능할까요?')" class="btn-tag">
@@ -539,24 +840,87 @@ onMounted(() => {
             </div>
 
             <div
-              class="flex items-end gap-3 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-2xl border border-slate-200 dark:border-slate-700/50 focus-within:border-amber-400 transition-all">
-              <button
-                class="w-10 h-10 flex-shrink-0 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                <i class="fa-solid fa-paperclip"></i>
-              </button>
-              <textarea ref="textareaRef" v-model="messageInput" @input="autosize" @keydown="handleKeydown" rows="1"
+              v-if="selectedFiles.length > 0"
+              class="flex flex-wrap gap-2 mb-2 p-2 bg-slate-100 dark:bg-slate-800/80 rounded-xl border border-dashed border-slate-300 dark:border-slate-600"
+            >
+              <div v-for="(file, index) in selectedFiles" :key="index" class="relative group">
+                <div
+                  class="flex items-center gap-2 px-2 py-1 bg-white dark:bg-slate-700 rounded-md border border-slate-200 dark:border-slate-600 shadow-sm text-[11px]"
+                >
+                  <i :class="getFileIcon(file)" class="text-amber-500"></i>
+                  <span class="max-w-[80px] truncate dark:text-slate-200">{{ file.name }}</span>
+                  <button @click="removeFile(index)" class="text-slate-400 hover:text-red-500">
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="flex items-end gap-3 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-2xl border border-slate-200 dark:border-slate-700/50 focus-within:border-amber-400 transition-all"
+            >
+              <div class="flex items-center">
+                <button
+                  @click="$refs.docInput.click()"
+                  class="w-10 h-10 flex-shrink-0 flex items-center justify-center text-slate-400 hover:text-blue-500 transition-colors"
+                  title="문서 추가"
+                >
+                  <i class="fa-solid fa-file-lines"></i>
+                </button>
+                <div class="w-[1px] h-4 bg-slate-300 dark:bg-slate-600 mx-0.5"></div>
+                <button
+                  @click="$refs.imageInput.click()"
+                  class="w-10 h-10 flex-shrink-0 flex items-center justify-center text-slate-400 hover:text-amber-500 transition-colors"
+                  title="이미지 추가"
+                >
+                  <i class="fa-solid fa-image"></i>
+                </button>
+              </div>
+
+              <input
+                type="file"
+                ref="imageInput"
+                class="hidden"
+                accept="image/*"
+                multiple
+                @change="handleFileChange($event, 'IMAGE')"
+              />
+              <input
+                type="file"
+                ref="docInput"
+                class="hidden"
+                accept=".pdf, .doc, .docx, .txt, .hwpx, .hwp"
+                multiple
+                @change="handleFileChange($event, 'DOC')"
+              />
+
+              <textarea
+                ref="textareaRef"
+                v-model="messageInput"
+                @input="adjustTextareaHeight"
+                @keydown.enter.prevent="handleSend"
+                rows="1"
                 class="flex-1 bg-transparent border-none focus:ring-0 text-sm py-2.5 resize-none max-h-32 dark:text-slate-200 outline-none"
-                placeholder="메시지를 입력하세요..."></textarea>
-              <button @click="sendMessage"
-                class="w-10 h-10 flex-shrink-0 bg-amber-400 hover:bg-amber-500 rounded-xl flex items-center justify-center text-amber-950 transition-all active:scale-95 shadow-sm">
+                placeholder="메시지를 입력하세요..."
+              ></textarea>
+
+              <button
+                @click="handleSend"
+                class="w-10 h-10 flex-shrink-0 bg-amber-400 hover:bg-amber-500 rounded-xl flex items-center justify-center text-amber-950 transition-all active:scale-95 shadow-sm"
+              >
                 <i class="fa-solid fa-paper-plane"></i>
               </button>
             </div>
           </div>
         </template>
 
-        <div v-else class="flex-1 flex flex-col items-center justify-center text-slate-400 p-10 text-center">
-          <div class="w-24 h-24 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-6">
+        <div
+          v-else
+          class="flex-1 flex flex-col items-center justify-center text-slate-400 p-10 text-center"
+        >
+          <div
+            class="w-24 h-24 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-6"
+          >
             <i class="fa-solid fa-comments text-4xl opacity-20"></i>
           </div>
           <h3 class="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">

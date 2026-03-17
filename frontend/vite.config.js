@@ -18,24 +18,25 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://10.10.10.20:8080',
+        target: 'http://back.devpoticard.kro.kr:8080',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
 
       '/ws': {
-        target: 'http://localhost:8080',
+        target: 'http://back.devpoticard.kro.kr:8080',
         ws: true,
         changeOrigin: true,
       },
 
       '/chat-ws': {
-        target: 'ws://localhost:8080',
+        target: 'ws://back.devpoticard.kro.kr:8080',
         ws: true,
         changeOrigin: true,
       },
-      '/json': { target: 'http://localhost:8080', changeOrigin: true },
+      '/json': { target: 'http://back.devpoticard.kro.kr:8080', changeOrigin: true },
     },
+    allowedHosts : ['front.devpoticard.kro.kr']
   },
   resolve: {
     alias: {

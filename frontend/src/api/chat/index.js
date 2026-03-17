@@ -4,18 +4,21 @@ import { apiFetch } from '../../plugins/interceptor.js'
 const chatRoomList = async () => {
   try {
     const res = await apiFetch('/chat/room/list')
-   
+
     if (res && res.data && Array.isArray(res.data)) {
-      const mappedData = res.data.map(room => ({
+      const mappedData = res.data.map((room) => ({
         id: room.idx,
+        opponentIdx: room.opponentUserIdx,
         name: room.opponentUserName || '',
         avatar: room.opponentUserProfileImage || '',
         role: room.opponentUserCareer || '',
         content: room.lastContents || '',
+        time: room.lastContentsTime || null,
+        unread: room.unreadCount || 0,
       }))
       return { ...res, data: mappedData }
     }
-    
+
     return res
   } catch (error) {
     console.error('채팅방 목록 호출 실패:', error.message)
@@ -60,9 +63,24 @@ const createChatRoom = async (guestUserId) => {
   }
 }
 
+// 채팅방 파일 업로드 (type: IMAGE | DOC)
+const uploadChatFiles = async (roomId, formData, type) => {
+  try {
+    const res = await apiFetch(`/chat/room/${roomId}/upload/${type}`, {
+      method: 'POST',
+      body: formData,
+    })
+    return res
+  } catch (error) {
+    console.error('채팅 파일 업로드 실패:', error.message)
+    throw error
+  }
+}
+
 export default {
   chatRoomList,
   getChatMessages,
   loadPortfolios,
   createChatRoom,
+  uploadChatFiles,
 }

@@ -1,30 +1,72 @@
 self.addEventListener('push', (event) => {
-    console.log('[Service Worker] Push Received.');
+  console.log('[Service Worker] Push Received.')
 
-    let data = { title: '새 메시지', contents: '메시지가 도착했습니다.' };
+  // 1. 기본값 설정 (Payload: roomIdx, senderIdx, senderEmail, contents, contentsTime)
+  let payload = {
+    roomIdx: 0,
+    senderIdx: 0,
+    senderEmail: 'System',
+    contents: '',
+    contentsTime: Date.now(),
+  }
 
-    if (event.data) {
-        try {
-            // 서버에서 보낸 JSON 데이터를 파싱 (NotificationService.java에서 보낸 Payload)
-            data = event.data.json();
-        } catch (e) {
-            // 텍스트로 올 경우 대비
-            data.contents = event.data.text();
-        }
+  // 2. 데이터 파싱
+  if (event.data) {
+    try {
+      payload = event.data.json()
+      console.log('[Service Worker] Payload:', payload)
+    } catch (e) {
+      console.error('[Service Worker] JSON Parsing failed:', e)
+      payload.contents = event.data.text()
     }
+  }
 
-    const title = data.title || 'Porti 알림';
-    const options = {
-        body: data.contents,
-        icon: '/img/icons/android-chrome-192x192.png', // 앱 아이콘 경로
-        badge: '/img/icons/favicon-32x32.png',        // 상태표시줄 작은 아이콘
-        vibrate: [200, 100, 200],                     // 진동 패턴
-        data: {
-            url: '/chat' // 알림 클릭 시 이동할 URL
-        }
-    };
+  const title = payload.senderEmail || '새 메시지'
+  const options = {
+    body: payload.contents || '내용이 없습니다.',
+    icon: '/img/icons/android-chrome-192x192.png',
+    badge: '/img/icons/favicon-32x32.png',
+    vibrate: [200, 100, 200],
+    tag: `chat-room-${payload.roomIdx}`, // 방별로 알림 그룹화 (선택 사항)
+    renotify: true,
+    data: {
+      url: '/chat',
+      roomIdx: payload.roomIdx, // 클릭 시 해당 방으로 이동하기 위한 데이터
+    },
+  }
 
-    event.waitUntil(
-        self.registration.showNotification(title, options)
-    );
-});
+  const showNotification = self.registration.showNotification(title, options)
+
+  const pushToClient = self.clients
+    .matchAll({ type: 'window', includeUncontrolled: true })
+    .then((clientList) => {
+      clientList.forEach((client) => {
+        client.postMessage({
+          type: 'PUSH_RECEIVED',
+          payload: {
+            roomIdx: payload.roomIdx,
+            senderIdx: payload.senderIdx,
+            senderEmail: payload.senderEmail,
+            contents: payload.contents,
+            contentsTime: payload.contentsTime,
+          },
+        })
+      })
+    })
+
+  event.waitUntil(Promise.all([showNotification, pushToClient]))
+})
+
+// 알림 클릭 시 처리
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      if (clientList.length > 0) {
+        clientList[0].focus()
+        return clientList[0].navigate('/chat')
+      }
+      return self.clients.openWindow('/chat')
+    }),
+  )
+})
