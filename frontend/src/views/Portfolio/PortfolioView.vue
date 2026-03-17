@@ -15,7 +15,6 @@ const getCookie = (name) => {
 };
 
 const token = getCookie('ATOKEN'); // 쿠키 이름을 입력하세요
-console.log(token)
 
 if (token) {
   // 2. JWT는 [header].[payload].[signature] 구조입니다.
