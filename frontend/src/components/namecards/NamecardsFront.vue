@@ -1,4 +1,6 @@
 <script setup>
+import { computed } from 'vue'
+
 const props = defineProps({
   cardInfo: {
     type: Object,
@@ -6,19 +8,62 @@ const props = defineProps({
   }
 })
 
+// 색상 키값에 따른 Tailwind 클래스 매핑
+const colorClasses = computed(() => {
+  const color = props.cardInfo?.color || 'YELLOW'
+  
+  const mapping = {
+    YELLOW: {
+      text: 'text-yellow-400',
+      bg: 'bg-yellow-400/20',
+      hover: 'hover:text-yellow-400'
+    },
+    BLUE: {
+      text: 'text-blue-500',
+      bg: 'bg-blue-500/20',
+      hover: 'hover:text-blue-500'
+    },
+    GREEN: {
+      text: 'text-green-500',
+      bg: 'bg-green-500/20',
+      hover: 'hover:text-green-500'
+    },
+    PURPLE: {
+      text: 'text-purple-500',
+      bg: 'bg-purple-500/20',
+      hover: 'hover:text-purple-500'
+    }
+  }
+  
+  return mapping[color] || mapping.YELLOW
+})
 </script>
 
 <template>
   <div v-if="cardInfo" class="relative w-full max-w-md aspect-[1.58/1] mx-auto">
     <div
-      class="absolute inset-0 w-full h-full bg-white dark:bg-zinc-900 rounded-2xl border border-gray-100 dark:border-zinc-800 p-8 backface-hidden overflow-hidden shadow-lg">
-      <div class="absolute top-0 right-0 w-32 h-32 bg-yellow-400/20 rounded-bl-full"></div>
+      class="absolute inset-0 w-full h-full bg-white dark:bg-zinc-900 rounded-2xl border border-gray-100 dark:border-zinc-800 p-8 backface-hidden overflow-hidden shadow-lg"
+    >
+      <!-- 동적 배경 장식 -->
+      <div 
+        class="absolute top-0 right-0 w-32 h-32 rounded-bl-full transition-colors duration-500"
+        :class="colorClasses.bg"
+      ></div>
 
       <div class="flex flex-col justify-between h-full relative z-10">
         <div class="flex justify-between items-start">
           <div class="pr-4">
-            <p class="text-xs font-bold text-point-yellow uppercase tracking-widest mb-1">
-              {{ cardInfo.role }}
+            <!-- 동적 소속 텍스트 컬러 -->
+            <p 
+              class="text-xs font-bold uppercase tracking-widest mb-1 transition-colors duration-500"
+              :class="colorClasses.text"
+            >
+              {{ cardInfo.affiliation }}
+            </p>
+            <p 
+              class="text-s font-bold tracking-widest mb-1 text-gray-700 duration-500"
+            >
+              {{ cardInfo.title }}
             </p>
             <h2 class="text-3xl font-black text-gray-900 dark:text-white tracking-tight mb-2 truncate">
               {{ cardInfo.name }}
@@ -29,7 +74,8 @@ const props = defineProps({
           </div>
 
           <div
-            class="shrink-0 w-20 h-20 rounded-full border-4 border-white dark:border-zinc-800 shadow-md overflow-hidden bg-gray-100">
+            class="shrink-0 w-20 h-20 rounded-full border-4 border-white dark:border-zinc-800 shadow-md overflow-hidden bg-gray-100"
+          >
             <img :src="cardInfo.avatar" alt="Profile" class="w-full h-full object-cover" />
           </div>
         </div>
@@ -44,26 +90,24 @@ const props = defineProps({
 
           <div class="pt-4 border-t border-gray-100 dark:border-zinc-800 flex justify-between items-center">
             <div class="flex gap-3 text-gray-400 dark:text-gray-500">
-              <a v-if="cardInfo.website" :href="'https://' + cardInfo.website" target="_blank"
-                class="hover:text-point-yellow transition-colors">
+              <!-- 동적 호버 컬러 (GitHub) -->
+              <a v-if="cardInfo.url" :href="'https://' + cardInfo.url" target="_blank"
+                class="transition-colors duration-300"
+                :class="colorClasses.hover">
                 <i class="fa-brands fa-github text-xl"></i>
               </a>
 
-              <a href="#" class="hover:text-point-yellow transition-colors">
-                <i class="fa-brands fa-linkedin text-xl"></i>
-              </a>
-              <a href="#" class="hover:text-point-yellow transition-colors">
-                <i class="fa-brands fa-instagram text-xl"></i>
-              </a>
-
+              <!-- 동적 호버 컬러 (Email) -->
               <a v-if="cardInfo.email" :href="'mailto:' + cardInfo.email"
-                class="hover:text-point-yellow transition-colors">
+                class="transition-colors duration-300"
+                :class="colorClasses.hover">
                 <i class="fa-solid fa-envelope text-xl"></i>
               </a>
             </div>
 
             <i
-              class="fa-solid fa-qrcode text-3xl text-gray-800 dark:text-white opacity-80 cursor-pointer hover:opacity-100 transition-opacity"></i>
+              class="fa-solid fa-qrcode text-3xl text-gray-800 dark:text-white opacity-80 cursor-pointer hover:opacity-100 transition-opacity"
+            ></i>
           </div>
         </div>
       </div>
@@ -74,7 +118,8 @@ const props = defineProps({
 </template>
 
 <style scoped>
-.text-point-yellow {
-  color: #facc15;
+/* 기존의 하드코딩된 스타일 대신 동적 클래스 사용 */
+.backface-hidden {
+  backface-visibility: hidden;
 }
 </style>
