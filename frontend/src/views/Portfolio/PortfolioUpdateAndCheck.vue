@@ -2,6 +2,7 @@
 import { onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter, useRoute, RouterLink } from 'vue-router'
 import portfolioApi from '@/api/portfolio/index'
+import { checkProUser } from '@/api/orders/index'
 import SectionEditor from '@/components/SectionEditor.vue'
 
 const router = useRouter()
@@ -10,6 +11,9 @@ const route = useRoute()
 const extractedKeywords = ref([])
 const projects = ref([])
 const isAiLoading = ref(false)
+
+// ✨ 1. PRO 유저 여부를 저장할 변수 추가 (기본값 false)
+const isProUser = ref(false)
 
 const ui = reactive({
   open: false,
@@ -40,7 +44,6 @@ const showToast = (message) => {
   }, 2000)
 }
 
-// 🌟 수정된 부분: 불필요한 래퍼 함수를 지우고 깔끔하게 하나로 통일했습니다.
 const extractKeywords = async () => {
   const loadingBtn = document.getElementById('extract-btn')
   const tagSection = document.getElementById('keyword-result-section')
@@ -55,23 +58,20 @@ const extractKeywords = async () => {
   try {
     const portfolioIdx = route.query.idx || 1
 
-    // 1. 화면에서 수정된 각 섹션의 내용을 백엔드 DB에 진짜로 업데이트 (반복문 사용)
     for (const p of projects.value) {
       if (p.idx) {
         await portfolioApi.updateSection(p.idx, {
           idx: p.idx,
           sectionTitle: p.title,
-          contents: p.original // AI로 교정했거나 수동 수정한 최신 텍스트
+          contents: p.original 
         })
       }
     }
 
-    // 2. 화면에 있는 모든 섹션의 내용을 하나의 텍스트로 합치기
     const allContents = projects.value
       .map((p) => `[${p.title}]\n${p.original}`)
       .join('\n\n')
 
-    // 3. 백엔드 AI 분석 API 호출 (키워드 추출)
     const aiRes = await portfolioApi.extractKeywordsAi(allContents)
     
     if (aiRes.isSuccess && aiRes.data) {
@@ -80,10 +80,8 @@ const extractKeywords = async () => {
       extractedKeywords.value = ['분석 결과 없음']
     }
 
-    // 4. 추출된 키워드를 백엔드 DB(Portfolio)에 업데이트
     await portfolioApi.updateKeywords(portfolioIdx, extractedKeywords.value)
 
-    // 5. 성공 시 UI 전환 (스타일 설정 버튼 나타남)
     tagSection.classList.remove('hidden')
     tagSection.classList.add('animate-fade-in')
     loadingBtn.classList.add('hidden')
@@ -96,59 +94,72 @@ const extractKeywords = async () => {
 
   } catch (error) {
     console.error('내용 및 키워드 저장 실패:', error)
-    alert('작업에 실패했습니다. 다시 시도해 주세요.')
+    alert('키워드 추출에 실패했습니다. 포트폴리오 내용을 다시 확인해 주세요.')
     
     loadingBtn.innerHTML = '내용 확정 및 키워드 추출 <i class="fa-solid fa-wand-sparkles text-point-yellow"></i>'
     loadingBtn.disabled = false
   }
 }
 
-const makeReview = async (original) => {
-  const o = (original || '').trim()
+const makeReview = async (contentToReview) => {
+  const o = (contentToReview || '').trim()
 
   if (!o) return ''
 
   isAiLoading.value = true
 
   try {
-    const data = await portfolioApi.getAiReview(o)
-    console.log('AI review response:', data)
-
-    if (data?.isSuccess && typeof data.data === 'string') {
-      return data.data
+    const res = await portfolioApi.getAiReview(o) 
+    
+    if (res?.isSuccess && typeof res.data === 'string') {
+      return res.data
+    } 
+    else if (res?.isSuccess === false) {
+      alert(res.message || 'AI 첨삭에 실패했습니다.')
+      return o 
     }
 
     return o
   } catch (error) {
     console.error('AI 첨삭 호출 실패:', error)
+    alert('오류가 발생했습니다. 다시 시도해 주세요.')
     return o
   } finally {
     isAiLoading.value = false
   }
 }
 
-const loadAiReviewForProject = async (idx) => {
-  const p = projects.value[idx]
+const requestAiReview = async () => {
+  // ✨ 2. 클릭 시 PRO 유저가 아니면 차단 알림 띄우기
+  if (!isProUser.value) {
+    alert('PRO가 아닌 사용자는 이용할 수 없습니다.');
+    return;
+  }
+
+  const p = projects.value[ui.projectIndex]
   if (!p) return
 
-  const generatedReview = await makeReview(p.original)
-  p.review = generatedReview
-  p.reviewDraft = generatedReview
+  const currentText = p.reviewDraft || p.original
+  const generatedReview = await makeReview(currentText)
+  
+  if (generatedReview !== currentText) {
+    p.review = generatedReview
+    p.reviewDraft = generatedReview
+    showToast('AI가 내용을 다듬었습니다!')
+  }
 }
 
-const openEval = async () => {
+const openEval = () => {
   ui.open = true
   ui.projectIndex = 0
-  await loadAiReviewForProject(0)
 }
 
 const closeEval = () => {
   ui.open = false
 }
 
-const selectProject = async (idx) => {
+const selectProject = (idx) => {
   ui.projectIndex = idx
-  await loadAiReviewForProject(idx)
 }
 
 const applyReview = () => {
@@ -159,29 +170,35 @@ const applyReview = () => {
   if (!edited) return
 
   p.original = edited
-  p.review = ''
-  p.reviewDraft = ''
-
-  showToast('적용했습니다!')
+  
+  showToast('수정된 내용이 임시 적용되었습니다!')
 }
 
 const activeProject = () => projects.value[ui.projectIndex]
-const goBack = () => router.back()
 
 onMounted(async () => {
   const portfolioIdx = route.query.idx || 1
 
+  // ✨ 3. 꼬여있던 문법 수정 (PRO 유저 확인)
+  try {
+    const proRes = await checkProUser() 
+    if (proRes?.isSuccess) {
+      isProUser.value = proRes.data
+    }
+  } catch (error) {
+    console.error('PRO 상태 확인 실패:', error)
+  }
+
+  // 기존 섹션 데이터 불러오기 복구
   try {
     const response = await portfolioApi.getPortfolioSections(portfolioIdx)
-    console.log('portfolio sections response:', response)
-
     if (response?.isSuccess && response?.data) {
       projects.value = response.data.map((section) => ({
         idx: section.idx,
         title: section.sectionTitle,
         original: section.contents,
         review: '',
-        reviewDraft: '',
+        reviewDraft: section.contents, 
       }))
     }
   } catch (error) {
@@ -234,7 +251,7 @@ onBeforeUnmount(() => {
               <div
                 class="inline-flex items-center gap-2 px-3 py-1 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-500 rounded-full text-[11px] font-bold mb-4"
               >
-                <i class="fa-solid fa-wand-magic-sparkles"></i> AI Content Review
+                <i class="fa-solid fa-pen-to-square"></i> Content Edit
               </div>
               <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-3">
                 내용 확정 및 키워드 추출
@@ -253,7 +270,7 @@ onBeforeUnmount(() => {
               class="px-8 py-3 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-gray-300 rounded-2xl font-bold hover:bg-gray-50 dark:hover:bg-zinc-700 transition-all shadow-sm flex items-center justify-center gap-2 shrink-0 text-sm"
               @click="openEval"
             >
-              <i class="fa-solid fa-wand-sparkles text-point-yellow"></i> AI 첨삭
+              <i class="fa-solid fa-pen text-point-yellow"></i> 내용 수정하기
             </button>
           </div>
 
@@ -294,24 +311,9 @@ onBeforeUnmount(() => {
           </div>
 
           <div
-            class="mt-16 flex flex-col md:flex-row justify-between items-center gap-6 pt-10 border-t border-gray-50 dark:border-zinc-800"
+            class="mt-16 flex flex-col md:flex-row justify-end items-center gap-6 pt-10 border-t border-gray-50 dark:border-zinc-800"
           >
-            <button
-              type="button"
-              class="px-8 py-3 bg-yellow-50 dark:bg-zinc-800/50 border border-yellow-200 dark:border-yellow-900/30 text-yellow-700 dark:text-yellow-500 rounded-2xl font-black tracking-tight hover:bg-yellow-100 dark:hover:bg-zinc-800 transition-colors inline-flex items-center justify-center"
-              @click="goBack"
-            >
-              <i class="fa-solid fa-arrow-left mr-2"></i> 이전 단계
-            </button>
-
             <div class="flex items-center gap-3 w-full md:w-auto">
-              <button
-                type="button"
-                class="flex-1 md:flex-none px-8 py-3 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-gray-300 rounded-2xl font-bold hover:bg-gray-50 dark:hover:bg-zinc-700 transition-all"
-              >
-                임시 저장
-              </button>
-
               <button
                 id="extract-btn"
                 type="button"
@@ -338,12 +340,12 @@ onBeforeUnmount(() => {
     <div class="eval-overlay" :class="ui.open ? 'eval-open' : ''" aria-hidden="true">
       <div class="eval-dim" @click="closeEval"></div>
 
-      <section class="eval-modal" role="dialog" aria-modal="true" aria-label="AI 첨삭 보기">
+      <section class="eval-modal" role="dialog" aria-modal="true" aria-label="수정 보기">
         <header class="eval-head">
           <div class="eval-title">
-            <span class="eval-badge">AI</span>
+            <span class="eval-badge"><i class="fa-solid fa-pen"></i></span>
             <h2>
-              AI 첨삭
+              섹션 수정하기
               <span class="eval-sub">({{ ui.projectIndex + 1 }} / {{ projects.length }})</span>
             </h2>
           </div>
@@ -371,7 +373,7 @@ onBeforeUnmount(() => {
           <main class="eval-main">
             <section class="eval-card">
               <div class="eval-card-head">
-                <h3>현재 내용</h3>
+                <h3>저장된 현재 내용</h3>
                 <span class="eval-chip">Original</span>
               </div>
               <div class="eval-text" v-html="activeProject()?.original"></div>
@@ -379,13 +381,24 @@ onBeforeUnmount(() => {
 
             <section class="eval-card">
               <div class="eval-card-head">
-                <h3>AI 첨삭본</h3>
-                <span class="eval-chip">1 review</span>
+                <h3>수정본</h3>
+                
+                <button 
+                  @click="requestAiReview" 
+                  :disabled="isAiLoading"
+                  class="text-xs font-bold px-3 py-1.5 rounded-full border transition-all flex items-center gap-1"
+                  :class="isProUser 
+                    ? 'border-yellow-300 text-yellow-700 bg-yellow-50 hover:bg-yellow-100 cursor-pointer' 
+                    : 'border-gray-200 text-gray-400 bg-gray-100 opacity-60 cursor-not-allowed'"
+                >
+                  <i class="fa-solid fa-wand-sparkles"></i> AI 첨삭
+                </button>
+
               </div>
 
               <div v-if="isAiLoading" class="py-10 text-center text-gray-500 font-bold">
                 <i class="fa-solid fa-spinner animate-spin text-point-yellow text-2xl mb-2"></i>
-                <p>AI가 포트폴리오를 첨삭하고 있습니다...</p>
+                <p>AI가 작성하신 내용을 다듬고 있습니다...</p>
               </div>
 
               <div v-else class="eval-variant">
@@ -397,8 +410,8 @@ onBeforeUnmount(() => {
                 ></SectionEditor>
 
                 <div class="eval-actions mt-4">
-                  <button type="button" class="eval-btn ghost" @click="closeEval">닫기</button>
-                  <button type="button" class="eval-btn" @click="applyReview">적용</button>
+                  <button type="button" class="eval-btn ghost" @click="closeEval">취소</button>
+                  <button type="button" class="eval-btn" @click="applyReview">저장</button>
                 </div>
               </div>
             </section>

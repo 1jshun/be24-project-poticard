@@ -13,6 +13,11 @@ export const verifyPayment = async (payload) => {
   }
 }
 
+export const checkProUser = async () => {
+  return await apiFetch('/orders/check-pro')
+}
+
 export default {
-  verifyPayment
+  verifyPayment,
+  checkProUser,
 }
