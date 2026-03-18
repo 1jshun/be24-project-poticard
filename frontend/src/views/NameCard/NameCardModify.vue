@@ -29,7 +29,7 @@ const dummy = {
   color: "YELLOW",
   affiliation: "포티 컴퍼니",
   name: "홍길동",
-  avatar: "http://cdn.testprofileimage.api/0100",
+  avatar: "https://api.dicebear.com/9.x/avataaars/svg?seed=홍길동",
   career: "100년차 개발자",
   url: "https://porti.example.com/user100",
   address: "서울특별시 강남구 테헤란로 100",
