@@ -66,16 +66,28 @@ const loadMyCard = async () => {
       
       const response = await api.getSingleNamecard(currentUserId)
       if (response) {
-        // null 방어 로직 추가: response.data.keywords가 null이면 빈 배열 유지
         const responseData = response.data || response
         cardData.value = { 
           ...dummy, 
+          userIdx: currentUserId, // ✨ [추가됨] 더미 데이터에도 현재 접속한 유저의 식별자를 강제로 주입
           ...responseData,
           keywords: responseData.keywords || [] 
+        }
+      } else {
+        // ✨ 데이터가 아예 없을 때(신규 유저)를 대비한 로직 추가
+        cardData.value = {
+          ...dummy,
+          userIdx: currentUserId,
+          keywords: []
         }
       }
     } catch (e) {
       console.error("데이터 로드 실패, 기본값 사용", e);
+      cardData.value = {
+        ...dummy,
+        userIdx: currentUserId,
+        keywords: []
+      }
     }
   }
   isLoading.value = false

@@ -5,25 +5,25 @@ import api from '@/api/namecard/index'
 export const namecardListStore = defineStore('namecardList', () => {
   const listData = ref(null)
 
-  // page, size에 기본값을 설정해두면 호출할 때 편합니다.
-  const namecardList = async (page = 1, size = 20) => {
+  // ✨ force 매개변수 추가 (기본값 false)
+  const namecardList = async (page = 1, size = 20, force = false) => {
     const pageKey = `namecardList_${page}_${size}`
 
     try {
-      // 1. 캐시 확인
-      const cacheStr = sessionStorage.getItem(pageKey)
-      if (cacheStr) {
-        const parsed = JSON.parse(cacheStr)
-        listData.value = parsed // ✅ 오타 수정: cacheData.value가 아니라 listData.value!
-        return parsed
+      // 1. 강제 새로고침(force)이 false일 때만 캐시를 확인합니다.
+      if (!force) {
+        const cacheStr = sessionStorage.getItem(pageKey)
+        if (cacheStr) {
+          const parsed = JSON.parse(cacheStr)
+          listData.value = parsed
+          return parsed
+        }
       }
 
-      // 2. API 호출
+      // 2. 캐시가 없거나, force가 true일 때 무조건 API를 호출합니다.
       const res = await api.getNamecardList(page, size)
 
-      // Axios를 쓴다면 실제 백엔드의 JSON 응답은 res.data에 들어있습니다.
       if (res && res.data) {
-        // 백엔드 응답(res.data) 자체가 이미 완벽한 구조이므로 그대로 캐싱하고 반환합니다.
         const responseData = res.data
 
         sessionStorage.setItem(pageKey, JSON.stringify(responseData))

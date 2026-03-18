@@ -21,7 +21,8 @@ const loadMoreCards = async () => {
   isLoadingMore.value=true;
 
   try {
-    const response = await store.namecardList(currentPage.value, size)
+    // ✨ 핵심 수정: 세 번째 인자로 true를 넘겨주어 강제 새로고침(Force Refresh) 실행
+    const response = await store.namecardList(currentPage.value, size, true)
 
     if (response){
       const newCards = response.namecardList
@@ -88,8 +89,6 @@ const toggleModalCardFlip = () => {
 <template>
   <div class="bg-pattern min-h-screen text-gray-800">
     <div class="flex pt-16 h-screen">
-      <!-- 좌측 고정 패널 (기업용 필터) -->
-
       <aside
         class="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-white/90 backdrop-blur border-r border-gray-100 p-6 overflow-y-auto z-40 hidden lg:block transition-colors duration-300">
         <div class="mb-8">
@@ -98,8 +97,6 @@ const toggleModalCardFlip = () => {
           </h2>
 
           <div class="space-y-6">
-            <!-- 필터 그룹 1 -->
-
             <div>
               <h3 class="font-bold text-gray-800 d mb-3 flex justify-between items-center text-sm">
                 직군 (Job Group)
@@ -134,8 +131,6 @@ const toggleModalCardFlip = () => {
 
             <div class="w-full h-px bg-gray-100"></div>
 
-            <!-- 필터 그룹 2 (태그 스타일 변경) -->
-
             <div>
               <h3 class="font-bold text-gray-800 mb-3 text-sm">필수 스킬</h3>
 
@@ -152,8 +147,6 @@ const toggleModalCardFlip = () => {
             </div>
           </div>
         </div>
-
-        <!-- 하단 버튼 (Yellow 포인트) -->
 
         <div class="absolute bottom-6 left-6 right-6">
           <button
@@ -175,14 +168,14 @@ const toggleModalCardFlip = () => {
         </div>
 
         <div ref="loadTrigger" class="w-full py-10 flex justify-center items-center">
-          <span v-if="isLoading" class="text-gray-400 font-mono text-sm">
+          <span v-if="isLoadingMore" class="text-gray-400 font-mono text-sm">
             <i class="fa-solid fa-circle-notch fa-spin mr-2"></i>Loading cards...
           </span>
         </div>
 
         <Teleport to="body">
           <Transition name="modal-fade">
-            <div v-if="selectedUserId" class="fixed inset-0 z-[9999] flex items-center justify-center px-4 py-8">
+            <div v-if="selectedUserId !== null" class="fixed inset-0 z-[9999] flex items-center justify-center px-4 py-8">
               <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="closeModal"></div>
 
               <div class="absolute top-4 right-4 z-50">

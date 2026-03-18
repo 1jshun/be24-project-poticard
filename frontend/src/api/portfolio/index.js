@@ -50,6 +50,11 @@ export const getPortfolioList = async (page = 0, size = 10) => {
   return await apiFetch(`portfolio/list?page=${page}&size=${size}`)
 }
 
+// 특정 유저 포트폴리오 목록 조회 API
+export const getUserPortfolioList = async (userIdx, page = 0, size = 10) => {
+  return await apiFetch(`portfolio/user/${userIdx}/list?page=${page}&size=${size}`)
+}
+
 // 포트폴리오 키워드 저장 API
 export const updateKeywords = async (portfolioIdx, keywords) => {
   return await apiFetch(`portfolio/${portfolioIdx}/keywords`, {
@@ -107,6 +112,7 @@ export default {
   savePortfolioProgress,
   updateStyle,
   getPortfolioList,
+  getUserPortfolioList,
   updateKeywords,
   getProjectDetail,
   getAiReview,
