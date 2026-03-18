@@ -201,7 +201,7 @@ const goSubscribe = () => {
   router.push('/subscribe')
 }
 
-const cardName = computed(() => authStore.userInfo?.userName ?? '밥')
+const cardName = computed(() => authStore.userInfo?.name ?? '밥')
 const cardRole = computed(() => authStore.userInfo?.job || authStore.userInfo?.position || 'Portfolio Creator')
 const cardCompany = computed(() => authStore.userInfo?.company || authStore.userInfo?.organization || 'PotiCard')
 const cardEmail = computed(() => authStore.userInfo?.userEmail || authStore.userInfo?.email || 'w@naver.com')
@@ -319,7 +319,7 @@ onBeforeUnmount(() => {
             <button id="flyout-user" type="button"
               class="relative text-sm font-black text-gray-900 dark:text-white hover:text-point-yellow transition-colors"
               @click="toggleUserMenu">
-              {{ authStore.userInfo?.userName }}님
+              {{ authStore.userInfo?.name }}님
 
               <div class="pc-user-panel nav-panel" :class="{ 'pc-open': userMenuOpen }">
                 <div class="pc-user-panel-card">

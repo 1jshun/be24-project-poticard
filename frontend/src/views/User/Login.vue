@@ -96,14 +96,18 @@ const login = async () => {
 
   try {
     const res = await api.login({
-      name: id,
       email: id,
       password: loginForm.password,
     })
-
-    const userInfo = typeof res === 'object' && res ? res : { userName: id }
+    console.log('res'+res.data)
+    if (res == null){
+      console.log('ㄴㄴ')
+      return
+    }
+    // const userInfo = typeof res === 'object' && res.data ? res : { email: id }
+    const userInfo = res.data
     authStore.login(userInfo)
-
+    console.log('ㅇㅇ')
     // redirect 쿼리가 있으면 우선 사용, 없으면 타입에 따라 분기
     let redirect = route.query.redirect
     if (!redirect) {
