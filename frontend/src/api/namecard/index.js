@@ -37,7 +37,8 @@ const editNamcard = async(cardData)=>{
         layout:cardData.layout,
         color:cardData.color,
         url:cardData.url,
-        description:cardData.description
+        description:cardData.description,
+        keywords:cardData.keywords,
       }
     })
     const user = await apiFetch(`/user/nonessential`, {
