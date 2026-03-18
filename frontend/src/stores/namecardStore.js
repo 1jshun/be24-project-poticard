@@ -34,7 +34,7 @@ export const useNamecardStore = defineStore('namecard', () => {
           color: res.data.color,
           phone: res.data.phone,
           address: res.data.address,
-          website: res.data.url,
+          url: res.data.url,
         }
 
         sessionStorage.setItem(storageKey, JSON.stringify(mappedData))
