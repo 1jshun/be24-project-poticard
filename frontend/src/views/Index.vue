@@ -4,6 +4,23 @@ import MiniNamecards from '@/components/namecards/MiniNamecards.vue'
 import NamecardsFront from '@/components/namecards/NamecardsFront.vue'
 import NamecardsBack from '@/components/namecards/NamecardsBack.vue'
 import { namecardListStore } from '@/stores/namecardListStore.js'
+import useAuthStore from '@/stores/useAuthStore'
+import api from '@/api/user/index.js'
+
+
+
+const getUserInfo = async () =>{
+  const authStore = useAuthStore()
+  try {
+    const res = await api.getMyInfo()
+    console.log(res.data)
+    authStore.login(res.data)
+    return res;
+  }
+  catch (error){
+    console.error(error.message)
+  }
+}
 
 const pageOfToday = 45;
 
@@ -24,6 +41,7 @@ const loadMyCardList = async () => {
 
 onMounted(()=>{
   loadMyCardList()
+  getUserInfo()
 })
 
 // 45부터 55까지 숫자가 담긴 배열 생성

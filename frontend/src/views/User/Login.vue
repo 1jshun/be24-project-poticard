@@ -27,7 +27,7 @@ const getCookie = (name) => {
 }
 
 // cookie 가져와서 userIdx 반환하는 함수
-const getIdxFromJwtCookie = (cookieName) => {
+const getUserFromJwtCookie = (cookieName) => {
   const token = getCookie(cookieName)
   if (!token) return null
 
@@ -47,7 +47,7 @@ const getIdxFromJwtCookie = (cookieName) => {
       ),
     )
 
-    return payload.idx // JWT payload 안에 들어있는 idx 반환
+    return payload // JWT payload 안에 들어있는 idx 반환
   } catch (e) {
     console.error('JWT 파싱 실패:', e)
     return null
@@ -99,15 +99,13 @@ const login = async () => {
       email: id,
       password: loginForm.password,
     })
-    console.log('res'+res.data)
     if (res == null){
-      console.log('ㄴㄴ')
       return
     }
+    
     // const userInfo = typeof res === 'object' && res.data ? res : { email: id }
-    const userInfo = res.data
-    authStore.login(userInfo)
-    console.log('ㅇㅇ')
+    const user = await api.getMyInfo()
+    authStore.login(user)
     // redirect 쿼리가 있으면 우선 사용, 없으면 타입에 따라 분기
     let redirect = route.query.redirect
     if (!redirect) {
@@ -129,7 +127,8 @@ const login = async () => {
           'BLHgfPga02L2u89uc4xjhbUFTy_U04rQCjGq7o24oxtqfVmAPHTxOmp6xndSHZtGQpmt7gqTFdMXco2gRNP7_p8',
       })
 
-      const userIdx = getIdxFromJwtCookie('ATOKEN')
+      const userInfo = getUserFromJwtCookie('ATOKEN')
+      const userIdx = userInfo.idx
 
       if (!userIdx) {
         console.warn('Invalid user')
@@ -151,6 +150,9 @@ const login = async () => {
 const socialLogin = (provider) => {
   const baseUrl = 'http://localhost:5173/api/oauth2/authorization/'
   window.location.href = `${baseUrl}${provider}`
+  const user = getUserFromJwtCookie('ATOKEN')
+  user.email = provider+'@social.login'
+  authStore.login(user)
 }
 </script>
 
