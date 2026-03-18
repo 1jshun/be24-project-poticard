@@ -3,9 +3,34 @@ import { onMounted, ref, reactive, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import NamecardsFront from '@/components/namecards/NamecardsFront.vue'
 import NamecardsBack from '@/components/namecards/NamecardsBack.vue'
-import { useNamecardStore } from '@/stores/namecardStore'
 import api from '@/api/namecard'
 import portfolioApi from '@/api/portfolio'
+
+const fileInput = ref(null)
+
+const triggerFileInput = () => {
+  fileInput.value.click();
+}
+
+const handleFileChange = (event) =>{
+  const file = event.target.files[0]
+  if (file) {
+    console.log("선택된 파일 : ", file.name)
+    uploadImage(file);
+  }
+}
+
+const uploadImage = async (file) => {
+  const formData = new FormData();
+  formData.append('profile_image', file)
+
+  try {
+    // api로 전송하기
+    alert('프로필 이미지가 변경되었습니다.')
+  } catch (error){
+    console.error('업로드 실패 : ',error)
+  }
+}
 
 const router = useRouter()
 
@@ -279,7 +304,16 @@ const updateColor = (color) => {
               </div>
 
               <div class="mt-8 grid grid-cols-2 md:grid-cols-3 gap-4">
-                <button class="col-span-1 py-4 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-gray-200 rounded-2xl font-bold hover:bg-gray-50 transition-all flex flex-col items-center justify-center gap-1">
+                <input
+                  type="file"
+                  ref="fileInput"
+                  class="hidden"
+                  accept="image/*"
+                  @change="handleFileChange"
+                />
+                <button 
+                  @click="triggerFileInput"
+                  class="col-span-1 py-4 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-gray-200 rounded-2xl font-bold hover:bg-gray-50 transition-all flex flex-col items-center justify-center gap-1">
                   <i class="fa-solid fa-image text-xl mb-1"></i>
                   <span class="text-xs">프로필 이미지 설정</span>
                 </button>
