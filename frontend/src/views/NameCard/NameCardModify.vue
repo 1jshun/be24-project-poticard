@@ -48,18 +48,11 @@ const userInfo = JSON.parse(localStorage.getItem('USERINFO'))
 
 const dummy = {
   email: userInfo.email,
-  title: "제목",
-  description: "설명",
-  layout: "Type A",
-  color: "YELLOW",
+  title: "등록되지 않은 명함",
   affiliation: userInfo.affiliation,
+  description:"아래 '수정 완료'를 눌러 최초 등록을 실행해주세요.",
   name: userInfo.name,
-  avatar: "https://api.dicebear.com/9.x/avataaars/svg?seed=홍길동",
-  career: userInfo.career,
-  url: "https://porti.example.com/user100",
-  address: "서울특별시 강남구 테헤란로 100",
-  phone: "010-0000-0100",
-  keywords: []
+  career: userInfo.career
 }
 
 
