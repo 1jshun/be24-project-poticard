@@ -1,556 +1,456 @@
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { updateStyle, getPortfolioSections } from '@/api/portfolio/index.js'
+
+import ThemeSelector from '@/components/portfolio/ThemeSelector.vue'
+import ColorSelector from '@/components/portfolio/ColorSelector.vue'
+import LayoutSelector from '@/components/portfolio/LayoutSelector.vue'
 
 const router = useRouter()
 const route = useRoute()
 
+const theme = ref('minimal')
+const layout = ref('single')
+const accent = ref('amber')
+const font = ref('sans')
+const sections = ref([])
+
+const portfolioIdx = route.query.idx || 1; 
+
+const defaultSections = [
+  { id: 's1', title: 'INTRO', icon: '👋', visible: true, kind: 'summary', content: '문제를 단순하게 만들고, 사용자가 바로 이해하는 코드를 작성합니다.' },
+  { id: 's2', title: 'SKILLS', icon: '🧰', visible: true, kind: 'summary', content: ['Java', 'Spring Boot', 'Vue.js', 'MariaDB'].join(', ') },
+  { id: 's3', title: 'PROJECTS', icon: '🧩', visible: true, kind: 'detail', content: 'Poticard 포트폴리오 플랫폼 개발\n- 소셜 로그인 연동 (OAuth 2.0)\n- Master-Slave DB 레플리케이션 구축' },
+]
+
 onMounted(async () => {
-  const defaultSections = [
-    {
-      id: 's1',
-      title: 'INTRO',
-      icon: '👋',
-      visible: true,
-      kind: 'summary',
-      content:
-        '문제를 단순하게 만들고, 사용자가 바로 이해하는 UI를 설계합니다. 디자인-개발 커뮤니케이션까지 고려해요.',
-    },
-    {
-      id: 's2',
-      title: 'SKILLS',
-      icon: '🧰',
-      visible: true,
-      kind: 'summary',
-      content: ['Figma', 'Prototyping', 'Design System', 'React', 'Tailwind'].join(', '),
-    },
-    {
-      id: 's3',
-      title: 'PROJECTS',
-      icon: '🧩',
-      visible: true,
-      kind: 'detail',
-      content: [
-        { name: 'E-commerce UI 리디자인', period: '2023.01–06', tags: ['Figma', 'React', 'UX'] },
-        { name: 'Design System 구축', period: '2023.07–09', tags: ['Tokens', 'Docs', 'Figma'] },
-      ],
-    },
-    {
-      id: 's4',
-      title: 'EXPERIENCE',
-      icon: '🏢',
-      visible: true,
-      kind: 'detail',
-      content: [
-        'ABC Studio / UX Designer (2022–2023)',
-        '디자인 QA & 사용자 테스트 리딩',
-        '핵심 플로우 전환율 개선',
-      ],
-    },
-    {
-      id: 's5',
-      title: 'CONTACT',
-      icon: '📩',
-      visible: true,
-      kind: 'summary',
-      content: 'contact@poticard.io · github.com/kimpoti',
-    },
-  ]
-
-  // state
-  let sections = []
-  let layout = 'single'
-  let accent = 'amber'
-  let font = 'sans'
-
-  const portfolioIdx = route.query.idx || 1; 
-
-  // --- 수정된 부분: API 응답 JSON 구조에 맞게 매핑 ---
   try {
     const res = await getPortfolioSections(portfolioIdx);
-    
-    // axios 응답 결과에서 data 배열을 추출
     const fetchedData = res.data; 
     
-    // fetchedData가 배열이고 데이터가 있는지 확인
     if (Array.isArray(fetchedData) && fetchedData.length > 0) {
-      sections = fetchedData.map((sec, index) => ({
+      sections.value = fetchedData.map((sec, index) => ({
         id: sec.idx, 
         title: sec.sectionTitle || `SECTION ${index + 1}`, 
         icon: '📌', 
-        visible: sec.visible, // JSON 데이터의 visible 상태 반영
+        visible: sec.visible !== false, 
         kind: 'detail', 
-        content: sec.contents || '내용이 없습니다.' // JSON 데이터의 contents 키 매핑
+        content: sec.contents || '내용이 없습니다.' 
       }));
     } else {
-      sections = JSON.parse(JSON.stringify(defaultSections));
+      sections.value = JSON.parse(JSON.stringify(defaultSections));
     }
   } catch (error) {
-    console.error('섹션 데이터를 불러오는데 실패했습니다:', error);
-    sections = JSON.parse(JSON.stringify(defaultSections)); 
+    sections.value = JSON.parse(JSON.stringify(defaultSections)); 
   }
-  // ---------------------------------------------------
 
-  // DOM 요소 선택
-  const sectionListEl = document.getElementById('sectionList')
+  renderList()
+  renderPreview()
+})
+
+watch([theme, layout, accent, font], () => {
+  renderPreview()
+})
+
+const resetSections = () => {
+  sections.value = JSON.parse(JSON.stringify(defaultSections))
+  renderList()
+  renderPreview()
+}
+
+const saveStyle = async () => {
+  const styleData = {
+    accentColor: accent.value,
+    fontFamily: font.value,
+    layoutType: layout.value,
+    sectionList: sections.value.map((s, index) => ({
+      idx: s.id, 
+      sectionOrder: index + 1 
+    }))
+  };
+
+  try {
+    await updateStyle(portfolioIdx, styleData);
+    alert('스타일 설정이 저장되었습니다.');
+    router.push({ path: '/portfolio-view', query: { idx: portfolioIdx } });
+  } catch (error) {
+    alert('스타일 저장 중 오류가 발생했습니다.');
+  }
+};
+
+const accentMap = {
+  amber: { text: 'text-yellow-500', pillBg: 'bg-yellow-100', pillText: 'text-yellow-800', border: 'border-yellow-200', bg: 'bg-yellow-400' },
+  sky: { text: 'text-sky-500', pillBg: 'bg-sky-100', pillText: 'text-sky-800', border: 'border-sky-200', bg: 'bg-sky-400' },
+  emerald: { text: 'text-emerald-500', pillBg: 'bg-emerald-100', pillText: 'text-emerald-800', border: 'border-emerald-200', bg: 'bg-emerald-400' },
+  violet: { text: 'text-violet-500', pillBg: 'bg-violet-100', pillText: 'text-violet-800', border: 'border-violet-200', bg: 'bg-violet-400' },
+  pink: { text: 'text-pink-500', pillBg: 'bg-pink-100', pillText: 'text-pink-800', border: 'border-pink-200', bg: 'bg-pink-400' },
+}
+
+function getThemeClasses() {
+  switch(theme.value) {
+    case 'notion': 
+      return { wrapperBg: 'bg-white dark:bg-[#191919]', card: 'bg-white dark:bg-[#191919] text-zinc-900 dark:text-zinc-100 border-none shadow-none', section: 'bg-transparent py-6 border-b border-zinc-100 dark:border-zinc-800/60 last:border-0 rounded-none p-0', avatar: 'rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm' }
+    case 'bento': 
+      return { wrapperBg: 'bg-[#f5f5f7] dark:bg-black', card: 'bg-[#f5f5f7] dark:bg-black text-zinc-900 dark:text-zinc-100 border-none shadow-none', section: 'bg-white dark:bg-zinc-900/80 rounded-[2rem] p-8 shadow-sm border border-black/5 dark:border-white/5', avatar: 'rounded-full border-4 border-white dark:border-zinc-800 shadow-lg' }
+    case 'saas': 
+      return { wrapperBg: 'bg-[#0a0a0a]', card: 'bg-[#0a0a0a] text-zinc-100 border border-zinc-800/60 rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.3)]', section: 'bg-zinc-900/40 rounded-2xl p-6 border border-zinc-800/50 hover:border-zinc-700 transition-colors', avatar: 'rounded-2xl border border-zinc-800' }
+    case 'terminal':
+      return { wrapperBg: 'bg-zinc-900 dark:bg-zinc-950', card: 'bg-black text-green-500 font-mono border border-green-500/30 rounded-lg shadow-none', section: 'bg-black/50 border border-green-500/20 rounded-lg p-6', avatar: 'rounded-none border-2 border-green-500 bg-black' }
+    case 'brutalism':
+      return { wrapperBg: 'bg-yellow-300 dark:bg-yellow-500', card: 'bg-white text-black border-4 border-black rounded-none shadow-[8px_8px_0_0_rgba(0,0,0,1)]', section: 'bg-white border-4 border-black p-6 rounded-none shadow-[4px_4px_0_0_rgba(0,0,0,1)]', avatar: 'rounded-none border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] bg-white' }
+    case 'glassmorphism':
+      return { wrapperBg: 'bg-gradient-to-br from-indigo-300 via-purple-300 to-pink-300 dark:from-indigo-900 dark:via-purple-900 dark:to-pink-900', card: 'bg-white/30 dark:bg-black/40 backdrop-blur-xl text-zinc-900 dark:text-zinc-100 border border-white/40 dark:border-white/10 rounded-3xl shadow-2xl', section: 'bg-white/20 dark:bg-black/20 border border-white/30 dark:border-white/10 rounded-2xl p-6 backdrop-blur-md', avatar: 'rounded-full border-2 border-white/50 bg-white/30 dark:bg-black/30' }
+    case 'retro':
+      return { wrapperBg: 'bg-indigo-900', card: 'bg-black text-white border-4 border-white rounded-none shadow-[4px_4px_0_0_#fff]', section: 'bg-blue-900 border-2 border-white p-6 rounded-none', avatar: 'rounded-none border-2 border-white bg-blue-900' }
+    case 'paper':
+      return { wrapperBg: 'bg-zinc-200 dark:bg-zinc-800', card: 'bg-[#f4f1ea] dark:bg-[#2c2a26] text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700 shadow-md rounded-none font-serif', section: 'bg-transparent border-t-2 border-b-2 border-zinc-300 dark:border-zinc-700 py-6 px-0 rounded-none', avatar: 'rounded-none border border-zinc-400 p-1 bg-transparent' }
+    case 'monochrome':
+      return { wrapperBg: 'bg-zinc-300 dark:bg-zinc-900', card: 'bg-white dark:bg-black text-black dark:text-white border-2 border-black dark:border-white rounded-none shadow-none', section: 'bg-transparent border-l-4 border-black dark:border-white pl-6 rounded-none py-4', avatar: 'rounded-full border-2 border-black dark:border-white grayscale bg-transparent' }
+    case 'blueprint':
+      return { wrapperBg: 'bg-blue-950', card: 'bg-blue-900 text-blue-100 border border-blue-400 font-mono rounded-none shadow-none', section: 'bg-transparent border border-blue-400/50 p-6 rounded-none', avatar: 'rounded-none border border-blue-400 bg-transparent' }
+    case 'claymorphism':
+      return { wrapperBg: 'bg-zinc-100 dark:bg-zinc-900', card: 'bg-zinc-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 rounded-[3rem] shadow-[12px_12px_24px_rgba(0,0,0,0.1),-12px_-12px_24px_rgba(255,255,255,0.8)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.5),-12px_-12px_24px_rgba(255,255,255,0.05)] border-none', section: 'bg-zinc-100 dark:bg-zinc-900 rounded-3xl p-8 shadow-[inset_6px_6px_12px_rgba(0,0,0,0.1),inset_-6px_-6px_12px_rgba(255,255,255,0.8)] dark:shadow-[inset_6px_6px_12px_rgba(0,0,0,0.5),inset_-6px_-6px_12px_rgba(255,255,255,0.05)]', avatar: 'rounded-full shadow-[6px_6px_12px_rgba(0,0,0,0.1),-6px_-6px_12px_rgba(255,255,255,0.8)] dark:shadow-[6px_6px_12px_rgba(0,0,0,0.5),-6px_-6px_12px_rgba(255,255,255,0.05)] bg-transparent border-none' }
+    case 'neon':
+      return { wrapperBg: 'bg-zinc-950', card: 'bg-zinc-950 text-fuchsia-100 border border-fuchsia-500 rounded-xl shadow-[0_0_20px_rgba(217,70,239,0.2)]', section: 'bg-black/50 border border-fuchsia-500/50 p-6 rounded-xl shadow-[inset_0_0_10px_rgba(217,70,239,0.1)]', avatar: 'rounded-xl border border-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.4)] bg-black' }
+    case 'macos':
+      return { wrapperBg: 'bg-zinc-200 dark:bg-zinc-800', card: 'bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700 shadow-xl rounded-xl', section: 'bg-zinc-100/50 dark:bg-black/20 rounded-lg p-6 border border-zinc-200/50 dark:border-zinc-700/50', avatar: 'rounded-full border shadow-sm bg-white dark:bg-zinc-800' }
+    default: 
+      return { wrapperBg: 'bg-zinc-50 dark:bg-zinc-950', card: 'bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-[2rem] shadow-sm text-zinc-900 dark:text-zinc-100', section: 'bg-zinc-50 dark:bg-zinc-800/40 rounded-3xl p-6 md:p-8 border border-zinc-100 dark:border-zinc-800/60', avatar: 'rounded-full border border-zinc-200 dark:border-zinc-700' }
+  }
+}
+
+function renderPreview() {
   const previewSectionsEl = document.getElementById('previewSections')
   const tagRowEl = document.getElementById('tagRow')
   const previewCardEl = document.getElementById('previewCard')
   const roleTextEl = document.getElementById('roleText')
   const avatarEl = document.getElementById('avatar')
-  const saveStyleBtn = document.getElementById('saveStyleBtn')
+  const previewWrapperEl = document.getElementById('previewWrapper')
 
-  // inputs & buttons
-  document.getElementById('layout_single').addEventListener('change', () => {
-    layout = 'single'
-    renderPreview()
-  })
-  document.getElementById('layout_two').addEventListener('change', () => {
-    layout = 'two'
-    renderPreview()
-  })
-  document.getElementById('layout_cards').addEventListener('change', () => {
-    layout = 'cards'
-    renderPreview()
+  if(!previewSectionsEl) return;
+
+  const a = accentMap[accent.value] || accentMap.amber
+  const tc = getThemeClasses()
+
+  previewWrapperEl.className = `${tc.wrapperBg} backdrop-blur-3xl rounded-[2.5rem] p-4 md:p-8 border border-white/50 dark:border-zinc-700/30 shadow-2xl transition-all duration-500`
+  previewCardEl.className = `${tc.card} p-8 md:p-12 transition-all duration-500 overflow-hidden relative min-h-[600px] ${font.value === 'serif' ? 'font-serif' : 'font-sans'}`
+  
+  const isPlain = ['notion', 'paper', 'monochrome'].includes(theme.value);
+  const isTech = ['saas', 'terminal', 'neon', 'blueprint'].includes(theme.value);
+  const isHarsh = ['brutalism', 'retro'].includes(theme.value);
+  const isGlass = theme.value === 'glassmorphism';
+
+  if (isPlain) roleTextEl.className = `inline-block text-sm font-medium opacity-70 mb-2`
+  else if (isTech) roleTextEl.className = `inline-block px-3 py-1 rounded-full border border-current opacity-70 text-[10px] font-medium tracking-widest uppercase mb-4`
+  else if (isHarsh) roleTextEl.className = `inline-block px-3 py-1 border-2 border-current bg-transparent text-[10px] font-bold tracking-widest uppercase mb-4`
+  else roleTextEl.className = `inline-block px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase ${a.pillBg} ${a.pillText} mb-4`
+  
+  const useAccentAvatar = !isPlain && !isTech && !isHarsh && !isGlass && theme.value !== 'macos' && theme.value !== 'claymorphism';
+  avatarEl.className = `w-24 h-24 grid place-items-center text-4xl ${tc.avatar} ${useAccentAvatar ? a.pillBg : ''}`
+
+  tagRowEl.innerHTML = ''
+  ;['#FullStack', '#Java', '#Vue.js'].forEach((t) => {
+    const span = document.createElement('span')
+    if (isPlain) span.className = `opacity-60 text-sm mr-3`
+    else if (isTech) span.className = `px-2.5 py-1 rounded-md border border-current opacity-70 text-xs font-medium`
+    else if (isHarsh) span.className = `px-3 py-1 border-2 border-current bg-transparent text-xs font-bold`
+    else span.className = `px-3 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 text-xs font-bold border border-zinc-200/50 dark:border-zinc-700/50`
+    span.textContent = t
+    tagRowEl.appendChild(span)
   })
 
-  document.getElementById('resetSections').addEventListener('click', () => {
-    sections = JSON.parse(JSON.stringify(defaultSections))
-    renderList()
-    renderPreview()
-  })
+  const visibleSections = sections.value.filter((s) => s.visible)
+  previewSectionsEl.innerHTML = ''
 
-  // accent buttons
-  document.querySelectorAll('[data-accent]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      accent = btn.dataset.accent
-      document
-        .querySelectorAll('[data-accent]')
-        .forEach((b) => b.classList.remove('ring-2', 'ring-amber-200'))
-      btn.classList.add('ring-2', 'ring-amber-200')
-      renderPreview()
+  if (layout.value === 'single') {
+    const wrapper = document.createElement('div'); wrapper.className = 'space-y-6 md:space-y-8'
+    visibleSections.forEach((s) => wrapper.appendChild(renderSectionBlock(s, a, tc, layout.value)))
+    previewSectionsEl.appendChild(wrapper)
+  } else if (layout.value === 'cards' || layout.value === 'masonry') {
+    const grid = document.createElement('div')
+    grid.className = layout.value === 'masonry' ? 'columns-1 sm:columns-2 gap-4 md:gap-6 space-y-4 md:space-y-6' : 'grid sm:grid-cols-2 gap-4 md:gap-6'
+    visibleSections.forEach((s) => {
+      const el = renderSectionBlock(s, a, tc, layout.value);
+      if (layout.value === 'masonry') el.classList.add('break-inside-avoid', 'mb-4');
+      grid.appendChild(el);
     })
-  })
-
-  // typography buttons
-  const fontSansBtn = document.getElementById('fontSans')
-  const fontSerifBtn = document.getElementById('fontSerif')
-
-  const fontActiveClass = 'border border-amber-300 bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3 text-left'
-  const fontInactiveClass = 'border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 rounded-xl p-3 text-left'
-
-  fontSansBtn.addEventListener('click', () => {
-    font = 'sans'
-    fontSansBtn.className = fontActiveClass
-    fontSerifBtn.className = fontInactiveClass
-    previewCardEl.classList.remove('font-serif')
-    renderPreview()
-  })
-
-  fontSerifBtn.addEventListener('click', () => {
-    font = 'serif'
-    fontSerifBtn.className = fontActiveClass
-    fontSansBtn.className = fontInactiveClass
-    previewCardEl.classList.add('font-serif')
-    renderPreview()
-  })
-
-  // helpers
-  const accentMap = {
-    amber: { text: 'text-amber-500', pillBg: 'bg-amber-50', pillText: 'text-amber-600', border: 'border-amber-100', panel: 'bg-amber-50' },
-    sky: { text: 'text-sky-500', pillBg: 'bg-sky-50', pillText: 'text-sky-600', border: 'border-sky-100', panel: 'bg-sky-50' },
-    emerald: { text: 'text-emerald-500', pillBg: 'bg-emerald-50', pillText: 'text-emerald-600', border: 'border-emerald-100', panel: 'bg-emerald-50' },
-    violet: { text: 'text-violet-500', pillBg: 'bg-violet-50', pillText: 'text-violet-600', border: 'border-violet-100', panel: 'bg-violet-50' },
-    pink: { text: 'text-pink-500', pillBg: 'bg-pink-50', pillText: 'text-pink-600', border: 'border-pink-100', panel: 'bg-pink-50' },
-  }
-
-  // Left: render section list
-  function renderList() {
-    sectionListEl.innerHTML = ''
-    sections.forEach((s, idx) => {
-      const item = document.createElement('div')
-      item.className = 'drag-item flex items-center justify-between gap-3 border border-zinc-200 dark:border-zinc-700 rounded-xl p-3 bg-white dark:bg-zinc-900'
-      item.draggable = true
-      item.dataset.id = s.id
-
-      const left = document.createElement('div')
-      left.className = 'flex items-center gap-3 min-w-0'
-      left.innerHTML = `
-          <div class="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 grid place-items-center text-sm" title="드래그 핸들">⠿</div>
-          <div class="min-w-0">
-            <div class="flex items-center gap-2">
-              <span class="text-xs text-zinc-500 dark:text-zinc-400 font-semibold">SECTION ${idx + 1}</span>
-              <span class="text-sm">${s.icon || ''}</span>
-            </div>
-            <div class="font-semibold truncate">${s.title}</div>
-          </div>
-        `
-
-      const right = document.createElement('div')
-      right.className = 'flex items-center gap-2'
-      right.innerHTML = `
-          <label class="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-            <span>${s.visible ? 'ON' : 'OFF'}</span>
-            <input type="checkbox" ${s.visible ? 'checked' : ''} class="w-4 h-4 accent-amber-400" />
-          </label>
-        `
-
-      right.querySelector('input').addEventListener('change', (e) => {
-        s.visible = e.target.checked
-        right.querySelector('span').textContent = s.visible ? 'ON' : 'OFF'
-        renderPreview()
-      })
-
-      item.addEventListener('dragstart', () => item.classList.add('dragging'))
-      item.addEventListener('dragend', () => {
-        item.classList.remove('dragging')
-        document.querySelectorAll('.drag-item').forEach((x) => x.classList.remove('over'))
-      })
-      item.addEventListener('dragover', (e) => {
-        e.preventDefault()
-        item.classList.add('over')
-        const dragging = document.querySelector('.drag-item.dragging')
-        if (!dragging || dragging === item) return
-
-        const rect = item.getBoundingClientRect()
-        const after = e.clientY - rect.top > rect.height / 2
-        if (after) item.after(dragging)
-        else item.before(dragging)
-      })
-      item.addEventListener('dragleave', () => item.classList.remove('over'))
-      item.addEventListener('drop', () => {
-        const newOrder = [...sectionListEl.querySelectorAll('.drag-item')].map(
-          (el) => String(el.dataset.id), 
-        )
-        sections = newOrder.map((id) => sections.find((s) => String(s.id) === id))
-        renderPreview()
-      })
-
-      item.appendChild(left)
-      item.appendChild(right)
-      sectionListEl.appendChild(item)
+    previewSectionsEl.appendChild(grid)
+  } else if (layout.value === 'timeline') {
+    const timelineWrapper = document.createElement('div'); timelineWrapper.className = 'relative border-l border-current opacity-80 ml-4 space-y-8 pb-4'
+    visibleSections.forEach((s) => {
+      const item = document.createElement('div'); item.className = 'relative pl-8'
+      const dot = document.createElement('div'); dot.className = `absolute -left-[5px] top-2 w-2.5 h-2.5 rounded-full ring-4 ring-transparent ${a.bg}`
+      item.appendChild(dot); item.appendChild(renderSectionBlock(s, a, tc, layout.value))
+      timelineWrapper.appendChild(item)
     })
-  }
-
-  // Right: render preview by selected layout
-  function renderPreview() {
-    const a = accentMap[accent] || accentMap.amber
-    roleTextEl.className = `text-[11px] font-bold tracking-wider ${a.text}`
-    avatarEl.className = `w-16 h-16 rounded-2xl border ${a.border} ${a.panel} grid place-items-center`
-
-    tagRowEl.innerHTML = ''
-      ;['#Figma', '#Prototyping', '#Problem_Solver'].forEach((t) => {
-        const span = document.createElement('span')
-        span.className = `px-2.5 py-1 rounded-full ${a.pillBg} ${a.pillText} text-xs font-semibold`
-        span.textContent = t
-        tagRowEl.appendChild(span)
-      })
-
-    const visibleSections = sections.filter((s) => s.visible)
-    previewSectionsEl.innerHTML = ''
-
-    if (layout === 'single') {
-      const wrapper = document.createElement('div')
-      wrapper.className = 'space-y-5'
-      visibleSections.forEach((s) => wrapper.appendChild(renderSectionBlock(s, a)))
-      previewSectionsEl.appendChild(wrapper)
-      return
-    }
-
-    if (layout === 'cards') {
-      const grid = document.createElement('div')
-      grid.className = 'grid sm:grid-cols-2 gap-4'
-      visibleSections.forEach((s) => {
-        const card = document.createElement('div')
-        card.className = 'border border-zinc-100 dark:border-zinc-800 rounded-2xl p-4 bg-white dark:bg-zinc-900'
-        card.appendChild(renderSectionHeader(s, a))
-        card.appendChild(renderSectionBody(s))
-        grid.appendChild(card)
-      })
-      previewSectionsEl.appendChild(grid)
-      return
-    }
-
-    if (layout === 'two') {
-      const left = visibleSections.filter((s) => s.kind === 'summary')
-      const right = visibleSections.filter((s) => s.kind !== 'summary')
-      const two = document.createElement('div')
-      two.className = 'grid md:grid-cols-3 gap-6'
-      const colL = document.createElement('div')
-      colL.className = 'md:col-span-1 space-y-4'
-      left.forEach((s) => colL.appendChild(renderSectionBlock(s, a)))
-      const colR = document.createElement('div')
-      colR.className = 'md:col-span-2 space-y-4'
-      right.forEach((s) => colR.appendChild(renderSectionBlock(s, a)))
-      two.appendChild(colL)
-      two.appendChild(colR)
-      previewSectionsEl.appendChild(two)
-      return
-    }
-  }
-
-  function renderSectionHeader(section, a) {
-    const header = document.createElement('div')
-    header.className = 'flex items-center gap-2 text-sm font-bold'
-    header.innerHTML = `
-        <span class="${a.text}">●</span>
-        <span class="text-base">${section.icon || ''}</span>
-        <span>${section.title}</span>
-      `
-    return header
-  }
-
-  function renderSectionBody(section) {
-    const body = document.createElement('div')
-    body.className = 'mt-2'
-
-    let contentData = section.content;
-    try {
-      if (typeof contentData === 'string' && (contentData.startsWith('[') || contentData.startsWith('{'))) {
-        contentData = JSON.parse(contentData);
+    previewSectionsEl.appendChild(timelineWrapper)
+  } else if (layout.value === 'split') {
+    const wrapper = document.createElement('div'); wrapper.className = 'space-y-8 md:space-y-12'
+    visibleSections.forEach((s) => wrapper.appendChild(renderSectionBlock(s, a, tc, layout.value)))
+    previewSectionsEl.appendChild(wrapper)
+  } else if (layout.value === 'horizontal') {
+    const wrapper = document.createElement('div'); wrapper.className = 'flex gap-4 md:gap-6 overflow-x-auto pb-6 snap-x snap-mandatory hide-scrollbar'
+    visibleSections.forEach((s) => {
+      const el = renderSectionBlock(s, a, tc, layout.value);
+      el.classList.add('min-w-[280px]', 'md:min-w-[320px]', 'max-w-[400px]', 'snap-center', 'shrink-0');
+      wrapper.appendChild(el);
+    })
+    previewSectionsEl.appendChild(wrapper)
+  } else if (layout.value === 'zigzag') {
+    const wrapper = document.createElement('div'); wrapper.className = 'space-y-8 md:space-y-12'
+    visibleSections.forEach((s, idx) => {
+      const el = renderSectionBlock(s, a, tc, layout.value);
+      if (idx % 2 === 1) {
+        el.classList.add('ml-auto');
+        el.style.textAlign = 'right';
+        const header = el.querySelector('div.flex.items-center');
+        if (header) {
+          header.classList.remove('justify-start');
+          header.classList.add('justify-end', 'flex-row-reverse');
+        }
+        const lis = el.querySelectorAll('li');
+        lis.forEach(li => {
+           li.classList.remove('items-start');
+           li.classList.add('items-start', 'flex-row-reverse', 'text-right');
+        });
+      } else {
+        el.classList.add('mr-auto');
       }
-    } catch (e) { }
+      el.classList.add('max-w-[90%]');
+      wrapper.appendChild(el);
+    })
+    previewSectionsEl.appendChild(wrapper)
+  } else if (layout.value === 'hero-grid') {
+    const grid = document.createElement('div'); grid.className = 'grid sm:grid-cols-2 gap-4 md:gap-6'
+    visibleSections.forEach((s, idx) => {
+      const el = renderSectionBlock(s, a, tc, layout.value);
+      if (idx === 0) el.classList.add('sm:col-span-2', 'md:p-10'); 
+      grid.appendChild(el);
+    })
+    previewSectionsEl.appendChild(grid)
+  } else if (layout.value === 'compact') {
+    const wrapper = document.createElement('div'); wrapper.className = 'space-y-2 md:space-y-3'
+    visibleSections.forEach((s) => wrapper.appendChild(renderSectionBlock(s, a, tc, layout.value)))
+    previewSectionsEl.appendChild(wrapper)
+  }
+}
 
-    if (Array.isArray(contentData)) {
-      const ul = document.createElement('ul')
-      ul.className = 'text-sm text-zinc-700 dark:text-zinc-200 list-disc pl-5 space-y-1'
-      contentData.forEach((line) => {
-        const li = document.createElement('li')
-        li.textContent = typeof line === 'object' ? line.name || JSON.stringify(line) : line
-        ul.appendChild(li)
-      })
-      body.appendChild(ul)
-      return body
+function renderSectionHeader(section, a, tc) {
+  const header = document.createElement('div'); header.className = 'flex items-center gap-3 mb-4'
+  const isPlain = ['notion', 'paper', 'monochrome'].includes(theme.value);
+  const isTech = ['saas', 'terminal', 'neon', 'blueprint'].includes(theme.value);
+  const isHarsh = ['brutalism', 'retro'].includes(theme.value);
+
+  if (isPlain) header.innerHTML = `<h3 class="text-xl font-bold tracking-tight flex items-center gap-2"><span class="text-xl">${section.icon}</span> ${section.title}</h3>`
+  else if (isTech) header.innerHTML = `<div class="w-8 h-8 rounded-lg border border-current opacity-80 flex items-center justify-center text-sm">${section.icon}</div><h3 class="text-base font-semibold tracking-wide">${section.title}</h3>`
+  else if (isHarsh) header.innerHTML = `<div class="w-8 h-8 border-2 border-current flex items-center justify-center text-sm font-bold">${section.icon}</div><h3 class="text-lg font-bold tracking-tight uppercase">${section.title}</h3>`
+  else header.innerHTML = `<div class="flex items-center justify-center w-8 h-8 rounded-full ${a.pillBg} ${a.pillText} text-sm font-bold">${section.icon || '✦'}</div><h3 class="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100">${section.title}</h3>`
+  return header
+}
+
+function renderSectionBody(section) {
+  const body = document.createElement('div'); 
+  
+  if (['terminal', 'blueprint'].includes(theme.value)) body.className = 'opacity-80 leading-relaxed text-sm font-mono'
+  else if (['brutalism', 'retro'].includes(theme.value)) body.className = 'font-bold leading-relaxed text-sm'
+  else if (['notion', 'paper'].includes(theme.value)) body.className = 'opacity-80 leading-relaxed text-[15px]'
+  else body.className = 'opacity-70 leading-relaxed text-sm'
+
+  let contentData = section.content;
+  try {
+    if (typeof contentData === 'string' && (contentData.startsWith('[') || contentData.startsWith('{'))) {
+      contentData = JSON.parse(contentData);
     }
+  } catch (e) { }
 
-    // JSON에 HTML 태그(<p> 등)가 섞여오고 있으므로 innerHTML로 처리 (보안상 v-html처럼 동작)
-    const p = document.createElement('div')
-    p.className = 'text-sm text-zinc-700 dark:text-zinc-200 whitespace-pre-line'
-    p.innerHTML = String(contentData ?? '')
-    body.appendChild(p)
+  if (Array.isArray(contentData)) {
+    const ul = document.createElement('ul')
+    ul.className = 'space-y-2.5'
+    contentData.forEach((line) => {
+      const li = document.createElement('li')
+      li.className = 'flex items-start gap-3'
+      
+      let marker = '';
+      if (['notion', 'paper', 'monochrome'].includes(theme.value)) marker = `<span class="mt-1.5 w-1 h-1 bg-current opacity-80 shrink-0"></span>`
+      else if (['saas', 'terminal', 'neon', 'blueprint'].includes(theme.value)) marker = `<span class="mt-2 w-1.5 h-1.5 border border-current opacity-80 shrink-0"></span>`
+      else if (['brutalism', 'retro'].includes(theme.value)) marker = `<span class="mt-1.5 w-2 h-2 bg-current shrink-0"></span>`
+      else marker = `<span class="mt-2 w-1.5 h-1.5 rounded-full bg-zinc-300 dark:bg-zinc-600 shrink-0"></span>`
+        
+      li.innerHTML = `${marker}<span>${typeof line === 'object' ? line.name || JSON.stringify(line) : line}</span>`
+      ul.appendChild(li)
+    })
+    body.appendChild(ul)
     return body
   }
 
-  function renderSectionBlock(section, a) {
-    const wrap = document.createElement('div')
-    wrap.className = 'border border-zinc-100 dark:border-zinc-800 rounded-2xl p-4 bg-white dark:bg-zinc-900'
-    wrap.appendChild(renderSectionHeader(section, a))
-    wrap.appendChild(renderSectionBody(section))
-    return wrap
+  const p = document.createElement('div')
+  p.className = 'whitespace-pre-line'
+  p.innerHTML = String(contentData ?? '')
+  body.appendChild(p)
+  return body
+}
+
+function renderSectionBlock(section, a, tc, layoutType) {
+  const wrap = document.createElement('div')
+  
+  let baseClass = tc.section;
+  if (['single', 'timeline', 'split', 'zigzag', 'compact'].includes(layoutType) && ['minimal', 'paper', 'monochrome'].includes(theme.value)) {
+    baseClass = 'border-t border-current/20 pt-8 mt-8 first:border-0 first:pt-0 first:mt-0';
   }
+  wrap.className = baseClass;
 
-  // 스타일 설정 저장 
-  saveStyleBtn.addEventListener('click', async () => {
-    const styleData = {
-      accentColor: accent,
-      fontFamily: font,
-      layoutType: layout,
-      sectionList: sections.map((s, index) => ({
-        idx: s.id, 
-        sectionOrder: index + 1 
-      }))
-    };
+  const header = renderSectionHeader(section, a, tc);
+  const body = renderSectionBody(section);
 
-    try {
-      await updateStyle(portfolioIdx, styleData);
-      alert('스타일 설정이 저장되었습니다.');
-      router.push({ path: '/portfolio-view', query: { idx: portfolioIdx } });
-    } catch (error) {
-      alert('스타일 저장 중 오류가 발생했습니다.');
-      console.error(error);
-    }
-  });
+  if (layoutType === 'split') {
+    wrap.classList.add('md:flex', 'md:gap-8', 'items-start');
+    const hWrap = document.createElement('div'); hWrap.className = 'md:w-1/3 shrink-0 mb-4 md:mb-0';
+    const bWrap = document.createElement('div'); bWrap.className = 'md:w-2/3';
+    hWrap.appendChild(header);
+    bWrap.appendChild(body);
+    wrap.appendChild(hWrap);
+    wrap.appendChild(bWrap);
+  } else if (layoutType === 'compact') {
+    wrap.classList.add('flex', 'flex-col', 'sm:flex-row', 'sm:items-start', 'gap-4', '!p-4', '!py-3');
+    header.classList.remove('mb-4');
+    header.classList.add('mb-0', 'shrink-0', 'sm:w-1/4');
+    wrap.appendChild(header);
+    wrap.appendChild(body);
+  } else {
+    wrap.appendChild(header);
+    wrap.appendChild(body);
+  }
+  return wrap
+}
 
-  // 데이터 로딩 완료 후 렌더링
-  renderList()
-  renderPreview()
-})
+function renderList() {
+  const sectionListEl = document.getElementById('sectionList')
+  if(!sectionListEl) return;
+  sectionListEl.innerHTML = ''
+  sections.value.forEach((s, idx) => {
+    const item = document.createElement('div'); item.className = 'drag-item group flex items-center justify-between gap-4 border border-zinc-100 dark:border-zinc-800/80 rounded-2xl p-4 bg-white dark:bg-zinc-900 shadow-sm transition-all'; item.draggable = true; item.dataset.id = s.id
+    const left = document.createElement('div'); left.className = 'flex items-center gap-4 min-w-0'
+    left.innerHTML = `<div class="cursor-grab active:cursor-grabbing w-8 h-8 rounded-xl bg-zinc-50 dark:bg-zinc-800 grid place-items-center text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-200"><i class="fa-solid fa-grip-vertical"></i></div><div class="min-w-0"><div class="text-[10px] font-bold text-zinc-400">SEC 0${idx + 1}</div><div class="font-bold text-zinc-800 dark:text-zinc-100 truncate">${s.icon} ${s.title}</div></div>`
+    const right = document.createElement('div'); right.className = 'flex items-center'
+    right.innerHTML = `<label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" ${s.visible ? 'checked' : ''} class="sr-only peer" /><div class="w-11 h-6 bg-zinc-200 rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-400"></div></label>`
+    
+    right.querySelector('input').addEventListener('change', (e) => { s.visible = e.target.checked; renderPreview() })
+    
+    item.addEventListener('dragstart', () => item.classList.add('dragging', 'opacity-50'))
+    item.addEventListener('dragend', () => { item.classList.remove('dragging', 'opacity-50'); document.querySelectorAll('.drag-item').forEach(x => x.classList.remove('over')) })
+    item.addEventListener('dragover', (e) => { e.preventDefault(); item.classList.add('over'); const dragging = document.querySelector('.drag-item.dragging'); if (!dragging || dragging === item) return; const rect = item.getBoundingClientRect(); const after = e.clientY - rect.top > rect.height / 2; if (after) item.after(dragging); else item.before(dragging) })
+    item.addEventListener('dragleave', () => item.classList.remove('over'))
+    item.addEventListener('drop', () => {
+      const newOrder = [...sectionListEl.querySelectorAll('.drag-item')].map(el => String(el.dataset.id))
+      sections.value = newOrder.map(id => sections.value.find(s => String(s.id) === id))
+      renderPreview(); renderList()
+    })
+    
+    item.appendChild(left); item.appendChild(right); sectionListEl.appendChild(item)
+  })
+}
 </script>
 
 <template>
-  <div class="min-h-screen bg-pattern text-zinc-900 dark:text-zinc-100 font-sans transition-colors">
-    <main class="dot-bg">
-      <div class="max-w-6xl mx-auto px-4 py-8">
-        <div class="mb-10 max-w-3xl mx-auto">
-          <div class="flex justify-between text-sm font-bold text-gray-400 mb-2 px-1">
-            <span>01. 프로젝트 작성</span>
-            <span>02. 프로젝트 확인/수정</span>
-            <span class="text-yellow-300">03. 스타일</span>
-          </div>
-          <div class="w-full h-2 bg-gray-300 dark:bg-zinc-800 rounded-full overflow-hidden">
-            <div class="w-3/3 h-full bg-yellow-300 rounded-full shadow-[0_0_10px_#FACC15] transition-all duration-500">
-            </div>
-          </div>
+  <div class="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans transition-colors selection:bg-yellow-200 selection:text-zinc-900">
+    <main class="py-12 px-4 sm:px-6 lg:px-8 max-w-[1400px] mx-auto">
+      
+      <div class="mb-12 max-w-4xl mx-auto text-center">
+        <div class="inline-flex items-center gap-2 px-4 py-2 bg-yellow-100 text-yellow-800 rounded-full text-xs font-black tracking-widest mb-6 uppercase">
+          Step 03
         </div>
+        <h1 class="text-3xl md:text-4xl font-black tracking-tight mb-4">어떤 스타일로 보여줄까요?</h1>
+        <p class="text-zinc-500 dark:text-zinc-400">당신의 프로젝트가 가장 잘 돋보이는 테마와 레이아웃을 선택하세요.</p>
+        
+        <div class="mt-8 flex justify-center gap-2 text-sm font-bold text-zinc-300 dark:text-zinc-700">
+          <span>작성</span><span>―</span><span>수정</span><span>―</span><span class="text-yellow-500">스타일</span>
+        </div>
+      </div>
 
-        <div class="grid grid-cols-12 gap-6">
-          <section class="col-span-12 lg:col-span-4">
-            <div
-              class="bg-white dark:bg-zinc-900 rounded-2xl shadow-soft border border-zinc-100 dark:border-zinc-800 p-5">
-              <div class="flex items-center gap-2 mb-4">
-                <span class="text-lg">✏️</span>
-                <h2 class="font-bold">스타일 커스터마이징</h2>
-              </div>
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        <section class="lg:col-span-4 space-y-6">
+          <div class="bg-white dark:bg-zinc-900 rounded-[2rem] shadow-xl shadow-zinc-200/40 dark:shadow-none border border-zinc-200/60 dark:border-zinc-800 p-8 h-auto">
+            
+            <ThemeSelector v-model="theme" />
+            <ColorSelector v-model="accent" />
 
-              <div class="mb-5">
-                <div class="text-xs text-zinc-500 font-semibold mb-2">ACCENT COLOR</div>
-                <div class="flex items-center gap-3">
-                  <button data-accent="amber" class="w-8 h-8 rounded-full bg-amber-400 ring-2 ring-amber-200"
-                    title="Yellow"></button>
-                  <button data-accent="sky" class="w-8 h-8 rounded-full bg-sky-400" title="Blue"></button>
-                  <button data-accent="emerald" class="w-8 h-8 rounded-full bg-emerald-400" title="Green"></button>
-                  <button data-accent="violet" class="w-8 h-8 rounded-full bg-violet-400" title="Violet"></button>
-                  <button data-accent="pink" class="w-8 h-8 rounded-full bg-pink-400" title="Pink"></button>
-                </div>
-              </div>
-
-              <div class="mb-5">
-                <div class="text-xs text-zinc-500 font-semibold mb-2">TYPOGRAPHY</div>
-                <div class="grid grid-cols-2 gap-3">
-                  <button id="fontSans"
-                    class="typo-btn border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 rounded-xl p-3 text-left transition-colors">
-                    <div class="text-sm font-bold">Sans-serif</div>
-                    <div class="text-xs text-zinc-500">Modern &amp; Clean</div>
-                  </button>
-                  <button id="fontSerif"
-                    class="typo-btn border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 rounded-xl p-3 text-left transition-colors">
-                    <div class="text-sm font-bold font-serif">Serif</div>
-                    <div class="text-xs text-zinc-500">Classic &amp; Elegant</div>
-                  </button>
-                </div>
-              </div>
-
-              <div class="mb-5">
-                <div class="text-xs text-zinc-500 font-semibold mb-2">SECTION LAYOUT</div>
-                <div class="grid gap-3">
-                  <div class="radio-card">
-                    <input id="layout_single" name="portfolio_layout" type="radio" checked class="hidden" />
-                    <label for="layout_single" class="block cursor-pointer border border-zinc-200 rounded-xl p-3">
-                      <div class="font-semibold">Single Column</div>
-                      <div class="text-xs text-zinc-500">섹션을 위에서 아래로 쭉</div>
-                    </label>
-                  </div>
-
-                  <div class="radio-card">
-                    <input id="layout_two" name="portfolio_layout" type="radio" class="hidden" />
-                    <label for="layout_two" class="block cursor-pointer border border-zinc-200 rounded-xl p-3">
-                      <div class="font-semibold">Two Column</div>
-                      <div class="text-xs text-zinc-500">왼쪽(요약) + 오른쪽(프로젝트/경험)</div>
-                    </label>
-                  </div>
-
-                  <div class="radio-card">
-                    <input id="layout_cards" name="portfolio_layout" type="radio" class="hidden" />
-                    <label for="layout_cards" class="block cursor-pointer border border-zinc-200 rounded-xl p-3">
-                      <div class="font-semibold">Cards</div>
-                      <div class="text-xs text-zinc-500">섹션을 카드 묶음으로</div>
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <div class="flex items-center justify-between mb-2">
-                  <div class="text-xs text-zinc-500 dark:text-zinc-400 font-semibold">
-                    SECTIONS (드래그로 순서 변경)
-                  </div>
-
-                  <button id="resetSections"
-                    class="text-xs px-2 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-200 transition-colors">
-                    초기화
-                  </button>
-                </div>
-
-                <div id="sectionList" class="grid gap-2">
-                  </div>
+            <div class="mb-8 border-b border-zinc-100 dark:border-zinc-800 pb-8">
+              <h3 class="text-sm font-black tracking-widest text-zinc-400 mb-4">TYPOGRAPHY</h3>
+              <div class="grid grid-cols-2 gap-4">
+                <button @click="font = 'sans'" :class="['border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 text-left transition-all', font === 'sans' ? 'ring-2 ring-yellow-400 bg-yellow-50/50 dark:bg-yellow-900/10' : 'bg-zinc-50 dark:bg-zinc-800/50 hover:bg-zinc-100 dark:hover:bg-zinc-800']">
+                  <div class="text-sm font-bold text-zinc-900 dark:text-zinc-100 mb-1">Sans-serif</div>
+                  <div class="text-xs text-zinc-500 font-medium">모던하고 깔끔한</div>
+                </button>
+                <button @click="font = 'serif'" :class="['border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 text-left transition-all', font === 'serif' ? 'ring-2 ring-yellow-400 bg-yellow-50/50 dark:bg-yellow-900/10' : 'bg-zinc-50 dark:bg-zinc-800/50 hover:bg-zinc-100 dark:hover:bg-zinc-800']">
+                  <div class="text-sm font-bold font-serif text-zinc-900 dark:text-zinc-100 mb-1">Serif</div>
+                  <div class="text-xs text-zinc-500 font-medium">우아하고 클래식한</div>
+                </button>
               </div>
             </div>
-          </section>
 
-          <section class="col-span-12 lg:col-span-8">
-            <div
-              class="bg-white dark:bg-zinc-900 rounded-2xl shadow-soft border border-zinc-100 dark:border-zinc-800 p-5">
+            <LayoutSelector v-model="layout" />
+
+            <div>
               <div class="flex items-center justify-between mb-4">
-                <h2 class="font-bold">Live Preview</h2>
+                <h3 class="text-sm font-black tracking-widest text-zinc-400">SECTIONS (드래그)</h3>
+                <button @click="resetSections" class="text-xs font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors">
+                  <i class="fa-solid fa-rotate-right mr-1"></i>초기화
+                </button>
               </div>
+              <div id="sectionList" class="flex flex-col gap-3"></div>
+            </div>
 
-              <div class="rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/60 p-6">
-                <div id="previewCard"
-                  class="bg-white dark:bg-zinc-900 rounded-2xl shadow-soft border border-zinc-100 dark:border-zinc-800 p-6 transition-all duration-200 preview-card">
-                  <div class="flex items-start justify-between gap-6">
-                    <div>
-                      <div id="roleText" class="text-[11px] font-bold tracking-wider">
-                        UX/UI DESIGNER
-                      </div>
-                      <div class="text-2xl font-extrabold leading-tight mt-1">Kim Poti</div>
-                      <p class="text-sm text-zinc-600 dark:text-zinc-300 mt-2">
-                        사용자 중심을 디자인하는 디자이너 김포티입니다.
-                      </p>
-                    </div>
+          </div>
+        </section>
 
-                    <div id="avatar" class="w-16 h-16 rounded-2xl border grid place-items-center">
-                      <span class="text-2xl">👩‍💻</span>
-                    </div>
+        <section class="lg:col-span-8">
+          <div class="sticky top-8">
+            <div id="previewWrapper" class="bg-zinc-200/50 dark:bg-zinc-800/30 backdrop-blur-3xl rounded-[2.5rem] p-4 md:p-8 border border-white/50 dark:border-zinc-700/30 shadow-2xl transition-all duration-500">
+              <div class="flex items-center gap-2 mb-6 px-2">
+                <div class="w-3 h-3 rounded-full bg-red-400"></div><div class="w-3 h-3 rounded-full bg-yellow-400"></div><div class="w-3 h-3 rounded-full bg-green-400"></div>
+                <div class="ml-4 text-xs font-bold text-zinc-400">Preview Mode</div>
+              </div>
+              <div id="previewCard" class="bg-white dark:bg-zinc-950 rounded-[2rem] shadow-sm border border-zinc-200/50 dark:border-zinc-800/80 p-8 md:p-12 transition-all duration-500 overflow-hidden relative min-h-[600px]">
+                <header class="flex flex-col md:flex-row md:items-start justify-between gap-8 mb-12 border-b border-current/10 pb-12">
+                  <div class="order-2 md:order-1 max-w-2xl">
+                    <div id="roleText">DEVELOPER</div>
+                    <h1 class="text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-6">Kim Poti</h1>
+                    <p class="text-lg opacity-80 leading-relaxed font-medium">백엔드 생태계와 아키텍처를 고민하는 개발자 김포티입니다.<br class="hidden md:block"/> 복잡한 문제를 단순한 코드로 해결하는 것을 지향합니다.</p>
+                    <div id="tagRow" class="mt-8 flex flex-wrap gap-2"></div>
                   </div>
-
-                  <div id="tagRow" class="mt-4 flex flex-wrap gap-2"></div>
-
-                  <div id="previewSections" class="mt-6"></div>
-                </div>
-              </div>
-
-              <div class="mt-5 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-                <a href="portfolio-update-n-check"
-                  class="px-6 py-2 bg-yellow-50 dark:bg-zinc-800/50 border border-yellow-200 dark:border-yellow-900/30 text-yellow-700 dark:text-yellow-500 rounded-2xl font-black tracking-tight hover:bg-yellow-100 dark:hover:bg-zinc-800 transition-colors inline-flex items-center justify-center">
-                  <i class="fa-solid fa-arrow-left mr-2 text-lg"></i> 이전 단계
-                </a>
-                <div class="flex gap-3">
-                  <button id="saveStyleBtn"
-                    class="px-4 py-3 bg-yellow-50 dark:bg-zinc-800/50 border border-yellow-200 dark:border-yellow-900/30 text-yellow-700 dark:text-yellow-500 rounded-2xl font-black tracking-tight hover:bg-yellow-100 dark:hover:bg-zinc-800 transition-colors inline-flex items-center justify-center cursor-pointer">
-                    저장하기 (완료)
-                  </button>
-                </div>
+                  <div id="avatar" class="order-1 md:order-2 shrink-0"><span class="text-3xl">💻</span></div>
+                </header>
+                <div id="previewSections"></div>
               </div>
             </div>
-          </section>
-        </div>
-        <br />
+
+            <div class="mt-8 flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-end">
+              <a href="portfolio-update-n-check" class="px-8 py-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 rounded-2xl font-bold hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all text-center">
+                <i class="fa-solid fa-arrow-left mr-2"></i> 이전 단계
+              </a>
+              <button @click="saveStyle" class="px-10 py-4 bg-yellow-400 text-zinc-900 rounded-2xl font-black shadow-lg shadow-yellow-400/30 hover:-translate-y-1 hover:shadow-xl hover:shadow-yellow-400/40 transition-all text-center">
+                저장 및 완료하기 <i class="fa-solid fa-check ml-2"></i>
+              </button>
+            </div>
+          </div>
+        </section>
       </div>
     </main>
   </div>
 </template>
 
 <style scoped>
-.bg-pattern {
-  background-color: #f8fafc;
-}
-
-.dark .bg-pattern {
-  background-color: #18181b;
-}
-
-.radio-card input:checked+label {
-  border-color: rgb(250 204 21);
-  box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.25);
-}
-
-.preview-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.1);
-}
-
-/* 드래그 섹션 리스트 */
-.drag-item {
-  user-select: none;
-}
-
-.drag-item.dragging {
-  opacity: 0.55;
-}
-
 .drag-item.over {
-  outline: 2px dashed rgba(250, 204, 21, 0.9);
+  outline: 2px dashed #facc15;
   outline-offset: 4px;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 </style>

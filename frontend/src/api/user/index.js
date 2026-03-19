@@ -56,4 +56,12 @@ const subscribePush = async (subscription, userIdx) => {
   });
 };
 
-export default { login, signup, profile, checkEmailDuplicate, subscribePush }
+const getMyInfo = async () => {
+  try {
+    const res = await apiFetch(`/user/me`)
+    return res
+  } catch (error) {
+    console.error('내 정보 호출 실패:', error.message)
+  }
+}
+export default { login, signup, profile, checkEmailDuplicate, subscribePush , getMyInfo}

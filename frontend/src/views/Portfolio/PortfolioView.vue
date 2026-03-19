@@ -1,71 +1,81 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import NamecardsFront from '@/components/namecards/NamecardsFront.vue'
 import NamecardsBack from '@/components/namecards/NamecardsBack.vue'
-import { getPortfolioList, deletePortfolio } from '@/api/portfolio/index.js'
+import { getPortfolioList, getUserPortfolioList, deletePortfolio } from '@/api/portfolio/index.js'
 import { useNamecardStore } from '@/stores/namecardStore'
 
+const route = useRoute()
 
 let currentUserId = 1
-// 1. 쿠키 이름으로 값을 가져오는 함수
 const getCookie = (name) => {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
   if (parts.length === 2) return parts.pop().split(';').shift();
 };
 
-const token = getCookie('ATOKEN'); // 쿠키 이름을 입력하세요
+const token = getCookie('ATOKEN'); 
 
 if (token) {
-  // 2. JWT는 [header].[payload].[signature] 구조입니다.
-  // 페이로드 부분(index 1)만 추출합니다.
   const base64Url = token.split('.')[1];
   const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-  
-  // 3. 디코딩 후 JSON 파싱
   const payload = JSON.parse(window.atob(base64));
-  
-  // console.log(payload.idx); // 1001 출력
-  currentUserId=payload.idx;
+  currentUserId = payload.idx;
 }
 
 const store = useNamecardStore()
 const cardData = ref(null)
 const isLoading = ref(true)
 
+const targetUserId = route.query.targetUser || null;
+const isMyPortfolio = computed(() => !targetUserId || targetUserId == currentUserId);
 
 const loadMyCard = async () => {
-  isLoading.value=true
-  const response = await store.getNamecard(currentUserId)
+  isLoading.value = true
+  const fetchId = targetUserId || currentUserId;
+  const response = await store.getNamecard(fetchId)
   if (response){
     cardData.value = response
   }
-
-  isLoading.vaue = false
+  isLoading.value = false
 }
 
 const isFlipped = ref(false)
 const portfolios = ref([])
 
-
 const toggleFlip = () => {
   isFlipped.value = !isFlipped.value
 }
 
-const deletePortfolioHandler = async (idx, originalTitle) => {
-  const inputTitle = prompt(`포트폴리오를 삭제하시려면 '${originalTitle}'을(를) 정확히 입력해주세요.`);
-  if (!inputTitle) return;
+const isDeleteModalOpen = ref(false)
+const portfolioToDelete = ref(null)
+const deleteInputTitle = ref('')
 
-  if (inputTitle !== originalTitle) {
+const openDeleteModal = (portfolio) => {
+  portfolioToDelete.value = portfolio
+  deleteInputTitle.value = ''
+  isDeleteModalOpen.value = true
+}
+
+const closeDeleteModal = () => {
+  isDeleteModalOpen.value = false
+  portfolioToDelete.value = null
+  deleteInputTitle.value = ''
+}
+
+const confirmDelete = async () => {
+  if (deleteInputTitle.value !== portfolioToDelete.value?.title) {
     alert('입력한 제목이 일치하지 않습니다.');
     return;
   }
 
   try {
-    const res = await deletePortfolio(idx, inputTitle);
+    const res = await deletePortfolio(portfolioToDelete.value.idx, deleteInputTitle.value);
     if (res.isSuccess) {
       alert('포트폴리오가 성공적으로 삭제되었습니다.');
-      portfolios.value = portfolios.value.filter(p => p.idx !== idx);
+      portfolios.value = portfolios.value.filter(p => p.idx !== portfolioToDelete.value.idx);
+      closeDeleteModal();
     } else {
       alert('삭제 실패: ' + (res.data || '오류가 발생했습니다.')); 
     }
@@ -76,10 +86,17 @@ const deletePortfolioHandler = async (idx, originalTitle) => {
 }
 
 onMounted(async () => {
+  document.body.style.overflow = ''
+  
   loadMyCard()
 
   try {
-    const res = await getPortfolioList(0, 10)
+    let res;
+    if (targetUserId && targetUserId != currentUserId) {
+      res = await getUserPortfolioList(targetUserId, 0, 10);
+    } else {
+      res = await getPortfolioList(0, 10);
+    }
     
     const fetchedData = res.data?.result || res.result || res.data?.data?.result || []
     
@@ -93,7 +110,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="bg-pattern text-gray-800 dark:text-gray-100 transition-colors duration-300 min-h-screen flex flex-col">
+  <div class="bg-pattern text-gray-800 dark:text-gray-100 transition-colors duration-300 min-h-screen flex flex-col relative">
     <div id="header-placeholder"></div>
 
     <main class="flex-1 w-full max-w-5xl mx-auto px-4 pt-28 pb-20">
@@ -113,7 +130,7 @@ onMounted(async () => {
             </div>
 
             <div class="card-face card-back">
-              <NamecardsBack :cardInfo="cardData" />
+              <NamecardsBack :cardInfo="cardData" :hidePortfolioBtn="!isMyPortfolio" />
             </div>
 
           </div>
@@ -123,7 +140,9 @@ onMounted(async () => {
 
       <section>
         <div class="flex items-center gap-3 mb-8">
-          <h3 class="text-2xl font-bold text-gray-900 dark:text-white">Featured Portfolios</h3>
+          <h3 class="text-2xl font-bold text-gray-900 dark:text-white">
+            {{ isMyPortfolio ? 'My Portfolios' : 'Portfolios' }}
+          </h3>
           <div class="h-px flex-1 bg-gray-200 dark:bg-zinc-800"></div>
         </div>
 
@@ -142,28 +161,31 @@ onMounted(async () => {
                   class="px-4 py-2 bg-white/20 backdrop-blur text-white rounded-full text-sm font-bold border border-white/30 hover:bg-white/40 transition-all text-yellow-300 hover:text-yellow-400 border-yellow-300/30 hover:border-yellow-400">
                   상세 보기
                 </router-link>
-                <router-link :to="{ path: '/portfolio-update-n-check', query: { idx: portfolio.idx } }"
-                  class="px-4 py-2 bg-yellow-400/90 backdrop-blur text-zinc-900 rounded-full text-sm font-bold hover:bg-yellow-400 transition-all border border-yellow-400 shadow-lg">
-                  수정하기
-                </router-link>
-                <button @click.stop="deletePortfolioHandler(portfolio.idx, portfolio.title)"
-                  class="px-3 py-2 bg-red-500/90 backdrop-blur text-white rounded-full text-xs font-bold hover:bg-red-600 transition-all border border-red-500 shadow-lg cursor-pointer">
-                  삭제하기
-                </button>
+                
+                <template v-if="isMyPortfolio">
+                  <router-link :to="{ path: '/portfolio-update-n-check', query: { idx: portfolio.idx } }"
+                    class="px-4 py-2 bg-yellow-400/90 backdrop-blur text-zinc-900 rounded-full text-sm font-bold hover:bg-yellow-400 transition-all border border-yellow-400 shadow-lg">
+                    수정하기
+                  </router-link>
+                  <button @click.stop="openDeleteModal(portfolio)"
+                    class="px-3 py-2 bg-red-500/90 backdrop-blur text-white rounded-full text-xs font-bold hover:bg-red-600 transition-all border border-red-500 shadow-lg cursor-pointer">
+                    삭제하기
+                  </button>
+                </template>
               </div>
             </div>
 
             <div class="p-6">
               <div class="flex justify-between items-start mb-2">
                 <span
-                  class="text-[10px] font-bold text-point-yellow bg-yellow-50 dark:bg-yellow-900/20 px-2 py-1 rounded uppercase tracking-wide">
+                  class="text-[10px] font-bold text-yellow-500 bg-yellow-50 dark:bg-yellow-900/20 px-2 py-1 rounded uppercase tracking-wide">
                   PORTFOLIO
                 </span>
                 <span class="text-xs text-gray-400">{{ portfolio.createdAt }}</span>
               </div>
               
               <h4
-                class="text-lg font-bold text-gray-900 dark:text-white mb-2 group-hover:text-point-yellow transition-colors">
+                class="text-lg font-bold text-gray-900 dark:text-white mb-2 group-hover:text-yellow-500 transition-colors">
                 {{ portfolio.title || '제목 없음' }}
               </h4>
               
@@ -175,6 +197,43 @@ onMounted(async () => {
         </div>
       </section>
     </main>
+
+    <div v-if="isDeleteModalOpen" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all" @click="closeDeleteModal">
+      <div class="bg-white dark:bg-zinc-900 rounded-[2rem] shadow-2xl border border-gray-100 dark:border-zinc-800 w-full max-w-md overflow-hidden transform scale-100 transition-all" @click.stop>
+        <div class="p-6 md:p-8">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-500">
+              <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+            </div>
+            <h3 class="text-xl font-black text-gray-900 dark:text-white tracking-tight">포트폴리오 삭제</h3>
+          </div>
+          
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
+            이 작업은 되돌릴 수 없습니다. 삭제를 하시려면 아래 입력창에 <br>
+            <strong class="text-gray-900 dark:text-white bg-gray-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded font-bold">'{{ portfolioToDelete?.title }}'</strong> 을(를) 정확히 입력해주세요.
+          </p>
+
+          <input 
+            v-model="deleteInputTitle" 
+            type="text" 
+            placeholder="포트폴리오 제목 입력"
+            class="w-full px-4 py-3.5 rounded-xl bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none transition-all text-gray-900 dark:text-white mb-8 font-bold"
+            @keyup.enter="confirmDelete"
+          />
+
+          <div class="flex gap-3">
+            <button @click="closeDeleteModal" class="flex-1 px-4 py-3.5 rounded-xl font-bold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors">
+              취소
+            </button>
+            <button @click="confirmDelete" 
+              :disabled="deleteInputTitle !== portfolioToDelete?.title" 
+              class="flex-1 px-4 py-3.5 rounded-xl font-bold text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-red-500/30">
+              삭제
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 

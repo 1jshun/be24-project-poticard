@@ -10,20 +10,34 @@
           <div class="cardHead">
             <h2 class="cardTitle">요금제</h2>
             <div class="pill">
-              <button type="button" class="pillBtn" :class="{ on: billingCycle === 'monthly' }"
-                @click="billingCycle = 'monthly'">
+              <button
+                type="button"
+                class="pillBtn"
+                :class="{ on: billingCycle === 'monthly' }"
+                @click="billingCycle = 'monthly'"
+              >
                 월간
               </button>
-              <button type="button" class="pillBtn" :class="{ on: billingCycle === 'yearly' }"
-                @click="billingCycle = 'yearly'">
+              <button
+                type="button"
+                class="pillBtn"
+                :class="{ on: billingCycle === 'yearly' }"
+                @click="billingCycle = 'yearly'"
+              >
                 연간 <span class="badge">할인</span>
               </button>
             </div>
           </div>
 
           <div class="plans">
-            <button v-for="p in displayPlans" :key="p.id" type="button" class="plan"
-              :class="{ selected: planId === p.id }" @click="planId = p.id">
+            <button
+              v-for="p in displayPlans"
+              :key="p.id"
+              type="button"
+              class="plan"
+              :class="{ selected: planId === p.id }"
+              @click="planId = p.id"
+            >
               <div class="planTop">
                 <div>
                   <div class="planName">{{ p.name }}</div>
@@ -47,17 +61,12 @@
 
           <div class="field">
             <label class="label">이메일</label>
-            <input class="input" type="email" v-model.trim="email" placeholder="example@poticard.com" />
-          </div>
-
-          <div class="field">
-            <label class="label">결제수단</label>
-            <div class="payMethods">
-              <button v-for="m in payMethods" :key="m.key" type="button" class="payBtn"
-                :class="{ on: payMethod === m.key }" @click="payMethod = m.key">
-                {{ m.label }}
-              </button>
-            </div>
+            <input
+              class="input"
+              type="email"
+              v-model.trim="email"
+              placeholder="example@poticard.com"
+            />
           </div>
 
           <div class="line"></div>
@@ -119,16 +128,9 @@ import ordersApi from '@/api/orders'
 const billingCycle = ref('monthly')
 const planId = ref('')
 const email = ref('')
-const payMethod = ref('card')
 const agreeTerms = ref(false)
 const agreeAutoRenew = ref(false)
-
-const payMethods = [
-  { key: 'card', label: '카드' },
-  { key: 'kakaopay', label: '카카오페이' },
-  { key: 'toss', label: '토스페이' },
-  { key: 'bank', label: '계좌이체' },
-]
+const isPaying = ref(false) 
 
 const plans = ref([])
 
@@ -136,7 +138,7 @@ onMounted(async () => {
   try {
     const data = await planApi.getPlanList()
     console.log('요금제 API 전체 응답:', data)
-    
+
     let planArray = []
     if (Array.isArray(data)) {
       planArray = data
@@ -147,17 +149,16 @@ onMounted(async () => {
     }
 
     if (planArray.length > 0) {
-      plans.value = planArray.map(p => ({
-        id: (p.name || '').toLowerCase(), // 'Basic' -> 'basic'
+      plans.value = planArray.map((p) => ({
+        id: (p.name || '').toLowerCase(), 
         name: p.name,
         monthly: p.monthlyPrice,
         yearly: p.yearlyPrice,
         benefits: p.benefits || [],
-        highlight: (p.name || '').toLowerCase() === 'pro'
+        highlight: (p.name || '').toLowerCase() === 'pro',
       }))
-      
-      // 요금제 기본 선택
-      const defaultPlan = plans.value.find(p => p.id === 'pro') || plans.value[0]
+
+      const defaultPlan = plans.value.find((p) => p.id === 'pro') || plans.value[0]
       if (defaultPlan) planId.value = defaultPlan.id
     } else {
       console.warn('데이터에서 요금제 배열을 찾을 수 없습니다.', data)
@@ -192,11 +193,12 @@ const total = computed(() => {
 
 const canPay = computed(() => {
   const hasEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)
-  return !!selectedPlan.value && hasEmail && agreeTerms.value && agreeAutoRenew.value
+  return !!selectedPlan.value && hasEmail && agreeTerms.value && agreeAutoRenew.value && !isPaying.value
 })
 
 const payButtonText = computed(() => {
   if (!selectedPlan.value) return '요금제를 불러오는 중...'
+  if (isPaying.value) return '결제창을 띄우는 중...'
   return `${formatWon(total.value)} 결제하고 구독 시작`
 })
 
@@ -205,54 +207,58 @@ function formatWon(v) {
   return n.toLocaleString('ko-KR') + '원'
 }
 
-function onPay() {
-  if (!window.IMP) {
-    alert('결제 모듈을 불러올 수 없습니다.');
+async function onPay() {
+  if (!window.PortOne) {
+    alert('포트원 결제 모듈을 불러올 수 없습니다. (스크립트 교체 확인)');
     return;
   }
-  
-  const IMP = window.IMP;
-  
-  // 주의: 'imp71852863'가 본인의 포트원 가맹점 식별코드가 맞는지 확인하세요!
-  IMP.init('imp71852863'); 
 
-  const merchant_uid = `mid_${new Date().getTime()}`;
+  isPaying.value = true;
+  const paymentId = `mid_${new Date().getTime()}`;
 
-  const data = {
-    pg: 'tosspayments', // 변경: 채널명 명시
-    pay_method: 'card', 
-    merchant_uid: merchant_uid,
-    name: `Poticard ${selectedPlan.value.name} 구독`,
-    amount: Number(total.value), // 변경: 확실한 숫자형으로 전달
-    buyer_email: email.value,
-    buyer_name: '테스트유저',     // 추가: 토스페이먼츠 필수값 (이름)
-    buyer_tel: '010-1234-5678', // 추가: 토스페이먼츠 필수값 (전화번호)
-  };
-
-  IMP.request_pay(data, async (response) => {
-    if (response.success) {
-      try {
-        const verifyResult = await ordersApi.verifyPayment({
-          impUid: response.imp_uid,
-          merchantUid: merchant_uid,
-          planCode: planId.value,
-          email: email.value,
-          amount: total.value
-        });
-        
-        if (verifyResult.isSuccess || verifyResult.code === 1000) {
-          alert('결제가 성공적으로 완료되었습니다!');
-          // TODO: 결제 완료 페이지로 이동 로직 추가
-        } else {
-          alert(`결제 검증 실패: ${verifyResult.message || '금액이 일치하지 않습니다.'}`);
-        }
-      } catch (error) {
-        alert('백엔드 서버와 통신 중 오류가 발생했습니다.');
+  try {
+    const response = await window.PortOne.requestPayment({
+      storeId: "store-9f76cf8e-f930-4d15-bde0-2a89967613fc",
+      channelKey: "channel-key-3d557ee7-31ae-4b5d-a7bc-32241dd1c3ef",
+      paymentId: paymentId,
+      orderName: `Poticard ${selectedPlan.value.name} 구독`,
+      totalAmount: Number(total.value),
+      currency: "CURRENCY_KRW",
+      payMethod: "CARD", // 복잡한 조건문 제거하고 기본 CARD로 하드코딩
+      customer: {
+        email: email.value,
+        fullName: "테스트유저",
+        phoneNumber: "010-1234-5678",
       }
-    } else {
-      alert(`결제 실패: ${response.error_msg}`);
+    });
+
+    isPaying.value = false;
+
+    if (response.code != null) {
+      console.error("🚨 포트원 V2 결제 실패:", response);
+      return alert(`결제 실패 [${response.code}]: ${response.message}`);
     }
-  });
+
+    const verifyResult = await ordersApi.verifyPayment({
+      paymentId: response.paymentId, 
+      merchantUid: paymentId,
+      planCode: planId.value,
+      email: email.value,
+      amount: total.value,
+    });
+
+    if (verifyResult.isSuccess || verifyResult.code === 1000) {
+      alert('결제가 성공적으로 완료되었습니다!');
+      window.location.href = '/'; 
+    } else {
+      alert(`결제 검증 실패: ${verifyResult.message || '금액 위변조가 의심됩니다.'}`);
+    }
+
+  } catch (error) {
+    isPaying.value = false;
+    console.error("결제 프로세스 에러:", error);
+    alert('결제 모듈 실행 중 오류가 발생했습니다.');
+  }
 }
 </script>
 
@@ -362,7 +368,10 @@ function onPay() {
   padding: 16px;
   background: #fff;
   cursor: pointer;
-  transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+  transition:
+    transform 0.12s ease,
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
 }
 
 .plan:hover {
@@ -453,29 +462,6 @@ function onPay() {
 .input:focus {
   border-color: #111827;
   box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.08);
-}
-
-.payMethods {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.payBtn {
-  border: 1px solid #e5e7eb;
-  background: #fff;
-  padding: 10px 12px;
-  border-radius: 12px;
-  cursor: pointer;
-  font-weight: 900;
-  font-size: 12px;
-  color: #374151;
-}
-
-.payBtn.on {
-  border-color: #111827;
-  background: #111827;
-  color: #fff;
 }
 
 .hint {

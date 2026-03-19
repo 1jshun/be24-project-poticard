@@ -1,29 +1,82 @@
 <script setup>
 import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import MiniNamecards from '@/components/namecards/MiniNamecards.vue'
 import NamecardsFront from '@/components/namecards/NamecardsFront.vue'
 import NamecardsBack from '@/components/namecards/NamecardsBack.vue'
 import { namecardListStore } from '@/stores/namecardListStore.js'
+import useAuthStore from '@/stores/useAuthStore'
+import api from '@/api/user/index.js'
+import matchingApi from '@/api/matching'
 
-const pageOfToday = 45;
+const router = useRouter()
+
+const getUserInfo = async () => {
+  const authStore = useAuthStore()
+  try {
+    const res = await api.getMyInfo()
+    console.log(res.data)
+    authStore.login(res.data)
+    return res
+  } catch (error) {
+    console.error(error.message)
+  }
+}
+
+const pageOfToday = 45
 
 const store = namecardListStore()
 
 const cardList = ref([])
 const isLoading = ref(true)
 
-const loadMyCardList = async () => {
-  isLoading.value=true
-  const response = await store.namecardList(pageOfToday,10)
+const recommendJobs = ref([])
+const recommendLoading = ref(false)
 
-  if (response){
+const loadMyCardList = async () => {
+  isLoading.value = true
+  const response = await store.namecardList(pageOfToday, 10)
+
+  if (response) {
     cardList.value = response.namecardList
   }
   isLoading.value = false
 }
 
-onMounted(()=>{
+const loadRecommendations = async () => {
+  recommendLoading.value = true
+  try {
+    recommendJobs.value = await matchingApi.recommend(4)
+  } catch (error) {
+    console.error(error.message)
+    recommendJobs.value = []
+  } finally {
+    recommendLoading.value = false
+  }
+}
+
+const toggleJobFavorite = async (job) => {
+  try {
+    const res = await matchingApi.toggleFavorite(job.id)
+    const result = res?.data || {}
+    job.isFavorite = Boolean(result.favorite)
+    job.likes = Number(result.favoriteCount ?? job.likes)
+  } catch (error) {
+    alert(error.message || '즐겨찾기 처리에 실패했습니다.')
+  }
+}
+
+const goRecommendDetail = (jobId) => {
+  router.push({
+    path: '/matching',
+    query: { jobId: String(jobId) },
+  })
+}
+
+onMounted(() => {
   loadMyCardList()
+  getUserInfo()
+  loadRecommendations()
 })
 
 // 45부터 55까지 숫자가 담긴 배열 생성
@@ -102,12 +155,17 @@ const getMiniCardStyle = (idx) => {
 
           <div class="flex-1 relative flex items-center justify-center" @wheel.prevent="handleScroll">
             <div class="stack-wrapper">
-              <div v-for="(card, idx) in cardList" :key="card.idx"
-                class="mini-card-container transition-all duration-700 ease-out" :style="getMiniCardStyle(idx)">
-                <div class="w-full h-full rounded-2xl overflow-hidden transition-all"
-                  :class="{ 'ring-4 ring-yellow-400': idx === selectedIdx }">
-                   <MiniNamecards
-                   :cardInfo="card" />
+              <div
+                v-for="(card, idx) in cardList"
+                :key="card.idx"
+                class="mini-card-container transition-all duration-700 ease-out"
+                :style="getMiniCardStyle(idx)"
+              >
+                <div
+                  class="w-full h-full rounded-2xl overflow-hidden transition-all"
+                  :class="{ 'ring-4 ring-yellow-400': idx === selectedIdx }"
+                >
+                  <MiniNamecards :cardInfo="card" />
                 </div>
               </div>
             </div>
@@ -119,21 +177,22 @@ const getMiniCardStyle = (idx) => {
             class="col-span-5 bg-white rounded-[2.5rem] border border-slate-200 p-8 flex flex-col items-center justify-center relative h-[480px] shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
             <div class="absolute top-8">
               <span
-                class="text-[10px] font-black bg-slate-50 border border-slate-100 shadow-sm text-gray-400 px-5 py-2 rounded-full uppercase tracking-[0.3em]">Business
-                Card View</span>
+                class="text-[10px] font-black bg-slate-50 border border-slate-100 shadow-sm text-gray-400 px-5 py-2 rounded-full uppercase tracking-[0.3em]">
+                Business Card View
+              </span>
             </div>
             <transition name="card-switch" mode="out-in">
-
-              <div :key="selectedIdx"
+              <div
+                :key="selectedIdx"
                 class="perspective-container relative w-full max-w-md aspect-[1.58/1] cursor-pointer"
-                @click="isFlipped = !isFlipped">
+                @click="isFlipped = !isFlipped"
+              >
                 <div
                   class="card-object w-full h-full relative shadow-[0_20px_50px_rgba(0,0,0,0.1)] rounded-2xl duration-700"
-                  :class="{ 'is-flipped': isFlipped }">
-
+                  :class="{ 'is-flipped': isFlipped }"
+                >
                   <div class="card-face card-front">
                     <NamecardsFront :cardInfo="cardList[selectedIdx]" />
-                    
 
                     <div class="absolute bottom-4 right-4 z-20 text-xs text-gray-400 animate-pulse pointer-events-none">
                       Click to flip <i class="fa-solid fa-rotate ml-1"></i>
@@ -155,7 +214,9 @@ const getMiniCardStyle = (idx) => {
             <div class="absolute -top-10 -right-10 w-40 h-40 bg-yellow-400/10 rounded-full blur-3xl"></div>
             <div>
               <span
-                class="text-[10px] font-black border border-white/20 px-4 py-1.5 rounded-full uppercase tracking-widest text-white/50">Ad</span>
+                class="text-[10px] font-black border border-white/20 px-4 py-1.5 rounded-full uppercase tracking-widest text-white/50">
+                Ad
+              </span>
               <h4 class="text-2xl font-black mt-6 leading-tight">
                 나를 위한<br /><span class="text-yellow-400">완벽한</span> 명함
               </h4>
@@ -178,7 +239,9 @@ const getMiniCardStyle = (idx) => {
               </button>
             </div>
             <div class="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-50">
-              <div v-for="i in 3" :key="i"
+              <div
+                v-for="i in 3"
+                :key="i"
                 class="p-4 flex items-center justify-between bg-white hover:bg-slate-50 transition cursor-pointer">
                 <div class="flex items-center gap-4">
                   <span class="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-sm"></span>
@@ -190,27 +253,45 @@ const getMiniCardStyle = (idx) => {
           </div>
         </div>
       </div>
+
       <div class="mt-16 space-y-6">
         <h3 class="text-2xl font-black px-2 text-slate-800">회원님을 위한 추천 공고</h3>
+
         <div class="grid grid-cols-4 gap-6">
-          <div v-for="job in [
-            { title: 'UI/UX 디자이너 채용', company: '잡코리아 테크랩스' },
-            { title: '브랜드 디자이너', company: '포티카드 스튜디오' },
-            { title: '프로덕트 디자이너', company: '토스팀' },
-            { title: '콘텐츠 디자이너', company: '라인 플러스' },
-          ]" :key="job.title"
-            class="bg-white p-7 rounded-[2rem] border border-slate-200 hover:border-yellow-400 hover:shadow-xl transition-all cursor-pointer shadow-sm group">
+          <div
+            v-for="job in recommendJobs"
+            :key="job.id"
+            @click="goRecommendDetail(job.id)"
+            class="bg-white p-7 rounded-[2rem] border border-slate-200 hover:border-yellow-400 hover:shadow-xl transition-all cursor-pointer shadow-sm group"
+          >
             <div class="flex justify-between mb-4">
               <span
-                class="text-[10px] font-black text-yellow-600 bg-yellow-50 px-3 py-1 rounded-md border border-yellow-100">HOT</span>
-              <i class="fa-regular fa-bookmark text-slate-300 group-hover:text-yellow-400"></i>
+                class="text-[10px] font-black text-yellow-600 bg-yellow-50 px-3 py-1 rounded-md border border-yellow-100">
+                HOT
+              </span>
+              <button type="button" @click.stop="toggleJobFavorite(job)">
+                <i
+                  :class="job.isFavorite
+                    ? 'fa-solid fa-bookmark text-yellow-400'
+                    : 'fa-regular fa-bookmark text-slate-300 group-hover:text-yellow-400'"
+                ></i>
+              </button>
             </div>
 
             <h4 class="font-bold text-slate-800 line-clamp-1 group-hover:text-yellow-600">
-              {{ job.title }}
+              {{ job.role }}
             </h4>
-            <p class="text-xs text-slate-400 mt-1 font-medium">{{ job.company }}</p>
+            <p class="text-xs text-slate-400 mt-1 font-medium">{{ job.name }}</p>
+
+            <div class="mt-4 text-[11px] text-slate-400 font-bold flex items-center justify-between">
+              <span>❤ {{ job.likes }}</span>
+              <span>👁 {{ job.views }}</span>
+            </div>
           </div>
+        </div>
+
+        <div v-if="!recommendLoading && recommendJobs.length === 0" class="px-2 text-sm font-bold text-slate-400">
+          아직 추천 공고가 없습니다.
         </div>
       </div>
     </div>
@@ -268,41 +349,5 @@ const getMiniCardStyle = (idx) => {
 .card-switch-leave-to {
   opacity: 0;
   transform: translateY(-15px);
-}
-
-/* 3D 플립 애니메이션 필수 스타일 */
-.perspective-container {
-  perspective: 1000px;
-}
-
-.card-object {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  transition: transform 0.7s cubic-bezier(0.4, 0.2, 0.2, 1);
-  transform-style: preserve-3d;
-}
-
-.card-object.is-flipped {
-  transform: rotateY(180deg);
-}
-
-.card-face {
-  position: absolute;
-  inset: 0;
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
-  border-radius: 1rem;
-  overflow: hidden;
-}
-
-.card-front {
-  transform: rotateY(0deg);
-  z-index: 2;
-}
-
-.card-back {
-  transform: rotateY(180deg);
-  z-index: 1;
 }
 </style>

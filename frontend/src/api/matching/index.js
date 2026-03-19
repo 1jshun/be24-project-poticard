@@ -1,66 +1,47 @@
-const BASE = '/json/matching'
-const FILES = ['match1.json', 'match2.json', 'match3.json']
+import { apiFetch } from '@/plugins/interceptor'
 
-const normalize = (raw) => ({
-  id: raw?.id ?? 0,
-  name: raw?.name ?? '',
-  role: raw?.role ?? '',
-  category: raw?.category ?? 'ALL',
-  location: raw?.location ?? '',
-  exp: raw?.exp ?? '',
-  skills: Array.isArray(raw?.skills) ? raw.skills : [],
-  badges: Array.isArray(raw?.badges) ? raw.badges : [],
-  likes: Number(raw?.likes) || 0,
-  views: Number(raw?.views) || 0,
-  updatedAt: raw?.updatedAt ?? '',
+const normalize = (raw = {}) => ({
+  id: raw.idx,
+  name: raw.companyName || '',
+  role: raw.title || '',
+  category: raw.category || 'ALL',
+  location: raw.location || '',
+  exp: raw.experience || '',
+  skills: Array.isArray(raw.skills) ? raw.skills : [],
+  likes: Number(raw.favoriteCount ?? 0),
+  views: Number(raw.viewCount ?? 0),
+  updatedAt: raw.updatedAt || '',
+  isFavorite: Boolean(raw.favorite),
+  remotePossible: Boolean(raw.remotePossible),
+  detail: raw,
 })
 
-async function fetchJson(path) {
-  const url = `${path}${path.includes('?') ? '&' : '?'}t=${Date.now()}`
-
-  const res = await fetch(url, {
-    method: 'GET',
-    headers: { Accept: 'application/json' },
-    cache: 'no-store',
+const list = async ({ keyword = '', category = 'ALL', favoriteOnly = false, sort = 'popular' } = {}) => {
+  const query = new URLSearchParams({
+    keyword,
+    category,
+    favoriteOnly: String(favoriteOnly),
+    sort,
   })
 
-  if (res.status === 404) return null
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    throw new Error(text ? `[${res.status}] ${text}` : `[${res.status}] ${res.statusText}`)
-  }
-
-  return await res.json()
-}
-
-const list = async () => {
-  try {
-    const data = await fetchJson(`${BASE}/list.json`)
-    if (data) {
-      const arr = Array.isArray(data)
-        ? data
-        : Array.isArray(data?.companies)
-          ? data.companies
-          : null
-      if (arr) return arr.map(normalize)
-    }
-  } catch (e) {}
-
-  const results = await Promise.allSettled(FILES.map((f) => fetchJson(`${BASE}/${f}`)))
-
-  const merged = results
-    .filter((r) => r.status === 'fulfilled' && r.value)
-    .map((r) => r.value)
-    .map(normalize)
-    .sort((a, b) => (a.id || 0) - (b.id || 0))
-
-  return merged
+  const res = await apiFetch(`/company/public/list?${query.toString()}`)
+  return Array.isArray(res?.data) ? res.data.map(normalize) : []
 }
 
 const detail = async (id) => {
-  const all = await list()
-  return all.find((x) => String(x.id) === String(id)) || null
+  const res = await apiFetch(`/company/public/read/${id}`)
+  return normalize(res?.data || {})
 }
 
-export default { list, detail }
+const toggleFavorite = async (id) => {
+  return await apiFetch(`/company/public/favorite/${id}`, {
+    method: 'PATCH',
+  })
+}
+
+const recommend = async (size = 4) => {
+  const res = await apiFetch(`/company/public/recommend?size=${size}`)
+  return Array.isArray(res?.data) ? res.data.map(normalize) : []
+}
+
+export default { list, detail, toggleFavorite, recommend }
