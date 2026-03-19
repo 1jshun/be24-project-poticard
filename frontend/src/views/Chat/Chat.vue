@@ -81,8 +81,8 @@ const getIdxFromJwtCookie = (cookieName) => {
 }
 
 // userId 변수에 저장
-const myUserId = getIdxFromJwtCookie('ATOKEN')
 const userInfoString = localStorage.getItem('USERINFO')
+const myUserId = userInfoString ? JSON.parse(userInfoString).idx : null
 const myUserEmail = userInfoString ? JSON.parse(userInfoString).email : null
 
 /* 계산된 속성 */
