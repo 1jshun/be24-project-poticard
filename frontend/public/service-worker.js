@@ -32,6 +32,7 @@ self.addEventListener('push', (event) => {
     data: {
       url: '/chat',
       roomIdx: payload.roomIdx,
+      senderIdx: payload.senderIdx ?? payload.senderId,
     },
   }
 
@@ -48,6 +49,7 @@ self.addEventListener('push', (event) => {
             senderIdx: payload.senderIdx,
             senderEmail: payload.senderEmail,
             senderName: payload.senderName,
+            senderProfileImage: payload.senderProfileImage,
             contents: payload.contents,
             contentsTime: payload.contentsTime,
           },
