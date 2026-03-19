@@ -50,36 +50,6 @@ const getChatRoomList = async () => {
   }
 }
 
-// Cookie에서 사용자 ID 가져오기
-const getIdxFromJwtCookie = (cookieName) => {
-  const value = `; ${document.cookie}`
-  const parts = value.split(`; ${cookieName}=`)
-  if (parts.length === 2) {
-    const token = parts.pop().split(';').shift()
-    if (!token) return null
-
-    try {
-      const base64Url = token.split('.')[1]
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
-      const payload = JSON.parse(
-        decodeURIComponent(
-          atob(base64)
-            .split('')
-            .map(function (c) {
-              return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
-            })
-            .join(''),
-        ),
-      )
-      return payload.idx
-    } catch (e) {
-      console.error('JWT 파싱 실패:', e)
-      return null
-    }
-  }
-  return null
-}
-
 // userId 변수에 저장
 const userInfoString = localStorage.getItem('USERINFO')
 const myUserId = userInfoString ? JSON.parse(userInfoString).idx : null
@@ -98,6 +68,7 @@ const filteredRooms = computed(() => {
 
 const activeRoom = computed(() => rooms.find((r) => r.id === activeRoomId.value))
 const currentMessages = computed(() => messagesByRoom.value[activeRoomId.value] || [])
+const isOpponentLeft = computed(() => !!activeRoom.value?.opponentLeft)
 
 /*  로직 */
 const scrollBottom = async () => {
@@ -107,7 +78,7 @@ const scrollBottom = async () => {
   }
 }
 
-const wsConnect = (roomId) => {
+const wsConnect = (roomId, onConnected) => {
   const socket = new SockJS('/ws')
   stompClient = Stomp.over(socket)
   stompClient.debug = null
@@ -116,6 +87,7 @@ const wsConnect = (roomId) => {
     // 채팅방 구독: /sub/chat/room/{roomId}
     stompClient.subscribe(`/sub/chat/room/${roomId}`, (tick) => {
       const recv = JSON.parse(tick.body)
+      console.log(recv)
 
       // 읽음 처리 이벤트: 상대가 채팅방 입장 시 백엔드가 전송. 해당 방의 내 메시지를 모두 읽음으로 갱신
       if (recv.type === 'READ_RECEIPT') {
@@ -129,7 +101,26 @@ const wsConnect = (roomId) => {
         return
       }
 
-      // 일반 메시지: 백엔드 응답 형식 { idx, roomIdx, senderIdx, senderName, contents, isRead, createdAt, updatedAt }
+      // 입장/퇴장 시스템 메시지: contentsType으로 전달 (백엔드 getTypeMsg 결과가 contents에 담김)
+      const contentsType = recv.contentsType ?? recv.type
+      if (contentsType === 'USER_ENTER' || contentsType === 'USER_LEFT') {
+        const roomIdx = Number(recv.roomIdx)
+        const text = recv.contents ?? (contentsType === 'USER_LEFT' ? '상대방이 나갔습니다.' : '상대방이 입장하셨습니다.')
+        if (!messagesByRoom.value[roomIdx]) messagesByRoom.value[roomIdx] = []
+        messagesByRoom.value[roomIdx].push({
+          who: 'system',
+          text,
+          messageId: recv.idx ? `sys-${recv.idx}` : `sys-${roomIdx}-${Date.now()}`,
+        })
+        if (contentsType === 'USER_LEFT') {
+          const r = rooms.find((x) => x.id === roomIdx)
+          if (r) r.opponentLeft = true
+        }
+        if (roomIdx === activeRoomId.value) scrollBottom()
+        return
+      }
+
+      // 일반 메시지: 백엔드 응답 형식 { idx, roomIdx, senderIdx, senderName, contents, contentsType, isRead, createdAt, updatedAt }
       const receivedRoomId = Number(recv.roomIdx)
       const isMe = Number(recv.senderIdx) === Number(myUserId)
 
@@ -158,6 +149,7 @@ const wsConnect = (roomId) => {
         scrollBottom()
       }
     })
+    onConnected?.()
   })
 }
 
@@ -221,8 +213,16 @@ const formatMessageTime = (dateString) => {
   return `${ampm} ${displayHours}:${String(minutes).padStart(2, '0')}`
 }
 
-// 메시지 DTO → 포맷 변환
+// 메시지 DTO → 포맷 변환 (contentsType: TEXT, IMAGE, DOC, USER_ENTER, USER_LEFT)
 const formatMessage = (msg) => {
+  const contentsType = msg.contentsType ?? msg.type
+  if (contentsType === 'USER_ENTER' || contentsType === 'USER_LEFT') {
+    return {
+      who: 'system',
+      text: msg.contents ?? (contentsType === 'USER_LEFT' ? '상대방이 나갔습니다.' : '상대방이 입장하셨습니다.'),
+      messageId: msg.idx ? `sys-${msg.idx}` : undefined,
+    }
+  }
   const isMe = Number(msg.senderIdx) === Number(myUserId)
   const isRead = msg.isRead ?? msg.read ?? false
   return {
@@ -243,6 +243,15 @@ const loadChatMessages = async (roomId, page = 0) => {
     // 백엔드: createdAt DESC (최신순) → 채팅 UI는 과거→최신 순 필요
     const rawMessages = Array.isArray(res?.data?.content) ? [...res.data.content].reverse() : []
     const formattedMessages = rawMessages.map(formatMessage)
+
+    // 메시지 히스토리에 USER_LEFT가 있으면 opponentLeft 상태 반영
+    const hasUserLeft = rawMessages.some(
+      (m) => (m.contentsType ?? m.type) === 'USER_LEFT',
+    )
+    if (hasUserLeft) {
+      const r = rooms.find((x) => x.id === roomId)
+      if (r) r.opponentLeft = true
+    }
 
     const hasNext = res?.data?.hasNext ?? true
 
@@ -315,6 +324,8 @@ const leaveChat = async () => {
 
   const roomIdx = activeRoomId.value
   try {
+    // 퇴장 메시지 전송 (백엔드가 브로드캐스트 후 leave API 호출)
+    sendChatMessage('USER_LEFT', roomIdx, '')
     await chatApi.leaveChatRoom(roomIdx)
     // WebSocket 연결 종료
     if (stompClient && stompClient.connected) {
@@ -336,18 +347,21 @@ const leaveChat = async () => {
   }
 }
 
+// ContentsType: TEXT, IMAGE, DOC, USER_LEFT, USER_ENTER
+const sendChatMessage = (type, roomIdx, contents = '') => {
+  if (!stompClient?.connected) return
+  const message = { type, roomIdx, contents }
+  stompClient.send('/pub/chat/message', {}, JSON.stringify(message))
+}
+
 const sendMessage = () => {
   const text = messageInput.value.trim()
   if (!activeRoomId.value) return alert('채팅방을 먼저 선택해주세요!')
+  if (isOpponentLeft.value) return
   if (!text) return
 
   try {
-    const message = {
-      roomIdx: activeRoomId.value,
-      contents: text,
-    }
-    console.log('메시지 전송:', message)
-    stompClient.send('/pub/chat/message', {}, JSON.stringify(message))
+    sendChatMessage('TEXT', activeRoomId.value, text)
     messageInput.value = ''
     nextTick(() => autosize())
   } catch (error) {
@@ -362,6 +376,7 @@ const autosize = () => {
   el.style.height = 'auto'
   el.style.height = Math.min(el.scrollHeight, 150) + 'px'
 }
+const adjustTextareaHeight = autosize
 
 const quickReply = (text) => {
   messageInput.value = text
@@ -414,6 +429,7 @@ const getFileIcon = (file) => {
 
 /* 통합 전송 핸들러 */
 const handleSend = async () => {
+  if (isOpponentLeft.value) return
   // 1. 파일이 있는 경우 파일 업로드 먼저 수행
   if (selectedFiles.value.length > 0) {
     try {
@@ -879,9 +895,19 @@ onUnmounted(() => {
             <div
               v-for="(m, idx) in currentMessages"
               :key="m.messageId ?? idx"
-              :class="['flex w-full', m.who === 'me' ? 'justify-end' : 'justify-start']"
+              :class="[
+                'flex w-full',
+                m.who === 'system' ? 'justify-center' : m.who === 'me' ? 'justify-end' : 'justify-start',
+              ]"
             >
               <div
+                v-if="m.who === 'system'"
+                class="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-medium"
+              >
+                {{ m.text }}
+              </div>
+              <div
+                v-else
                 :class="['max-w-[75%] flex flex-col', m.who === 'me' ? 'items-end' : 'items-start']"
               >
                 <div :class="['bubble', m.who === 'me' ? 'bubble-me' : 'bubble-them']">
@@ -922,7 +948,10 @@ onUnmounted(() => {
                     </div>
                   </div>
                 </div>
-                <span class="text-[10px] mt-1.5 text-slate-400 font-bold px-1 uppercase">
+                <span
+                  v-if="m.who !== 'system'"
+                  class="text-[10px] mt-1.5 text-slate-400 font-bold px-1 uppercase"
+                >
                   {{ m.time }}
                   <template v-if="m.who === 'me'"> · {{ m.isRead ? '읽음' : '안읽음' }} </template>
                 </span>
@@ -933,7 +962,10 @@ onUnmounted(() => {
           <div
             class="p-5 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 shrink-0"
           >
-            <div class="flex gap-2 mb-4 overflow-x-auto pb-2 no-scrollbar">
+            <div
+              v-if="!isOpponentLeft"
+              class="flex gap-2 mb-4 overflow-x-auto pb-2 no-scrollbar"
+            >
               <button @click="quickReply('안녕하세요! 반갑습니다 👋')" class="btn-tag">
                 👋 인사
               </button>
@@ -948,9 +980,15 @@ onUnmounted(() => {
               </button>
               <button @click="quickReply('감사합니다!')" class="btn-tag">🙏 감사</button>
             </div>
+            <p
+              v-else
+              class="mb-4 text-sm text-slate-500 dark:text-slate-400 text-center"
+            >
+              상대방이 나갔으므로 채팅을 입력할 수 없습니다.
+            </p>
 
             <div
-              v-if="selectedFiles.length > 0"
+              v-if="selectedFiles.length > 0 && !isOpponentLeft"
               class="flex flex-wrap gap-2 mb-2 p-2 bg-slate-100 dark:bg-slate-800/80 rounded-xl border border-dashed border-slate-300 dark:border-slate-600"
             >
               <div v-for="(file, index) in selectedFiles" :key="index" class="relative group">
@@ -967,11 +1005,16 @@ onUnmounted(() => {
             </div>
 
             <div
-              class="flex items-end gap-3 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-2xl border border-slate-200 dark:border-slate-700/50 focus-within:border-amber-400 transition-all"
+              :class="[
+                'flex items-end gap-3 p-2 rounded-2xl border transition-all',
+                isOpponentLeft
+                  ? 'bg-slate-100 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/50 opacity-75'
+                  : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700/50 focus-within:border-amber-400',
+              ]"
             >
-              <div class="flex items-center">
+              <div v-if="!isOpponentLeft" class="flex items-center">
                 <button
-                  @click="$refs.docInput.click()"
+                  @click="$refs.docInput?.click()"
                   class="w-10 h-10 flex-shrink-0 flex items-center justify-center text-slate-400 hover:text-blue-500 transition-colors"
                   title="문서 추가"
                 >
@@ -979,7 +1022,7 @@ onUnmounted(() => {
                 </button>
                 <div class="w-[1px] h-4 bg-slate-300 dark:bg-slate-600 mx-0.5"></div>
                 <button
-                  @click="$refs.imageInput.click()"
+                  @click="$refs.imageInput?.click()"
                   class="w-10 h-10 flex-shrink-0 flex items-center justify-center text-slate-400 hover:text-amber-500 transition-colors"
                   title="이미지 추가"
                 >
@@ -1007,16 +1050,20 @@ onUnmounted(() => {
               <textarea
                 ref="textareaRef"
                 v-model="messageInput"
+                :disabled="isOpponentLeft"
                 @input="adjustTextareaHeight"
                 @keydown.enter.prevent="handleSend"
                 rows="1"
-                class="flex-1 bg-transparent border-none focus:ring-0 text-sm py-2.5 resize-none max-h-32 dark:text-slate-200 outline-none"
-                placeholder="메시지를 입력하세요..."
+                class="flex-1 bg-transparent border-none focus:ring-0 text-sm py-2.5 resize-none max-h-32 dark:text-slate-200 outline-none disabled:cursor-not-allowed disabled:opacity-70"
+                :placeholder="
+                  isOpponentLeft ? '상대방이 나갔으므로 채팅을 입력할 수 없습니다.' : '메시지를 입력하세요...'
+                "
               ></textarea>
 
               <button
                 @click="handleSend"
-                class="w-10 h-10 flex-shrink-0 bg-amber-400 hover:bg-amber-500 rounded-xl flex items-center justify-center text-amber-950 transition-all active:scale-95 shadow-sm"
+                :disabled="isOpponentLeft"
+                class="w-10 h-10 flex-shrink-0 bg-amber-400 hover:bg-amber-500 rounded-xl flex items-center justify-center text-amber-950 transition-all active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-amber-400"
               >
                 <i class="fa-solid fa-paper-plane"></i>
               </button>

@@ -13,6 +13,7 @@ const mapRoom = (room) => ({
   unread: room.unreadCount ?? room.unread ?? 0,
   tags: room.tags || [],
   intro: room.intro || '',
+  opponentLeft: !!room.opponentLeft,
 })
 
 // 채팅방 목록 - Slice<ChatRoomDto.ListRes> 응답
