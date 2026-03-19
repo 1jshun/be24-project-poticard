@@ -1,7 +1,8 @@
 <script setup>
 import { onMounted, ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { updateStyle, getPortfolioSections } from '@/api/portfolio/index.js'
+// ✨ 1. API 함수 변경: 전체 데이터를 가져오는 getProjectDetail 사용
+import { updateStyle, getProjectDetail } from '@/api/portfolio/index.js'
 
 import ThemeSelector from '@/components/portfolio/ThemeSelector.vue'
 import LayoutSelector from '@/components/portfolio/LayoutSelector.vue'
@@ -11,9 +12,18 @@ const route = useRoute()
 
 const theme = ref('minimal')
 const layout = ref('single')
-const accent = ref('amber') // UI는 제거되었으나 미리보기 렌더링 유지용
-const font = ref('sans') // UI는 제거되었으나 미리보기 렌더링 유지용
+const accent = ref('amber')
+const font = ref('sans')
 const sections = ref([])
+
+// ✨ 2. 포트폴리오 기본 데이터 및 초기 섹션 상태를 담을 변수 추가
+const portfolioData = ref({
+  title: '',
+  role: '',
+  keywords: [],
+  Image: ''
+})
+const initialSections = ref([]) // 초기화 버튼을 위해 원래 DB 상태를 보관하는 곳
 
 const portfolioIdx = route.query.idx || 1; 
 
@@ -25,23 +35,32 @@ const defaultSections = [
 
 onMounted(async () => {
   try {
-    const res = await getPortfolioSections(portfolioIdx);
-    const fetchedData = res.data; 
+    // ✨ 3. 포트폴리오 데이터와 섹션을 한 번에 조회
+    const res = await getProjectDetail(portfolioIdx);
+    const fetchedData = res.data?.result || res.data; // BaseResponse 형태에 맞게 분기
     
-    if (Array.isArray(fetchedData) && fetchedData.length > 0) {
-      sections.value = fetchedData.map((sec, index) => ({
-        id: sec.idx, 
-        title: sec.sectionTitle || `SECTION ${index + 1}`, 
-        icon: '📌', 
-        visible: sec.visible !== false, 
-        kind: 'detail', 
-        content: sec.contents || '내용이 없습니다.' 
-      }));
-    } else {
-      sections.value = JSON.parse(JSON.stringify(defaultSections));
+    if (fetchedData) {
+      portfolioData.value = fetchedData; // 화면에 뿌려줄 기본 정보 저장
+
+      if (Array.isArray(fetchedData.sectionList) && fetchedData.sectionList.length > 0) {
+        sections.value = fetchedData.sectionList.map((sec, index) => ({
+          id: sec.idx, 
+          title: sec.sectionTitle || `SECTION ${index + 1}`, 
+          icon: '📌', 
+          visible: sec.visible !== false, // 백엔드의 isVisible 변수 매핑
+          kind: 'detail', 
+          content: sec.contents || '내용이 없습니다.' 
+        }));
+        // ✨ 4. 성공적으로 불러온 데이터를 깊은 복사하여 보관 (초기화용)
+        initialSections.value = JSON.parse(JSON.stringify(sections.value));
+      } else {
+        sections.value = JSON.parse(JSON.stringify(defaultSections));
+        initialSections.value = JSON.parse(JSON.stringify(defaultSections));
+      }
     }
   } catch (error) {
     sections.value = JSON.parse(JSON.stringify(defaultSections)); 
+    initialSections.value = JSON.parse(JSON.stringify(defaultSections));
   }
 
   renderList()
@@ -52,12 +71,14 @@ watch([theme, layout], () => {
   renderPreview()
 })
 
+// ✨ 5. 초기화 기능 수정: 더미데이터가 아닌 initialSections(오리지널 DB)로 복구
 const resetSections = () => {
-  sections.value = JSON.parse(JSON.stringify(defaultSections))
+  sections.value = JSON.parse(JSON.stringify(initialSections.value))
   renderList()
   renderPreview()
 }
 
+// ✨ 6. 저장 시 isVisible 필드 백엔드 DTO에 맞게 전송
 const saveStyle = async () => {
   const styleData = {
     theme: theme.value,
@@ -65,7 +86,7 @@ const saveStyle = async () => {
     sectionList: sections.value.map((s, index) => ({
       idx: s.id, 
       sectionOrder: index + 1,
-      visible: s.visible
+      visible: s.visible // boolean isVisible 매핑
     }))
   };
 
@@ -88,34 +109,20 @@ const accentMap = {
 
 function getThemeClasses() {
   switch(theme.value) {
-    case 'notion': 
-      return { wrapperBg: 'bg-white dark:bg-[#191919]', card: 'bg-white dark:bg-[#191919] text-zinc-900 dark:text-zinc-100 border-none shadow-none', section: 'bg-transparent py-6 border-b border-zinc-100 dark:border-zinc-800/60 last:border-0 rounded-none p-0', avatar: 'rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm' }
-    case 'bento': 
-      return { wrapperBg: 'bg-[#f5f5f7] dark:bg-black', card: 'bg-[#f5f5f7] dark:bg-black text-zinc-900 dark:text-zinc-100 border-none shadow-none', section: 'bg-white dark:bg-zinc-900/80 rounded-[2rem] p-8 shadow-sm border border-black/5 dark:border-white/5', avatar: 'rounded-full border-4 border-white dark:border-zinc-800 shadow-lg' }
-    case 'saas': 
-      return { wrapperBg: 'bg-[#0a0a0a]', card: 'bg-[#0a0a0a] text-zinc-100 border border-zinc-800/60 rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.3)]', section: 'bg-zinc-900/40 rounded-2xl p-6 border border-zinc-800/50 hover:border-zinc-700 transition-colors', avatar: 'rounded-2xl border border-zinc-800' }
-    case 'terminal':
-      return { wrapperBg: 'bg-zinc-900 dark:bg-zinc-950', card: 'bg-black text-green-500 font-mono border border-green-500/30 rounded-lg shadow-none', section: 'bg-black/50 border border-green-500/20 rounded-lg p-6', avatar: 'rounded-none border-2 border-green-500 bg-black' }
-    case 'brutalism':
-      return { wrapperBg: 'bg-yellow-300 dark:bg-yellow-500', card: 'bg-white text-black border-4 border-black rounded-none shadow-[8px_8px_0_0_rgba(0,0,0,1)]', section: 'bg-white border-4 border-black p-6 rounded-none shadow-[4px_4px_0_0_rgba(0,0,0,1)]', avatar: 'rounded-none border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] bg-white' }
-    case 'glassmorphism':
-      return { wrapperBg: 'bg-gradient-to-br from-indigo-300 via-purple-300 to-pink-300 dark:from-indigo-900 dark:via-purple-900 dark:to-pink-900', card: 'bg-white/30 dark:bg-black/40 backdrop-blur-xl text-zinc-900 dark:text-zinc-100 border border-white/40 dark:border-white/10 rounded-3xl shadow-2xl', section: 'bg-white/20 dark:bg-black/20 border border-white/30 dark:border-white/10 rounded-2xl p-6 backdrop-blur-md', avatar: 'rounded-full border-2 border-white/50 bg-white/30 dark:bg-black/30' }
-    case 'retro':
-      return { wrapperBg: 'bg-indigo-900', card: 'bg-black text-white border-4 border-white rounded-none shadow-[4px_4px_0_0_#fff]', section: 'bg-blue-900 border-2 border-white p-6 rounded-none', avatar: 'rounded-none border-2 border-white bg-blue-900' }
-    case 'paper':
-      return { wrapperBg: 'bg-zinc-200 dark:bg-zinc-800', card: 'bg-[#f4f1ea] dark:bg-[#2c2a26] text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700 shadow-md rounded-none font-serif', section: 'bg-transparent border-t-2 border-b-2 border-zinc-300 dark:border-zinc-700 py-6 px-0 rounded-none', avatar: 'rounded-none border border-zinc-400 p-1 bg-transparent' }
-    case 'monochrome':
-      return { wrapperBg: 'bg-zinc-300 dark:bg-zinc-900', card: 'bg-white dark:bg-black text-black dark:text-white border-2 border-black dark:border-white rounded-none shadow-none', section: 'bg-transparent border-l-4 border-black dark:border-white pl-6 rounded-none py-4', avatar: 'rounded-full border-2 border-black dark:border-white grayscale bg-transparent' }
-    case 'blueprint':
-      return { wrapperBg: 'bg-blue-950', card: 'bg-blue-900 text-blue-100 border border-blue-400 font-mono rounded-none shadow-none', section: 'bg-transparent border border-blue-400/50 p-6 rounded-none', avatar: 'rounded-none border border-blue-400 bg-transparent' }
-    case 'claymorphism':
-      return { wrapperBg: 'bg-zinc-100 dark:bg-zinc-900', card: 'bg-zinc-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 rounded-[3rem] shadow-[12px_12px_24px_rgba(0,0,0,0.1),-12px_-12px_24px_rgba(255,255,255,0.8)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.5),-12px_-12px_24px_rgba(255,255,255,0.05)] border-none', section: 'bg-zinc-100 dark:bg-zinc-900 rounded-3xl p-8 shadow-[inset_6px_6px_12px_rgba(0,0,0,0.1),inset_-6px_-6px_12px_rgba(255,255,255,0.8)] dark:shadow-[inset_6px_6px_12px_rgba(0,0,0,0.5),inset_-6px_-6px_12px_rgba(255,255,255,0.05)]', avatar: 'rounded-full shadow-[6px_6px_12px_rgba(0,0,0,0.1),-6px_-6px_12px_rgba(255,255,255,0.8)] dark:shadow-[6px_6px_12px_rgba(0,0,0,0.5),-6px_-6px_12px_rgba(255,255,255,0.05)] bg-transparent border-none' }
-    case 'neon':
-      return { wrapperBg: 'bg-zinc-950', card: 'bg-zinc-950 text-fuchsia-100 border border-fuchsia-500 rounded-xl shadow-[0_0_20px_rgba(217,70,239,0.2)]', section: 'bg-black/50 border border-fuchsia-500/50 p-6 rounded-xl shadow-[inset_0_0_10px_rgba(217,70,239,0.1)]', avatar: 'rounded-xl border border-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.4)] bg-black' }
-    case 'macos':
-      return { wrapperBg: 'bg-zinc-200 dark:bg-zinc-800', card: 'bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700 shadow-xl rounded-xl', section: 'bg-zinc-100/50 dark:bg-black/20 rounded-lg p-6 border border-zinc-200/50 dark:border-zinc-700/50', avatar: 'rounded-full border shadow-sm bg-white dark:bg-zinc-800' }
-    default: 
-      return { wrapperBg: 'bg-zinc-50 dark:bg-zinc-950', card: 'bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-[2rem] shadow-sm text-zinc-900 dark:text-zinc-100', section: 'bg-zinc-50 dark:bg-zinc-800/40 rounded-3xl p-6 md:p-8 border border-zinc-100 dark:border-zinc-800/60', avatar: 'rounded-full border border-zinc-200 dark:border-zinc-700' }
+    case 'notion': return { wrapperBg: 'bg-white dark:bg-[#191919]', card: 'bg-white dark:bg-[#191919] text-zinc-900 dark:text-zinc-100 border-none shadow-none', section: 'bg-transparent py-6 border-b border-zinc-100 dark:border-zinc-800/60 last:border-0 rounded-none p-0', avatar: 'rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm' }
+    case 'bento': return { wrapperBg: 'bg-[#f5f5f7] dark:bg-black', card: 'bg-[#f5f5f7] dark:bg-black text-zinc-900 dark:text-zinc-100 border-none shadow-none', section: 'bg-white dark:bg-zinc-900/80 rounded-[2rem] p-8 shadow-sm border border-black/5 dark:border-white/5', avatar: 'rounded-full border-4 border-white dark:border-zinc-800 shadow-lg' }
+    case 'saas': return { wrapperBg: 'bg-[#0a0a0a]', card: 'bg-[#0a0a0a] text-zinc-100 border border-zinc-800/60 rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.3)]', section: 'bg-zinc-900/40 rounded-2xl p-6 border border-zinc-800/50 hover:border-zinc-700 transition-colors', avatar: 'rounded-2xl border border-zinc-800' }
+    case 'terminal': return { wrapperBg: 'bg-zinc-900 dark:bg-zinc-950', card: 'bg-black text-green-500 font-mono border border-green-500/30 rounded-lg shadow-none', section: 'bg-black/50 border border-green-500/20 rounded-lg p-6', avatar: 'rounded-none border-2 border-green-500 bg-black' }
+    case 'brutalism': return { wrapperBg: 'bg-yellow-300 dark:bg-yellow-500', card: 'bg-white text-black border-4 border-black rounded-none shadow-[8px_8px_0_0_rgba(0,0,0,1)]', section: 'bg-white border-4 border-black p-6 rounded-none shadow-[4px_4px_0_0_rgba(0,0,0,1)]', avatar: 'rounded-none border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] bg-white' }
+    case 'glassmorphism': return { wrapperBg: 'bg-gradient-to-br from-indigo-300 via-purple-300 to-pink-300 dark:from-indigo-900 dark:via-purple-900 dark:to-pink-900', card: 'bg-white/30 dark:bg-black/40 backdrop-blur-xl text-zinc-900 dark:text-zinc-100 border border-white/40 dark:border-white/10 rounded-3xl shadow-2xl', section: 'bg-white/20 dark:bg-black/20 border border-white/30 dark:border-white/10 rounded-2xl p-6 backdrop-blur-md', avatar: 'rounded-full border-2 border-white/50 bg-white/30 dark:bg-black/30' }
+    case 'retro': return { wrapperBg: 'bg-indigo-900', card: 'bg-black text-white border-4 border-white rounded-none shadow-[4px_4px_0_0_#fff]', section: 'bg-blue-900 border-2 border-white p-6 rounded-none', avatar: 'rounded-none border-2 border-white bg-blue-900' }
+    case 'paper': return { wrapperBg: 'bg-zinc-200 dark:bg-zinc-800', card: 'bg-[#f4f1ea] dark:bg-[#2c2a26] text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700 shadow-md rounded-none font-serif', section: 'bg-transparent border-t-2 border-b-2 border-zinc-300 dark:border-zinc-700 py-6 px-0 rounded-none', avatar: 'rounded-none border border-zinc-400 p-1 bg-transparent' }
+    case 'monochrome': return { wrapperBg: 'bg-zinc-300 dark:bg-zinc-900', card: 'bg-white dark:bg-black text-black dark:text-white border-2 border-black dark:border-white rounded-none shadow-none', section: 'bg-transparent border-l-4 border-black dark:border-white pl-6 rounded-none py-4', avatar: 'rounded-full border-2 border-black dark:border-white grayscale bg-transparent' }
+    case 'blueprint': return { wrapperBg: 'bg-blue-950', card: 'bg-blue-900 text-blue-100 border border-blue-400 font-mono rounded-none shadow-none', section: 'bg-transparent border border-blue-400/50 p-6 rounded-none', avatar: 'rounded-none border border-blue-400 bg-transparent' }
+    case 'claymorphism': return { wrapperBg: 'bg-zinc-100 dark:bg-zinc-900', card: 'bg-zinc-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 rounded-[3rem] shadow-[12px_12px_24px_rgba(0,0,0,0.1),-12px_-12px_24px_rgba(255,255,255,0.8)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.5),-12px_-12px_24px_rgba(255,255,255,0.05)] border-none', section: 'bg-zinc-100 dark:bg-zinc-900 rounded-3xl p-8 shadow-[inset_6px_6px_12px_rgba(0,0,0,0.1),inset_-6px_-6px_12px_rgba(255,255,255,0.8)] dark:shadow-[inset_6px_6px_12px_rgba(0,0,0,0.5),inset_-6px_-6px_12px_rgba(255,255,255,0.05)]', avatar: 'rounded-full shadow-[6px_6px_12px_rgba(0,0,0,0.1),-6px_-6px_12px_rgba(255,255,255,0.8)] dark:shadow-[6px_6px_12px_rgba(0,0,0,0.5),-6px_-6px_12px_rgba(255,255,255,0.05)] bg-transparent border-none' }
+    case 'neon': return { wrapperBg: 'bg-zinc-950', card: 'bg-zinc-950 text-fuchsia-100 border border-fuchsia-500 rounded-xl shadow-[0_0_20px_rgba(217,70,239,0.2)]', section: 'bg-black/50 border border-fuchsia-500/50 p-6 rounded-xl shadow-[inset_0_0_10px_rgba(217,70,239,0.1)]', avatar: 'rounded-xl border border-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.4)] bg-black' }
+    case 'macos': return { wrapperBg: 'bg-zinc-200 dark:bg-zinc-800', card: 'bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700 shadow-xl rounded-xl', section: 'bg-zinc-100/50 dark:bg-black/20 rounded-lg p-6 border border-zinc-200/50 dark:border-zinc-700/50', avatar: 'rounded-full border shadow-sm bg-white dark:bg-zinc-800' }
+    default: return { wrapperBg: 'bg-zinc-50 dark:bg-zinc-950', card: 'bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-[2rem] shadow-sm text-zinc-900 dark:text-zinc-100', section: 'bg-zinc-50 dark:bg-zinc-800/40 rounded-3xl p-6 md:p-8 border border-zinc-100 dark:border-zinc-800/60', avatar: 'rounded-full border border-zinc-200 dark:border-zinc-700' }
   }
 }
 
@@ -146,16 +153,23 @@ function renderPreview() {
   else roleTextEl.className = `inline-block px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase ${a.pillBg} ${a.pillText} mb-4`
   
   const useAccentAvatar = !isPlain && !isTech && !isHarsh && !isGlass && theme.value !== 'macos' && theme.value !== 'claymorphism';
-  avatarEl.className = `w-24 h-24 grid place-items-center text-4xl ${tc.avatar} ${useAccentAvatar ? a.pillBg : ''}`
+  
+  // ✨ 아바타(이미지) 클래스 설정
+  avatarEl.className = `w-24 h-24 flex place-items-center justify-center text-4xl overflow-hidden ${tc.avatar} ${useAccentAvatar ? a.pillBg : ''}`
 
+  // ✨ 기술 스택(키워드) 동적 렌더링 수정
   tagRowEl.innerHTML = ''
-  ;['#FullStack', '#Java', '#Vue.js'].forEach((t) => {
+  const currentKeywords = portfolioData.value.keywords || [];
+  
+  currentKeywords.forEach((t) => {
     const span = document.createElement('span')
     if (isPlain) span.className = `opacity-60 text-sm mr-3`
     else if (isTech) span.className = `px-2.5 py-1 rounded-md border border-current opacity-70 text-xs font-medium`
     else if (isHarsh) span.className = `px-3 py-1 border-2 border-current bg-transparent text-xs font-bold`
     else span.className = `px-3 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 text-xs font-bold border border-zinc-200/50 dark:border-zinc-700/50`
-    span.textContent = t
+    
+    // 키워드에 '#'이 없으면 붙여서 출력
+    span.textContent = t.startsWith('#') ? t : `#${t}`
     tagRowEl.appendChild(span)
   })
 
@@ -396,15 +410,28 @@ function renderList() {
                 <div class="ml-4 text-xs font-bold text-zinc-400">Preview Mode</div>
               </div>
               <div id="previewCard" class="bg-white dark:bg-zinc-950 rounded-[2rem] shadow-sm border border-zinc-200/50 dark:border-zinc-800/80 p-8 md:p-12 transition-all duration-500 overflow-hidden relative min-h-[600px]">
+                
                 <header class="flex flex-col md:flex-row md:items-start justify-between gap-8 mb-12 border-b border-current/10 pb-12">
                   <div class="order-2 md:order-1 max-w-2xl">
                     <div id="roleText">DEVELOPER</div>
-                    <h1 class="text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-6">Kim Poti</h1>
-                    <p class="text-lg opacity-80 leading-relaxed font-medium">백엔드 생태계와 아키텍처를 고민하는 개발자 김포티입니다.<br class="hidden md:block"/> 복잡한 문제를 단순한 코드로 해결하는 것을 지향합니다.</p>
+                    
+                    <h1 class="text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-6">
+                      {{ portfolioData.title || '포트폴리오 제목' }}
+                    </h1>
+                    
+                    <p class="text-lg opacity-80 leading-relaxed font-medium whitespace-pre-line">
+                      {{ portfolioData.role || '한 줄 소개를 입력해주세요.' }}
+                    </p>
+                    
                     <div id="tagRow" class="mt-8 flex flex-wrap gap-2"></div>
                   </div>
-                  <div id="avatar" class="order-1 md:order-2 shrink-0"><span class="text-3xl">💻</span></div>
+                  
+                  <div id="avatar" class="order-1 md:order-2 shrink-0">
+                    <img v-if="portfolioData.Image" :src="portfolioData.Image" class="w-full h-full object-cover rounded-full" alt="profile" />
+                    <span v-else class="text-3xl">💻</span>
+                  </div>
                 </header>
+
                 <div id="previewSections"></div>
               </div>
             </div>
