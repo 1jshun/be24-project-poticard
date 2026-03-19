@@ -51,9 +51,9 @@ const loadPortfolios = async () => {
 }
 
 // 채팅방 생성
-const createChatRoom = async (guestUserId) => {
+const createChatRoom = async (guestUserEmail) => {
   try {
-    const res = await apiFetch(`/chat/room/create/${guestUserId}`, {
+    const res = await apiFetch(`/chat/room/create/${guestUserEmail}`, {
       method: 'POST',
     })
     return res
