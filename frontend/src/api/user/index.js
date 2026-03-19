@@ -34,9 +34,7 @@ const profile = async (req) => {
 }
 
 const checkEmailDuplicate = async (email) => {
-  const res = await apiFetch('/user/check-email', {
-    method: 'POST',
-    body: { email },
+  const res = await apiFetch(`/user/check-email?email=${email}`, {
   })
 
   return res

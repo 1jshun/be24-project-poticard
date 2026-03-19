@@ -137,8 +137,7 @@ const checkEmailDuplicate = async (email) => {
     const res = await api.checkEmailDuplicate(email)
     // API 응답에 따라 중복 여부 확인
     // 일반적으로 중복이면 에러, 아니면 성공
-    console.log(res)
-    if (res.exists || res.duplicate) {
+    if (res.data) {
       emailDuplicateError.value = '이미 사용 중인 이메일입니다.'
       emailChecked.value = true
     } else {
