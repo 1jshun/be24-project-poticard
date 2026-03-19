@@ -115,7 +115,7 @@ const markAllReadAndClose = (e) => {
 }
 
 const addNotificationFromPush = (payload) => {
-  const { senderIdx, senderEmail, senderName, contents } = payload || {}
+  const { senderIdx, senderName, contents } = payload || {}
   if (senderIdx == null) return
 
   // 발신자 본인에게는 알림 표시 안 함 (받는 사람에게만 표시)
@@ -130,7 +130,7 @@ const addNotificationFromPush = (payload) => {
   notifications.value.unshift({
     id: Date.now() + Math.random(),
     senderIdx: Number(senderIdx),
-    senderUsername: senderName || senderEmail || '알 수 없음',
+    senderUsername: senderName || '알 수 없음',
     content: contents || '',
   })
   hasUnread.value = true
