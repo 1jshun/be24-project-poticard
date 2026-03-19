@@ -47,8 +47,7 @@ const editNamcard = async(cardData)=>{
           address:cardData.address,
           affiliation:cardData.affiliation,
           career:cardData.career,
-          gender:cardData.gender,
-          profile_image:cardData.avatar
+          gender:cardData.gender
         }
       })
     } catch (error) {
@@ -56,10 +55,29 @@ const editNamcard = async(cardData)=>{
   }
 }
 
+const editProfileImage = async(file) => {
+  try{
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const res = await apiFetch(`/namecard/setprofile`, {
+      method: 'POST',
+      body: formData
+    })
+    
+
+    return res;
+  } catch (error) {
+    console.error("이미지 업로드 실패 : ",error)
+  }
+}
+
+
 
 export default {
   getSingleNamecard,
   getNamecardsInfo,
   getNamecardList,
-  editNamcard
+  editNamcard,
+  editProfileImage
 }

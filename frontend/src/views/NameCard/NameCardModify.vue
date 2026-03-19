@@ -21,12 +21,11 @@ const handleFileChange = (event) =>{
 }
 
 const uploadImage = async (file) => {
-  const formData = new FormData();
-  formData.append('profile_image', file)
-
   try {
-    // api로 전송하기
+    await api.editProfileImage(file)
     alert('프로필 이미지가 변경되었습니다.')
+
+    await loadMyCard()
   } catch (error){
     console.error('업로드 실패 : ',error)
   }
@@ -45,22 +44,24 @@ const edit = async (cardData) => {
   }
 }
 
-// 1. 초기 더미 데이터 (구조 정의)
+const userInfo = localStorage.getItem('USERINFO')
+
 const dummy = {
-  email: "example@example.com",
+  email: userInfo.email,
   title: "제목",
   description: "설명",
   layout: "Type A",
   color: "YELLOW",
-  affiliation: "포티 컴퍼니",
-  name: "홍길동",
+  affiliation: userInfo.affiliation,
+  name: userInfo.name,
   avatar: "https://api.dicebear.com/9.x/avataaars/svg?seed=홍길동",
-  career: "100년차 개발자",
+  career: userInfo.career,
   url: "https://porti.example.com/user100",
   address: "서울특별시 강남구 테헤란로 100",
   phone: "010-0000-0100",
   keywords: []
 }
+
 
 // 2. 상태 관리
 const cardData = ref({ ...dummy }) 
