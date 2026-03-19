@@ -135,7 +135,7 @@ onMounted(async () => {
             class="group bg-white dark:bg-zinc-900 rounded-2xl border border-gray-100 dark:border-zinc-800 overflow-hidden hover:shadow-xl hover:shadow-yellow-100/50 dark:hover:shadow-none hover:-translate-y-1 transition-all duration-300 cursor-pointer">
             
             <div class="w-full h-48 bg-gray-100 dark:bg-zinc-800 relative overflow-hidden">
-              <img v-if="portfolio.image" :src="portfolio.image" alt="Hero Image" class="w-full h-full object-cover" />
+              <img v-if="portfolio.image" :src="portfolio.image" alt="Hero Image" class="w-full h-full object-contain p-2"/>
               <div v-else class="absolute inset-0 flex items-center justify-center text-gray-300 dark:text-zinc-700">
                 <i class="fa-regular fa-image text-4xl"></i>
               </div>
