@@ -17,6 +17,10 @@ const messageInput = ref('')
 const messageArea = ref(null)
 const textareaRef = ref(null)
 
+// 방별 메시지 페이지네이션 (page, hasNext)
+const messagePageByRoom = ref({})
+const isLoadingMore = ref(false)
+
 /* 명함 및 메뉴 관련 상태 */
 const isCardOpen = ref(false)
 const isFlipped = ref(false)
@@ -37,10 +41,9 @@ const getChatRoomList = async () => {
   try {
     const res = await chatApi.chatRoomList()
     console.log('채팅방 목록:', res)
-    if (res && res.data) {
-      rooms.splice(0, rooms.length, ...res.data)
-    } else if (Array.isArray(res)) {
-      rooms.splice(0, rooms.length, ...res)
+    const list = res?.data?.content ?? (Array.isArray(res?.data) ? res.data : res)
+    if (Array.isArray(list)) {
+      rooms.splice(0, rooms.length, ...list)
     }
   } catch (error) {
     console.error('채팅방 목록 로드 실패:', error)
@@ -195,7 +198,9 @@ const setActiveRoom = async (roomId) => {
 
 // 날짜 포맷팅 함수
 const formatMessageTime = (dateString) => {
+  if (dateString == null || dateString === '') return ''
   const date = new Date(dateString)
+  if (isNaN(date.getTime())) return ''
   const now = new Date()
   const diffMs = now - date
   const diffMins = Math.floor(diffMs / 60000)
@@ -216,40 +221,73 @@ const formatMessageTime = (dateString) => {
   return `${ampm} ${displayHours}:${String(minutes).padStart(2, '0')}`
 }
 
-// 채팅방 메시지 불러오기
-const loadChatMessages = async (roomId) => {
+// 메시지 DTO → 포맷 변환
+const formatMessage = (msg) => {
+  const isMe = Number(msg.senderIdx) === Number(myUserId)
+  const isRead = msg.isRead ?? msg.read ?? false
+  return {
+    who: isMe ? 'me' : 'them',
+    text: msg.contents,
+    attachments: msg.attachments,
+    time: formatMessageTime(msg.createdAt),
+    messageId: msg.idx,
+    isRead: !!isRead,
+  }
+}
+
+// 채팅방 메시지 불러오기 - BaseResponse.success(Slice) → data.content
+const loadChatMessages = async (roomId, page = 0) => {
   try {
-    const res = await chatApi.getChatMessages(roomId)
-    console.log(res)
+    const res = await chatApi.getChatMessages(roomId, page, 20)
 
-    let messages = []
-    if (res && res.data && Array.isArray(res.data)) {
-      messages = res.data
-    } else if (res && Array.isArray(res)) {
-      messages = res
-    }
+    // 백엔드: createdAt DESC (최신순) → 채팅 UI는 과거→최신 순 필요
+    const rawMessages = Array.isArray(res?.data?.content) ? [...res.data.content].reverse() : []
+    const formattedMessages = rawMessages.map(formatMessage)
 
-    const formattedMessages = messages.map((msg) => {
-      // 백엔드 Res DTO는 boolean isRead인데 Jackson 직렬화 시 "read"로 내려옴
-      const isMe = Number(msg.senderIdx) === Number(myUserId)
-      const isRead = msg.isRead ?? msg.read ?? false
-      return {
-        who: isMe ? 'me' : 'them',
-        text: msg.contents,
-        attachments: msg.attachments,
-        time: formatMessageTime(msg.createdAt),
-        messageId: msg.idx,
-        isRead: !!isRead,
+    const hasNext = res?.data?.hasNext ?? true
+
+    if (page === 0) {
+      messagesByRoom.value[roomId] = formattedMessages
+      messagePageByRoom.value[roomId] = { page: 0, hasNext }
+      scrollBottom()
+    } else {
+      // 이전 메시지 prepend + 스크롤 위치 유지
+      const el = messageArea.value
+      const oldScrollHeight = el?.scrollHeight ?? 0
+      const oldScrollTop = el?.scrollTop ?? 0
+
+      const existing = messagesByRoom.value[roomId] || []
+      messagesByRoom.value[roomId] = [...formattedMessages, ...existing]
+      messagePageByRoom.value[roomId] = { page, hasNext }
+
+      await nextTick()
+      if (el) {
+        const heightAdded = el.scrollHeight - oldScrollHeight
+        el.scrollTop = oldScrollTop + heightAdded
       }
-    })
-
-    messagesByRoom.value[roomId] = formattedMessages
-    console.log(`방 ${roomId}의 메시지 로드 완료:`, formattedMessages)
+    }
   } catch (error) {
     console.error(`방 ${roomId}의 메시지 로드 실패:`, error)
-    messagesByRoom.value[roomId] = []
+    if (page === 0) messagesByRoom.value[roomId] = []
+  } finally {
+    isLoadingMore.value = false
   }
-  scrollBottom()
+}
+
+// 스크롤 상단 도달 시 이전 메시지 로드 (무한 스크롤)
+const onMessageAreaScroll = async () => {
+  const el = messageArea.value
+  const roomId = activeRoomId.value
+  if (!el || !roomId || isLoadingMore.value) return
+
+  const meta = messagePageByRoom.value[roomId]
+  if (meta && !meta.hasNext) return
+
+  if (el.scrollTop < 80) {
+    isLoadingMore.value = true
+    const nextPage = meta ? meta.page + 1 : 1
+    await loadChatMessages(roomId, nextPage)
+  }
 }
 
 const toggleCard = () => {
@@ -811,10 +849,17 @@ onUnmounted(() => {
           <div
             ref="messageArea"
             class="flex-1 overflow-y-auto p-6 space-y-6 thin-scroll bg-slate-50/50 dark:bg-slate-950/20"
+            @scroll="onMessageAreaScroll"
           >
             <div
+              v-if="isLoadingMore"
+              class="flex justify-center py-3 text-xs text-slate-400"
+            >
+              <i class="fa-solid fa-spinner fa-spin mr-2"></i>이전 메시지 불러오는 중...
+            </div>
+            <div
               v-for="(m, idx) in currentMessages"
-              :key="idx"
+              :key="m.messageId ?? idx"
               :class="['flex w-full', m.who === 'me' ? 'justify-end' : 'justify-start']"
             >
               <div
