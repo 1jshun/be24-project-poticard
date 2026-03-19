@@ -1,42 +1,28 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
 import NamecardsFront from '@/components/namecards/NamecardsFront.vue'
 import NamecardsBack from '@/components/namecards/NamecardsBack.vue'
 import { getPortfolioList, getUserPortfolioList, deletePortfolio } from '@/api/portfolio/index.js'
-import { useNamecardStore } from '@/stores/namecardStore'
-
-const route = useRoute()
+import api from '@/api/namecard'
 
 let currentUserId = 1
-const getCookie = (name) => {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(';').shift();
-};
 
-const token = getCookie('ATOKEN'); 
+const userInfo = JSON.parse(localStorage.getItem('USERINFO'))
+console.log(userInfo.idx)
 
-if (token) {
-  const base64Url = token.split('.')[1];
-  const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-  const payload = JSON.parse(window.atob(base64));
-  currentUserId = payload.idx;
-}
-
-const store = useNamecardStore()
 const cardData = ref(null)
 const isLoading = ref(true)
 
-const targetUserId = route.query.targetUser || null;
+const targetUserId = userInfo.idx;
 const isMyPortfolio = computed(() => !targetUserId || targetUserId == currentUserId);
 
 const loadMyCard = async () => {
   isLoading.value = true
   const fetchId = targetUserId || currentUserId;
-  const response = await store.getNamecard(fetchId)
-  if (response){
-    cardData.value = response
+  const response = await api.getSingleNamecard(fetchId)
+  console.log(response.data)
+  if (response.isSuccess){
+    cardData.value = response.data
   }
   isLoading.value = false
 }
