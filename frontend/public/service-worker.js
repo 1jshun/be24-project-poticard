@@ -21,7 +21,7 @@ self.addEventListener('push', (event) => {
     }
   }
 
-  const title = payload.senderEmail || '새 메시지'
+  const title = payload.senderName || '새 메시지'
   const options = {
     body: payload.contents || '내용이 없습니다.',
     icon: '/img/icons/android-chrome-192x192.png',
@@ -32,7 +32,6 @@ self.addEventListener('push', (event) => {
     data: {
       url: '/chat',
       roomIdx: payload.roomIdx,
-      senderIdx: payload.senderIdx, // 클릭 시 해당 채팅방으로 이동
     },
   }
 
