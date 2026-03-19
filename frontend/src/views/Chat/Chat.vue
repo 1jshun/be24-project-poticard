@@ -753,7 +753,7 @@ onUnmounted(() => {
                 <div class="p-8 pt-0">
                   <div class="relative group mb-6">
                     <i
-                      class="fa-solid fa-fingerprint absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-amber-500 transition-colors"
+                      class="fa-solid fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-amber-500 transition-colors"
                     ></i>
                     <input
                       v-model="newChatTargetEmail"
