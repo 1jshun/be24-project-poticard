@@ -28,7 +28,7 @@ const imageInput = ref(null)
 const docInput = ref(null)
 
 const isNewChatModalOpen = ref(false)
-const newChatTargetId = ref('')
+const newChatTargetEmail = ref('')
 const errorMessage = ref('')
 
 let stompClient = null
@@ -79,6 +79,8 @@ const getIdxFromJwtCookie = (cookieName) => {
 
 // userId 변수에 저장
 const myUserId = getIdxFromJwtCookie('ATOKEN')
+const userInfoString = localStorage.getItem('USERINFO')
+const myUserEmail = userInfoString ? JSON.parse(userInfoString).email : null
 
 /* 계산된 속성 */
 const filteredRooms = computed(() => {
@@ -185,7 +187,9 @@ const setActiveRoom = async (roomId) => {
   if (room) {
     router.replace({ path: '/chat', query: { senderId: room.opponentIdx } })
     // 해당 방(sender)의 헤더 알림 제거
-    window.dispatchEvent(new CustomEvent('chat-room-entered', { detail: { senderId: room.opponentIdx } }))
+    window.dispatchEvent(
+      new CustomEvent('chat-room-entered', { detail: { senderId: room.opponentIdx } }),
+    )
   }
 }
 
@@ -319,7 +323,9 @@ const handleFileChange = (event, type) => {
 
   const oversized = files.filter((f) => f.size > MAX_FILE_SIZE)
   if (oversized.length) {
-    alert(`파일 크기는 최대 10MB까지 가능합니다.\n초과된 파일: ${oversized.map((f) => f.name).join(', ')}`)
+    alert(
+      `파일 크기는 최대 10MB까지 가능합니다.\n초과된 파일: ${oversized.map((f) => f.name).join(', ')}`,
+    )
     event.target.value = ''
     return
   }
@@ -387,20 +393,20 @@ const startVideoCall = () => {
 
 const confirmCreateChat = async () => {
   errorMessage.value = ''
-  const guestId = Number(newChatTargetId.value)
+  const guestEmail = newChatTargetEmail.value
 
-  if (!newChatTargetId.value || isNaN(guestId)) {
-    errorMessage.value = '올바른 사용자 ID(숫자)를 입력해주세요.'
+  if (!newChatTargetEmail.value) {
+    errorMessage.value = '올바른 사용자 Email을 입력해주세요.'
     return
   }
 
-  if (guestId === Number(myUserId)) {
+  if (guestEmail === myUserEmail) {
     errorMessage.value = '자기 자신과는 채팅할 수 없습니다.'
     return
   }
 
   try {
-    const res = await chatApi.createChatRoom(guestId)
+    const res = await chatApi.createChatRoom(guestEmail)
     isNewChatModalOpen.value = false
     await getChatRoomList()
 
@@ -414,7 +420,7 @@ const confirmCreateChat = async () => {
 }
 
 const openNewChatModal = () => {
-  newChatTargetId.value = ''
+  newChatTargetEmail.value = ''
   errorMessage.value = ''
   isNewChatModalOpen.value = true
 }
@@ -604,9 +610,9 @@ onUnmounted(() => {
                       class="fa-solid fa-fingerprint absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-amber-500 transition-colors"
                     ></i>
                     <input
-                      v-model="newChatTargetId"
+                      v-model="newChatTargetEmail"
                       type="text"
-                      placeholder="사용자 ID (숫자)"
+                      placeholder="사용자 Email"
                       @input="errorMessage = ''"
                       @keyup.enter="confirmCreateChat"
                       :class="[
@@ -620,7 +626,10 @@ onUnmounted(() => {
 
                   <div class="h-6 mb-4">
                     <transition name="fade">
-                      <p v-if="errorMessage" class="text-xs text-rose-500 font-bold flex items-center gap-1.5 px-1">
+                      <p
+                        v-if="errorMessage"
+                        class="text-xs text-rose-500 font-bold flex items-center gap-1.5 px-1"
+                      >
                         <i class="fa-solid fa-circle-exclamation"></i>
                         {{ errorMessage }}
                       </p>
