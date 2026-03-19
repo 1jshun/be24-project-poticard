@@ -71,6 +71,19 @@ const createChatRoom = async (guestUserEmail) => {
   }
 }
 
+// 채팅방 나가기
+const leaveChatRoom = async (roomIdx) => {
+  try {
+    const res = await apiFetch(`/chat/room/${roomIdx}/leave`, {
+      method: 'PATCH',
+    })
+    return res
+  } catch (error) {
+    console.error('채팅방 나가기 실패:', error.message)
+    throw error
+  }
+}
+
 // 채팅방 파일 업로드 (type: IMAGE | DOC)
 const uploadChatFiles = async (roomId, formData, type) => {
   try {
@@ -90,5 +103,6 @@ export default {
   getChatMessages,
   loadPortfolios,
   createChatRoom,
+  leaveChatRoom,
   uploadChatFiles,
 }

@@ -303,17 +303,36 @@ const reportUser = () => {
   isMenuOpen.value = false
 }
 
-const leaveChat = () => {
+const leaveChat = async () => {
   if (!activeRoom.value) return
   if (
-    confirm(
+    !confirm(
       `'${activeRoom.value.name}'님과의 채팅방을 나가시겠습니까?\n나가면 대화 내용이 모두 삭제됩니다.`,
     )
   ) {
-    const index = rooms.findIndex((r) => r.id === activeRoomId.value)
+    return
+  }
+
+  const roomIdx = activeRoomId.value
+  try {
+    await chatApi.leaveChatRoom(roomIdx)
+    // WebSocket 연결 종료
+    if (stompClient && stompClient.connected) {
+      stompClient.disconnect()
+      stompClient = null
+    }
+    // 방 목록에서 제거
+    const index = rooms.findIndex((r) => r.id === roomIdx)
     if (index > -1) rooms.splice(index, 1)
+    // 메시지 캐시 정리
+    delete messagesByRoom.value[roomIdx]
+    delete messagePageByRoom.value[roomIdx]
+    // 활성 방 해제
     activeRoomId.value = null
     isMenuOpen.value = false
+  } catch (error) {
+    console.error('채팅방 나가기 실패:', error)
+    alert(error?.message || '채팅방 나가기에 실패했습니다.')
   }
 }
 
