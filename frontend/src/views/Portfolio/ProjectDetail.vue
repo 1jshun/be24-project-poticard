@@ -23,21 +23,28 @@ const fetchProjectDetail = async () => {
     if (!portfolioIdx) return;
 
     const res = await portfolioApi.getProjectDetail(portfolioIdx);
-    const data = res.data || res;
+    // BaseResponse 패턴 분기 처리
+    const data = res.data?.result || res.data;
     
     if (data) {
-      projectInfo.value = {
-        name: data.title || '제목 없음',
-        period: data.period || '',
-        tags: data.keywords || [],
-        heroImage: data.image || '', 
-        fullStory: data.sectionList ? data.sectionList.map(sec => ({
-          title: sec.sectionTitle,
-          content: sec.contents,
-          icon: '📌'
-        })) : []
-      }
+  projectInfo.value = {
+    name: data.title || '제목 없음',
+    period: data.period || '',
+    tags: data.keywords || [],
+    heroImage: data.image || '', 
+    
+    // ✨ isVisible -> visible 로 변경!
+    fullStory: data.sectionList ? data.sectionList
+      .filter(sec => sec.visible !== false) // 숨김 처리된 섹션 제외
+      .sort((a, b) => (a.sectionOrder || 0) - (b.sectionOrder || 0)) // 순서대로 정렬
+      .map(sec => ({
+        title: sec.sectionTitle,
+        content: sec.contents,
+        icon: '📌'
+      })) : []
+  }
 
+      // 테마와 레이아웃 적용
       if (data.theme) theme.value = data.theme;
       if (data.layoutType) layoutType.value = data.layoutType;
     }
@@ -189,7 +196,7 @@ const goBack = () => router.push('/portfolio-view')
              </div>
 
              <div v-if="projectInfo.heroImage" class="mt-12 relative mx-auto rounded-[2rem] overflow-hidden shadow-2xl border border-current/10">
-               <img :src="projectInfo.heroImage" alt="Hero" class="w-full aspect-[21/9] object-cover" />
+              <img :src="projectInfo.heroImage" alt="Hero" class="w-full aspect-[21/9] object-contain bg-zinc-100 dark:bg-zinc-800 p-4" />
              </div>
           </header>
 
