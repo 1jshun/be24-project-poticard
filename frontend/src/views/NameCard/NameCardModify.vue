@@ -44,7 +44,7 @@ const edit = async (cardData) => {
   }
 }
 
-const userInfo = localStorage.getItem('USERINFO')
+const userInfo = JSON.parse(localStorage.getItem('USERINFO'))
 
 const dummy = {
   email: userInfo.email,
@@ -71,49 +71,33 @@ const isFlipped = ref(false)
 // 포트폴리오에서 가져온 중복 제거된 키워드 목록
 const availableKeywords = ref([])
 
-// JWT 로직
-let currentUserId = 1
-const getCookie = (name) => {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(';').shift();
-};
-
 const loadMyCard = async () => {
-  isLoading.value = true
-  const token = getCookie('ATOKEN');
-  
-  if (token) {
-    try {
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const payload = JSON.parse(window.atob(base64));
-      currentUserId = payload.idx;
-      
-      const response = await api.getSingleNamecard(currentUserId)
-      if (response) {
-        const responseData = response.data || response
-        cardData.value = { 
-          ...dummy, 
-          userIdx: currentUserId, // ✨ [추가됨] 더미 데이터에도 현재 접속한 유저의 식별자를 강제로 주입
-          ...responseData,
-          keywords: responseData.keywords || [] 
-        }
-      } else {
-        // ✨ 데이터가 아예 없을 때(신규 유저)를 대비한 로직 추가
-        cardData.value = {
-          ...dummy,
-          userIdx: currentUserId,
-          keywords: []
-        }
+const currentUserId = userInfo.idx
+  try {
+  const response = await api.getSingleNamecard(currentUserId)
+    if (response) {
+      const responseData = response.data || response
+      cardData.value = { 
+        ...dummy, 
+        userIdx: currentUserId, // ✨ [추가됨] 더미 데이터에도 현재 접속한 유저의 식별자를 강제로 주입
+        ...responseData,
+        keywords: responseData.keywords || [] ,
+        profileImage: responseData.profileImage
       }
-    } catch (e) {
-      console.error("데이터 로드 실패, 기본값 사용", e);
+    } else {
+      // ✨ 데이터가 아예 없을 때(신규 유저)를 대비한 로직 추가
       cardData.value = {
         ...dummy,
         userIdx: currentUserId,
         keywords: []
       }
+    }
+  } catch (e) {
+    console.error("데이터 로드 실패, 기본값 사용", e);
+    cardData.value = {
+      ...dummy,
+      userIdx: currentUserId,
+      keywords: []
     }
   }
   isLoading.value = false
