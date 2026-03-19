@@ -8,7 +8,6 @@ import api from '@/api/namecard'
 let currentUserId = 1
 
 const userInfo = JSON.parse(localStorage.getItem('USERINFO'))
-console.log(userInfo.idx)
 
 const cardData = ref(null)
 const isLoading = ref(true)
@@ -20,7 +19,6 @@ const loadMyCard = async () => {
   isLoading.value = true
   const fetchId = targetUserId || currentUserId;
   const response = await api.getSingleNamecard(fetchId)
-  console.log(response.data)
   if (response.isSuccess){
     cardData.value = response.data
   }
