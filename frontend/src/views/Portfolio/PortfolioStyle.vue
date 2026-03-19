@@ -4,7 +4,6 @@ import { useRouter, useRoute } from 'vue-router'
 import { updateStyle, getPortfolioSections } from '@/api/portfolio/index.js'
 
 import ThemeSelector from '@/components/portfolio/ThemeSelector.vue'
-import ColorSelector from '@/components/portfolio/ColorSelector.vue'
 import LayoutSelector from '@/components/portfolio/LayoutSelector.vue'
 
 const router = useRouter()
@@ -12,8 +11,8 @@ const route = useRoute()
 
 const theme = ref('minimal')
 const layout = ref('single')
-const accent = ref('amber')
-const font = ref('sans')
+const accent = ref('amber') // UI는 제거되었으나 미리보기 렌더링 유지용
+const font = ref('sans') // UI는 제거되었으나 미리보기 렌더링 유지용
 const sections = ref([])
 
 const portfolioIdx = route.query.idx || 1; 
@@ -49,7 +48,7 @@ onMounted(async () => {
   renderPreview()
 })
 
-watch([theme, layout, accent, font], () => {
+watch([theme, layout], () => {
   renderPreview()
 })
 
@@ -61,12 +60,12 @@ const resetSections = () => {
 
 const saveStyle = async () => {
   const styleData = {
-    accentColor: accent.value,
-    fontFamily: font.value,
+    theme: theme.value,
     layoutType: layout.value,
     sectionList: sections.value.map((s, index) => ({
       idx: s.id, 
-      sectionOrder: index + 1 
+      sectionOrder: index + 1,
+      visible: s.visible
     }))
   };
 
@@ -374,22 +373,6 @@ function renderList() {
           <div class="bg-white dark:bg-zinc-900 rounded-[2rem] shadow-xl shadow-zinc-200/40 dark:shadow-none border border-zinc-200/60 dark:border-zinc-800 p-8 h-auto">
             
             <ThemeSelector v-model="theme" />
-            <ColorSelector v-model="accent" />
-
-            <div class="mb-8 border-b border-zinc-100 dark:border-zinc-800 pb-8">
-              <h3 class="text-sm font-black tracking-widest text-zinc-400 mb-4">TYPOGRAPHY</h3>
-              <div class="grid grid-cols-2 gap-4">
-                <button @click="font = 'sans'" :class="['border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 text-left transition-all', font === 'sans' ? 'ring-2 ring-yellow-400 bg-yellow-50/50 dark:bg-yellow-900/10' : 'bg-zinc-50 dark:bg-zinc-800/50 hover:bg-zinc-100 dark:hover:bg-zinc-800']">
-                  <div class="text-sm font-bold text-zinc-900 dark:text-zinc-100 mb-1">Sans-serif</div>
-                  <div class="text-xs text-zinc-500 font-medium">모던하고 깔끔한</div>
-                </button>
-                <button @click="font = 'serif'" :class="['border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 text-left transition-all', font === 'serif' ? 'ring-2 ring-yellow-400 bg-yellow-50/50 dark:bg-yellow-900/10' : 'bg-zinc-50 dark:bg-zinc-800/50 hover:bg-zinc-100 dark:hover:bg-zinc-800']">
-                  <div class="text-sm font-bold font-serif text-zinc-900 dark:text-zinc-100 mb-1">Serif</div>
-                  <div class="text-xs text-zinc-500 font-medium">우아하고 클래식한</div>
-                </button>
-              </div>
-            </div>
-
             <LayoutSelector v-model="layout" />
 
             <div>

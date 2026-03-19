@@ -49,7 +49,7 @@ const colorClasses = computed(() => {
         class="absolute top-0 right-0 w-32 h-32 rounded-bl-full transition-colors duration-500"
         :class="colorClasses.bg"
       ></div>
-
+      
       <div class="flex flex-col justify-between h-full relative z-10">
         <div class="flex justify-between items-start">
           <div class="pr-4">
@@ -72,11 +72,11 @@ const colorClasses = computed(() => {
               {{ cardInfo.description }}
             </p>
           </div>
-
           <div
             class="shrink-0 w-20 h-20 rounded-full border-4 border-white dark:border-zinc-800 shadow-md overflow-hidden bg-gray-100"
           >
-            <img :src="cardInfo.avatar" alt="Profile" class="w-full h-full object-cover" />
+            
+            <img :src="cardInfo.profileImage" alt="Default" class="w-full h-full object-cover" />
           </div>
         </div>
 

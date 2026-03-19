@@ -19,6 +19,7 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: 'http://back.devpoticard.kro.kr:8080',
+        // target: 'http://localhost:8080',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
