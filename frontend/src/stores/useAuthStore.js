@@ -7,7 +7,6 @@ const useAuthStore = defineStore('auth', () => {
 
   const login = (info) => {
     userInfo.value = info
-    // console.log(info)
     isLogin.value = true
     localStorage.setItem('USERINFO', JSON.stringify(info))
   }
