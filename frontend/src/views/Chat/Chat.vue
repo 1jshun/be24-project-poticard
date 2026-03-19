@@ -464,6 +464,30 @@ const startVideoCall = () => {
   window.location.href = `/video-chat?id=${activeRoom.value.id}&name=${encodeURIComponent(activeRoom.value.name)}`
 }
 
+// 생성 API 응답으로 room 객체 생성 (목록에 없을 때 추가용)
+const buildRoomFromCreateRes = (res) => {
+  const d = res?.data ?? res
+  const idx = d?.idx ?? res?.idx
+  if (!idx) return null
+  const opponent = d?.opponentUser ?? d?.guestUser ?? d?.guest ?? {}
+  const opponentIdx = opponent?.idx ?? d?.opponentUserIdx ?? d?.guestUserIdx
+  const name = opponent?.userName ?? opponent?.name ?? d?.opponentUserName ?? d?.guestUserName ?? '-'
+  return {
+    id: idx,
+    opponentIdx: opponentIdx ?? null,
+    name,
+    avatar: opponent?.profileImage ?? d?.opponentUserProfileImage ?? null,
+    company: opponent?.company ?? d?.opponentUserCompany ?? '',
+    role: opponent?.career ?? d?.opponentUserCareer ?? '',
+    content: '',
+    time: null,
+    unread: 0,
+    tags: [],
+    intro: opponent?.intro ?? '',
+    opponentLeft: false,
+  }
+}
+
 const confirmCreateChat = async () => {
   errorMessage.value = ''
   const guestEmail = newChatTargetEmail.value
@@ -481,10 +505,19 @@ const confirmCreateChat = async () => {
   try {
     const res = await chatApi.createChatRoom(guestEmail)
     isNewChatModalOpen.value = false
+
+    const roomIdx = res?.data?.idx ?? res?.idx
+    const newRoom = buildRoomFromCreateRes(res)
+
     await getChatRoomList()
 
-    if (res?.data?.idx || res?.idx) {
-      await setActiveRoom(res?.data?.idx || res?.idx)
+    // 목록에 새 방이 없으면 생성 응답으로 즉시 추가 (실시간 반영)
+    if (roomIdx && newRoom && !rooms.some((r) => r.id === roomIdx)) {
+      rooms.unshift(newRoom)
+    }
+
+    if (roomIdx) {
+      await setActiveRoom(roomIdx)
     }
   } catch (error) {
     console.error('채팅방 생성 실패:', error)
@@ -519,20 +552,60 @@ watch(
   },
 )
 
+// 푸시 페이로드로 room 객체 생성 (목록에 없을 때 추가용)
+const buildRoomFromPush = (payload) => {
+  const { roomIdx, senderIdx, senderName, senderProfileImage, contents, contentsTime } =
+    payload ?? {}
+  const rid = Number(roomIdx)
+  const sid = Number(senderIdx)
+  if (!rid || isNaN(sid)) return null
+  return {
+    id: rid,
+    opponentIdx: sid,
+    name: senderName || '알 수 없음',
+    avatar: senderProfileImage || null,
+    company: '',
+    role: '',
+    content: contents?.length > 30 ? contents.slice(0, 30) + '...' : contents || '',
+    time: contentsTime ?? null,
+    unread: 1,
+    tags: [],
+    intro: '',
+    opponentLeft: false,
+  }
+}
+
 onMounted(async () => {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('message', (event) => {
       if (event.data && event.data.type === 'PUSH_RECEIVED') {
-        const { roomIdx, senderIdx, contents, contentsTime } = event.data.payload ?? event.data
+        const payload = event.data.payload ?? event.data
+        const { roomIdx, senderIdx, senderProfileImage, contents, contentsTime } = payload
 
         const room = rooms.find(
           (r) => r.id === Number(roomIdx) || r.opponentIdx === Number(senderIdx),
         )
-        if (room && activeRoomId.value !== room.id) {
-          room.unread = (room.unread || 0) + 1
-          room.content =
-            contents?.length > 30 ? contents.slice(0, 30) + '...' : contents || room.content
-          room.time = contentsTime ?? room.time ?? room.lastContentsTime
+        if (room) {
+          if (activeRoomId.value !== room.id) {
+            room.unread = (room.unread || 0) + 1
+            room.content =
+              contents?.length > 30 ? contents.slice(0, 30) + '...' : contents || room.content
+            room.time = contentsTime ?? room.time ?? room.lastContentsTime
+          }
+          if (senderProfileImage) room.avatar = senderProfileImage
+        } else {
+          // 목록에 없는 새 채팅방 → 실시간으로 추가
+          const newRoom = buildRoomFromPush(payload)
+          if (newRoom) {
+            rooms.unshift(newRoom)
+            // 알림 클릭으로 진입한 경우 해당 방 자동 선택
+            const sid = Number(route.query.senderId)
+            if (!isNaN(sid) && newRoom.opponentIdx === sid) {
+              setActiveRoom(newRoom.id)
+            }
+          } else {
+            getChatRoomList()
+          }
         }
       }
     })
