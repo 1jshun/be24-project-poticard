@@ -15,7 +15,6 @@ const getUserInfo = async () => {
   const authStore = useAuthStore()
   try {
     const res = await api.getMyInfo()
-    console.log(res.data)
     authStore.login(res.data)
     return res
   } catch (error) {
