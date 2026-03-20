@@ -92,7 +92,7 @@ const login = async () => {
       })
 
       const userInfo = JSON.parse(localStorage.getItem('USERINFO'))
-      const userIdx = userInfo.idx
+      const userIdx = userInfo.data.idx
 
       if (!userIdx) {
         console.warn('Invalid user')
