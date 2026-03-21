@@ -30,13 +30,6 @@ export default defineConfig({
         ws: true,
         changeOrigin: true,
       },
-
-      '/chat-ws': {
-        target: 'ws://back.devpoticard.kro.kr:8080',
-        ws: true,
-        changeOrigin: true,
-      },
-      '/json': { target: 'http://back.devpoticard.kro.kr:8080', changeOrigin: true },
     },
     allowedHosts : ['front.devpoticard.kro.kr']
   },
