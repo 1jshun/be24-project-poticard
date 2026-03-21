@@ -15,6 +15,7 @@ const sections = ref([
     { sectionTitle: '', contents: '', sectionOrder: 1, isVisible: true }
 ]);
 const currentSectionIndex = ref(0);
+const pendingImages = ref([]);
 
 const handleImageChange = (event) => {
     const file = event.target.files[0];
@@ -44,6 +45,11 @@ const selectSection = (index) => {
     currentSectionIndex.value = index;
 };
 
+// ✨ 에디터 컴포넌트에서 이미지가 추가될 때마다 호출되어 대기열에 저장
+const handleSectionImageAdded = (imageData) => {
+    pendingImages.value.push(imageData); // imageData 구조: { file: File객체, localUrl: 'blob:http...' }
+};
+
 const submitPortfolio = async () => {
     if (!title.value.trim()) {
         alert('프로젝트 제목을 입력해주세요.');
@@ -51,6 +57,39 @@ const submitPortfolio = async () => {
     }
 
     try {
+        // ✨ 1. 최종 저장 전, 대기열(pendingImages)에 있는 에디터 이미지들을 먼저 S3에 업로드
+        for (const img of pendingImages.value) {
+            let isUsed = false;
+            
+            // 본문에 해당 이미지가 지워지지 않고 진짜로 남아있는지 검사
+            for (const sec of sections.value) {
+                if (sec.contents && sec.contents.includes(img.localUrl)) {
+                    isUsed = true;
+                    break;
+                }
+            }
+
+            // 본문에 사용 중인 이미지라면 S3로 업로드
+            if (isUsed) {
+                const imgFormData = new FormData();
+                imgFormData.append('image', img.file);
+                
+                // 백엔드로 업로드 요청 후 S3 URL 받아오기 (uploadImage API 호출)
+                const uploadRes = await portfolioApi.uploadImage(imgFormData);
+                
+                // 응답 구조에 맞게 S3 URL 추출 (BaseResponse 적용 유무에 따라 조절)
+                const s3Url = uploadRes.data?.result || uploadRes.data; 
+                
+                // 모든 섹션 본문을 순회하며 가짜 로컬 주소(blob)를 진짜 S3 주소로 치환
+                for (const sec of sections.value) {
+                    if (sec.contents) {
+                        sec.contents = sec.contents.replaceAll(img.localUrl, s3Url);
+                    }
+                }
+            }
+        }
+
+        // ✨ 2. 원래 있던 포트폴리오 생성 로직 수행 (이제 contents에는 S3 URL만 들어있음)
         const formData = new FormData();
 
         const dataPayload = {
@@ -75,7 +114,7 @@ const submitPortfolio = async () => {
         
         alert('성공적으로 저장되었습니다.');
   
-        const newPortfolioIdx = response.data; 
+        const newPortfolioIdx = response.data?.result || response.data; 
         
         router.push({ path: '/portfolio-update-n-check', query: { idx: newPortfolioIdx } }); 
         
@@ -183,11 +222,14 @@ onMounted(async () => {
                                     <div class="space-y-2">
                                         <label class="text-xs font-bold text-zinc-500 dark:text-zinc-400 ml-1">상세 내용 작성</label>
                                         <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-2xl overflow-hidden focus-within:border-yellow-400 focus-within:ring-4 focus-within:ring-yellow-400/10 transition-all shadow-sm">
+                                            
                                             <SectionEditor 
                                                 :key="currentSectionIndex" 
-                                                v-model="sections[currentSectionIndex].contents"      
+                                                v-model="sections[currentSectionIndex].contents"
+                                                @imageAdded="handleSectionImageAdded"
                                                 class="w-full p-4 min-h-[300px] outline-none text-zinc-900 dark:text-white">
                                             </SectionEditor>
+
                                         </div>
                                     </div>
                                 </main>
