@@ -30,9 +30,15 @@ export async function apiFetch(url, options = {}) {
   //응답 인터셉터
   const body = await response.json().catch(() => null)
     if (body.code == 3001) {
-      console.log(body.message)
+      const role = JSON.parse(localStorage.getItem('USERINFO')).role
+      console.log(role)
+      if (role == 'ROLE_USER'){
+        window.location.href = '/login?type=personal';
+      }else{
+        window.location.href = '/login?type=company';
+      }
       localStorage.removeItem('USERINFO');
-    window.location.href = '/login';
+      
   }
   else if (!response.ok) {
     console.log('응답 받을 때 HTTP 에러')
