@@ -1,24 +1,25 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import NamecardsFront from '@/components/namecards/NamecardsFront.vue'
 import NamecardsBack from '@/components/namecards/NamecardsBack.vue'
 import { getPortfolioList, getUserPortfolioList, deletePortfolio } from '@/api/portfolio/index.js'
 import api from '@/api/namecard'
 
-let currentUserId = 1
+const route = useRoute()
 
-const userInfo = JSON.parse(localStorage.getItem('USERINFO'))
+const userInfo = JSON.parse(localStorage.getItem('USERINFO')) || {}
+const myUserId = userInfo.idx 
+const pageUserId = route.query.userId || myUserId
+const isMyPortfolio = computed(() => myUserId == pageUserId);
 
 const cardData = ref(null)
 const isLoading = ref(true)
 
-const targetUserId = userInfo.idx;
-const isMyPortfolio = computed(() => !targetUserId || targetUserId == currentUserId);
-
 const loadMyCard = async () => {
   isLoading.value = true
-  const fetchId = targetUserId || currentUserId;
-  const response = await api.getSingleNamecard(fetchId)
+  // 접속한 페이지 주인의 명함 조회
+  const response = await api.getSingleNamecard(pageUserId)
   if (response.isSuccess){
     cardData.value = response.data
   }
@@ -76,10 +77,10 @@ onMounted(async () => {
 
   try {
     let res;
-    if (targetUserId && targetUserId != currentUserId) {
-      res = await getUserPortfolioList(targetUserId, 0, 10);
-    } else {
+    if (isMyPortfolio.value) {
       res = await getPortfolioList(0, 10);
+    } else {
+      res = await getUserPortfolioList(pageUserId, 0, 10);
     }
     
     const fetchedData = res.data?.result || res.result || res.data?.data?.result || []
@@ -92,7 +93,6 @@ onMounted(async () => {
   }
 })
 </script>
-
 <template>
   <div class="bg-pattern text-gray-800 dark:text-gray-100 transition-colors duration-300 min-h-screen flex flex-col relative">
     <div id="header-placeholder"></div>
