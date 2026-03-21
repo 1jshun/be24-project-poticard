@@ -29,8 +29,12 @@ export async function apiFetch(url, options = {}) {
 
   //응답 인터셉터
   const body = await response.json().catch(() => null)
-
-  if (!response.ok) {
+    if (body.code == 3001) {
+      console.log(body.message)
+      localStorage.removeItem('USERINFO');
+    window.location.href = '/login';
+  }
+  else if (!response.ok) {
     console.log('응답 받을 때 HTTP 에러')
     throw new Error(body?.message || `HTTP ${response.status}`)
   }
