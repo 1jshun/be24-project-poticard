@@ -1,10 +1,13 @@
 <script setup>
-import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { apiFetch } from '@/plugins/interceptor'
 
+const route = useRoute()
 const router = useRouter()
+const isSubmitting = ref(false)
+const isLoading = ref(false)
 
-// 데이터 리스트 (기존 유지)
 const categories = [
   { value: 'Backend', label: 'Backend' },
   { value: 'Frontend', label: 'Frontend' },
@@ -51,6 +54,22 @@ const form = ref({
   isPublic: true,
 })
 
+const editingJobId = computed(() => {
+  const value = route.query.jobId
+  if (!value) return null
+
+  const parsed = Number(value)
+  return Number.isNaN(parsed) ? null : parsed
+})
+
+const isEditMode = computed(() => !!editingJobId.value)
+const pageTitle = computed(() => (isEditMode.value ? '공고 수정' : '공고 등록'))
+const submitLabel = computed(() => {
+  if (isLoading.value) return '불러오는 중...'
+  if (isSubmitting.value) return isEditMode.value ? '수정 중...' : '등록 중...'
+  return isEditMode.value ? '수정하기' : '등록하기'
+})
+
 const skillList = computed(() =>
   form.value.skills
     .split(',')
@@ -69,12 +88,114 @@ const errors = computed(() => {
 })
 
 const canSubmit = computed(() => Object.keys(errors.value).length === 0)
-const goBack = () => router.push('/company')
-const submit = () => {
-  if (!canSubmit.value) return
-  alert('공고 등록이 완료되었습니다!')
-  router.push('/company')
+
+const goBack = () => router.push('/company/joblist')
+
+const buildPayload = () => {
+  return {
+    title: form.value.title,
+    category: form.value.category,
+    employmentType: form.value.employmentType,
+    experience: form.value.experience,
+    location: form.value.location,
+    salaryMin: form.value.salaryMin === '' ? null : Number(form.value.salaryMin),
+    salaryMax: form.value.salaryMax === '' ? null : Number(form.value.salaryMax),
+    headcount: form.value.headcount === '' ? null : Number(form.value.headcount),
+    deadline: form.value.deadline || null,
+    workStart: form.value.workStart || null,
+    skills: form.value.skills,
+    intro: form.value.intro,
+    description: form.value.description,
+    requirements: form.value.requirements,
+    preferred: form.value.preferred,
+    process: form.value.process,
+    contactEmail: form.value.contactEmail,
+    contactPhone: form.value.contactPhone,
+    isRemotePossible: form.value.isRemotePossible,
+    isPublic: form.value.isPublic,
+  }
 }
+
+const loadJob = async () => {
+  if (!isEditMode.value) return
+
+  isLoading.value = true
+
+  try {
+    const res = await apiFetch(`/company/read/${editingJobId.value}`)
+    const item = res?.data
+
+    if (!item) {
+      throw new Error('공고 정보를 불러오지 못했습니다.')
+    }
+
+    form.value = {
+      title: item.title || '',
+      category: item.category || 'Backend',
+      employmentType: item.employmentType || 'FULL_TIME',
+      experience: item.experience || 'NEW',
+      location: item.location || 'Seoul',
+      salaryMin: item.salaryMin ?? '',
+      salaryMax: item.salaryMax ?? '',
+      deadline: item.deadline || '',
+      headcount: item.headcount ?? '1',
+      workStart: item.workStart || '',
+      skills: Array.isArray(item.skills) ? item.skills.join(', ') : item.skills || '',
+      intro: item.intro || '',
+      description: item.description || '',
+      requirements: item.requirements || '',
+      preferred: item.preferred || '',
+      process: item.process || '',
+      contactEmail: item.contactEmail || '',
+      contactPhone: item.contactPhone || '',
+      isRemotePossible: Boolean(item.isRemotePossible ?? item.remotePossible ?? false),
+      isPublic: Boolean(item.isPublic ?? item.publicOpen ?? false),
+    }
+  } catch (error) {
+    alert(error.message || '공고 정보를 불러오지 못했습니다.')
+    router.push('/company/joblist')
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const submit = async () => {
+  if (!canSubmit.value || isSubmitting.value || isLoading.value) return
+
+  isSubmitting.value = true
+
+  try {
+    const url = isEditMode.value ? `/company/update/${editingJobId.value}` : '/company/reg'
+    const method = isEditMode.value ? 'PUT' : 'POST'
+
+    const res = await apiFetch(url, {
+      method,
+      body: buildPayload(),
+    })
+
+    if (res?.isSuccess === false) {
+      throw new Error(res?.message || (isEditMode.value ? '공고 수정에 실패했습니다.' : '공고 등록에 실패했습니다.'))
+    }
+
+    alert(isEditMode.value ? '공고 수정이 완료되었습니다!' : '공고 등록이 완료되었습니다!')
+    router.push('/company/joblist')
+  } catch (error) {
+    console.error(isEditMode.value ? '공고 수정 실패:' : '공고 등록 실패:', error)
+
+    const message =
+      error?.message === 'HTTP 500'
+        ? `${isEditMode.value ? '공고 수정' : '공고 등록'}에 실패했습니다. 로그인 상태 또는 서버 로그를 확인해주세요.`
+        : error?.message || `${isEditMode.value ? '공고 수정' : '공고 등록'} 중 오류가 발생했습니다.`
+
+    alert(message)
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+onMounted(() => {
+  loadJob()
+})
 </script>
 
 <template>
@@ -82,16 +203,16 @@ const submit = () => {
     <main class="max-w-7xl mx-auto px-6 py-10">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
         <div>
-          <h1 class="text-3xl font-bold tracking-tight">공고 등록</h1>
+          <h1 class="text-3xl font-bold tracking-tight">{{ pageTitle }}</h1>
         </div>
         <div class="flex items-center gap-3">
           <button @click="goBack"
             class="px-5 py-2.5 rounded-2xl font-semibold border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 transition">
             취소
           </button>
-          <button @click="submit" :disabled="!canSubmit"
+          <button @click="submit" :disabled="!canSubmit || isSubmitting || isLoading"
             class="px-8 py-2.5 rounded-2xl font-bold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-40 shadow-lg shadow-indigo-200 dark:shadow-none transition-all">
-            등록하기
+            {{ submitLabel }}
           </button>
         </div>
       </div>
@@ -245,10 +366,10 @@ const submit = () => {
 
                 <div class="flex flex-wrap gap-2 mb-6">
                   <span class="px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-[11px] font-semibold">
-                    {{employmentTypes.find((x) => x.value === form.employmentType)?.label}}
+                    {{ employmentTypes.find((x) => x.value === form.employmentType)?.label }}
                   </span>
                   <span class="px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-[11px] font-semibold">
-                    {{experiences.find((x) => x.value === form.experience)?.label}}
+                    {{ experiences.find((x) => x.value === form.experience)?.label }}
                   </span>
                   <span class="px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-[11px] font-semibold">
                     {{ form.location }}
@@ -266,29 +387,14 @@ const submit = () => {
                       form.deadline || '-'
                     }}</span>
                   </div>
-                </div>
-
-                <div class="mt-8 flex flex-wrap gap-1.5">
-                  <span v-for="s in skillList.length ? skillList : ['Skill']" :key="s"
-                    class="text-[10px] font-bold text-zinc-500 dark:text-zinc-400">#{{ s }}</span>
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs text-zinc-400 font-medium">연락 이메일</span>
+                    <span class="text-sm font-semibold truncate max-w-[180px]">{{
+                      form.contactEmail || '-'
+                    }}</span>
+                  </div>
                 </div>
               </div>
-
-              <div class="px-8 py-6 bg-zinc-50 dark:bg-zinc-800/50 flex items-center justify-between">
-                <div class="flex -space-x-2">
-                  <div class="w-8 h-8 rounded-full border-2 border-white bg-zinc-200"></div>
-                  <div class="w-8 h-8 rounded-full border-2 border-white bg-zinc-300"></div>
-                </div>
-                <span class="text-[10px] text-zinc-400 font-medium">공고 등록 시 실시간 노출</span>
-              </div>
-            </div>
-
-            <div
-              class="mt-6 p-6 rounded-3xl bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20">
-              <p class="text-xs text-amber-800/70 dark:text-amber-400/60 leading-relaxed italic">
-                💡 공고 제목에 **주요 기술 스택**이나 **핵심 혜택**을 포함하면 지원율이 최대 30%
-                상승합니다!
-              </p>
             </div>
           </div>
         </aside>
@@ -298,18 +404,6 @@ const submit = () => {
 </template>
 
 <style scoped>
-/* 더 부드러운 전환 효과 */
-input,
-select,
-textarea,
-button {
-  transition: all 0.2s ease-in-out;
-}
-
-.rounded-\[2\.5rem\] {
-  border-radius: 2.5rem;
-}
-
 .bg-pattern {
   background-color: #f8fafc;
 }

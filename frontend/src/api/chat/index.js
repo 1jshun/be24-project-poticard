@@ -1,36 +1,45 @@
 import { apiFetch } from '../../plugins/interceptor.js'
 
-// 채팅방 목록
-const chatRoomList = async () => {
+// API 응답의 room 객체를 템플릿용으로 매핑
+const mapRoom = (room) => ({
+  id: room.idx,
+  opponentIdx: room.opponentUserIdx,
+  name: room.opponentUserName || '-',
+  avatar: room.opponentUserProfileImage || room.opponentProfileImg || null,
+  company: room.opponentUserCompany || room.company || '',
+  role: room.opponentUserCareer || room.role || '',
+  content: room.lastContents || room.lastContent || '',
+  time: room.lastContentsTime || room.lastContentTime || null,
+  unread: room.unreadCount ?? room.unread ?? 0,
+  tags: room.tags || [],
+  intro: room.intro || '',
+  opponentLeft: !!room.opponentLeft,
+})
+
+// 채팅방 목록 - Slice<ChatRoomDto.ListRes> 응답
+const chatRoomList = async (page = 0, size = 10) => {
   try {
-    const res = await apiFetch('/chat/room/list')
+    const params = new URLSearchParams({ page: String(page), size: String(size) })
+    const res = await apiFetch(`/chat/room/list?${params}`)
 
-    if (res && res.data && Array.isArray(res.data)) {
-      const mappedData = res.data.map((room) => ({
-        id: room.idx,
-        opponentIdx: room.opponentUserIdx,
-        name: room.opponentUserName || '',
-        avatar: room.opponentUserProfileImage || '',
-        role: room.opponentUserCareer || '',
-        content: room.lastContents || '',
-        time: room.lastContentsTime || null,
-        unread: room.unreadCount || 0,
-      }))
-      return { ...res, data: mappedData }
-    }
+    if (!res?.data) return res
 
-    return res
+    // BaseResponse.success(Slice) → data.content
+    const rawList = Array.isArray(res.data.content) ? res.data.content : []
+    const mappedData = rawList.map(mapRoom)
+
+    return { ...res, data: { ...res.data, content: mappedData } }
   } catch (error) {
     console.error('채팅방 목록 호출 실패:', error.message)
     throw error
   }
 }
 
-// 특정 채팅방의 메시지 가져오기
-const getChatMessages = async (roomId) => {
+// 특정 채팅방의 메시지 가져오기 - Slice<ChatMessageDto.Res> 응답
+const getChatMessages = async (roomId, page = 0, size = 20) => {
   try {
-    const res = await apiFetch(`/chat/room/${roomId}/messages`)
-    console.log(res)
+    const params = new URLSearchParams({ page: String(page), size: String(size) })
+    const res = await apiFetch(`/chat/room/${roomId}/messages?${params}`)
     return res
   } catch (error) {
     console.error(`${roomId}번 방 이전 채팅 내역 조회 실패`, error.message)
@@ -51,14 +60,27 @@ const loadPortfolios = async () => {
 }
 
 // 채팅방 생성
-const createChatRoom = async (guestUserId) => {
+const createChatRoom = async (guestUserEmail) => {
   try {
-    const res = await apiFetch(`/chat/room/create/${guestUserId}`, {
+    const res = await apiFetch(`/chat/room/create/${guestUserEmail}`, {
       method: 'POST',
     })
     return res
   } catch (error) {
     console.error('채팅방 생성 실패:', error.message)
+    throw error
+  }
+}
+
+// 채팅방 나가기
+const leaveChatRoom = async (roomIdx) => {
+  try {
+    const res = await apiFetch(`/chat/room/${roomIdx}/leave`, {
+      method: 'PATCH',
+    })
+    return res
+  } catch (error) {
+    console.error('채팅방 나가기 실패:', error.message)
     throw error
   }
 }
@@ -82,5 +104,6 @@ export default {
   getChatMessages,
   loadPortfolios,
   createChatRoom,
+  leaveChatRoom,
   uploadChatFiles,
 }

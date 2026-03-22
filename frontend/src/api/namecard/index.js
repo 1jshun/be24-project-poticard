@@ -28,9 +28,56 @@ const getNamecardList = async (page, size) => {
   }
 }
 
+const editNamcard = async(cardData)=>{
+  try{
+    const namecard = await apiFetch(`/namecard/reg`, {
+      method:'POST',
+      body:{
+        title:cardData.title,
+        layout:cardData.layout,
+        color:cardData.color,
+        url:cardData.url,
+        description:cardData.description,
+        keywords:cardData.keywords,
+      }
+    })
+    const user = await apiFetch(`/user/nonessential`, {
+        method:'POST',
+        body:{
+          address:cardData.address,
+          affiliation:cardData.affiliation,
+          career:cardData.career,
+          gender:cardData.gender
+        }
+      })
+    } catch (error) {
+    console.error('명함 리스트 정보 호출 실패:', error.message)
+  }
+}
+
+const editProfileImage = async(file) => {
+  try{
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const res = await apiFetch(`/namecard/setprofile`, {
+      method: 'POST',
+      body: formData
+    })
+    
+
+    return res;
+  } catch (error) {
+    console.error("이미지 업로드 실패 : ",error)
+  }
+}
+
+
 
 export default {
   getSingleNamecard,
   getNamecardsInfo,
-  getNamecardList
+  getNamecardList,
+  editNamcard,
+  editProfileImage
 }

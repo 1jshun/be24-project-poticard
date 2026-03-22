@@ -18,42 +18,6 @@ const loginForm = reactive({
   password: '',
 })
 
-// cookie 가져오는 함수
-const getCookie = (name) => {
-  const value = `; ${document.cookie}`
-  const parts = value.split(`; ${name}=`)
-  if (parts.length === 2) return parts.pop().split(';').shift()
-  return null
-}
-
-// cookie 가져와서 userIdx 반환하는 함수
-const getIdxFromJwtCookie = (cookieName) => {
-  const token = getCookie(cookieName)
-  if (!token) return null
-
-  try {
-    const base64Url = token.split('.')[1]
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
-
-    // 브라우저의 atob를 이용해 디코딩 후 JSON 파싱
-    const payload = JSON.parse(
-      decodeURIComponent(
-        atob(base64)
-          .split('')
-          .map(function (c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
-          })
-          .join(''),
-      ),
-    )
-
-    return payload.idx // JWT payload 안에 들어있는 idx 반환
-  } catch (e) {
-    console.error('JWT 파싱 실패:', e)
-    return null
-  }
-}
-
 onMounted(() => {
   loginForm.identifier = ''
   loginForm.password = ''
@@ -96,14 +60,16 @@ const login = async () => {
 
   try {
     const res = await api.login({
-      name: id,
       email: id,
       password: loginForm.password,
     })
-
-    const userInfo = typeof res === 'object' && res ? res : { userName: id }
-    authStore.login(userInfo)
-
+    if (res == null){
+      return
+    }
+    
+    // const userInfo = typeof res === 'object' && res.data ? res : { email: id }
+    const user = await api.getMyInfo()
+    authStore.login(user)
     // redirect 쿼리가 있으면 우선 사용, 없으면 타입에 따라 분기
     let redirect = route.query.redirect
     if (!redirect) {
@@ -125,7 +91,8 @@ const login = async () => {
           'BLHgfPga02L2u89uc4xjhbUFTy_U04rQCjGq7o24oxtqfVmAPHTxOmp6xndSHZtGQpmt7gqTFdMXco2gRNP7_p8',
       })
 
-      const userIdx = getIdxFromJwtCookie('ATOKEN')
+      const userInfo = JSON.parse(localStorage.getItem('USERINFO'))
+      const userIdx = userInfo.data.idx
 
       if (!userIdx) {
         console.warn('Invalid user')
@@ -142,6 +109,7 @@ const login = async () => {
     serverError.value = e?.userMessage || '로그인 실패'
   }
 }
+
 </script>
 
 <template>
@@ -238,7 +206,49 @@ const login = async () => {
             로그인
           </button>
         </form>
+                <!-- SNS 로그인 섹션 -->
+        <div class="mt-10">
+          <div class="relative flex items-center justify-center mb-8">
+            <div class="flex-grow border-t border-gray-200 dark:border-zinc-800"></div>
+            <span class="flex-shrink mx-4 text-[11px] font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-widest">
+              SNS Quick Login
+            </span>
+            <div class="flex-grow border-t border-gray-200 dark:border-zinc-800"></div>
+          </div>
 
+          <div class="flex justify-center items-center gap-6">
+            <!-- 카카오 버튼 -->
+            <button 
+              type="button" 
+              @click="api.social('kakao')"
+              class="group flex flex-col items-center gap-2 outline-none"
+            >
+              <div class="w-14 h-14 bg-[#FEE500] rounded-full flex items-center justify-center shadow-md group-hover:shadow-lg group-hover:scale-110 group-active:scale-95 transition-all">
+                <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 3C7.029 3 3 6.129 3 10C3 12.48 4.632 14.671 7.148 15.939L6.11 19.749C6.056 19.949 6.175 20.151 6.372 20.203C6.441 20.221 6.513 20.218 6.58 20.194L11.021 17.21C11.343 17.243 11.668 17.26 12 17.26C16.971 17.26 21 14.131 21 10.26C21 6.389 16.971 3.26 12 3.26V3Z" fill="#3C1E1E"/>
+                </svg>
+              </div>
+              <span class="text-[10px] font-bold text-gray-400 group-hover:text-gray-600 transition-colors">카카오</span>
+            </button>
+
+            <!-- 구글 버튼 -->
+            <button 
+              type="button" 
+              @click="api.social('google')"
+              class="group flex flex-col items-center gap-2 outline-none"
+            >
+              <div class="w-14 h-14 bg-white border border-gray-100 rounded-full flex items-center justify-center shadow-md group-hover:shadow-lg group-hover:scale-110 group-active:scale-95 transition-all">
+                <svg class="w-6 h-6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-1 .67-2.28 1.07-3.71 1.07-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                  <path d="M5.84 14.11c-.22-.67-.35-1.38-.35-2.11s.13-1.44.35-2.11V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.83z" fill="#FBBC05"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.83c.87-2.6 3.3-4.51 6.16-4.51z" fill="#EA4335"/>
+                </svg>
+              </div>
+              <span class="text-[10px] font-bold text-gray-400 group-hover:text-gray-600 transition-colors">구글</span>
+            </button>
+          </div>
+        </div>
         <p class="text-center mt-6 text-sm text-gray-400">
           로그인 정보를 잊어버리셨나요?
           <router-link

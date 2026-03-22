@@ -34,9 +34,7 @@ const profile = async (req) => {
 }
 
 const checkEmailDuplicate = async (email) => {
-  const res = await apiFetch('/user/check-email', {
-    method: 'POST',
-    body: { email },
+  const res = await apiFetch(`/user/check-email?email=${email}`, {
   })
 
   return res
@@ -56,4 +54,18 @@ const subscribePush = async (subscription, userIdx) => {
   });
 };
 
-export default { login, signup, profile, checkEmailDuplicate, subscribePush }
+const getMyInfo = async () => {
+  try {
+    const res = await apiFetch(`/user/me`)
+    return res
+  } catch (error) {
+    console.error('내 정보 호출 실패:', error.message)
+  }
+}
+
+const social = async (provider) =>{
+  const baseUrl = '/api/oauth2/authorization/'
+  window.location.href = `${baseUrl}${provider}`
+}
+
+export default { login, signup, profile, checkEmailDuplicate, subscribePush , getMyInfo, social}

@@ -9,7 +9,7 @@ const route = useRoute()
 
 const loadCompanyInfo = () => {
   try {
-    return JSON.parse(localStorage.getItem('USERINFO') || 'null')
+    return JSON.parse(locsessionStoragealStorage.getItem('USERINFO') || 'null')
   } catch {
     return null
   }
@@ -112,9 +112,8 @@ const openLogoutConfirm = (e) => {
 const cancelLogout = () => (showLogoutConfirm.value = false)
 
 const confirmLogout = () => {
-  localStorage.removeItem('USERINFO')
-  localStorage.removeItem('ATOKEN')
-  sessionStorage.removeItem('ATOKEN')
+  sessionStorage.removeItem('USERINFO')
+  document.cookie.removeItem('ATOKEN')
   document.cookie = 'ATOKEN=; Max-Age=0; path=/'
   document.cookie = 'RTOKEN=; Max-Age=0; path=/'
 

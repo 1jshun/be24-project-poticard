@@ -28,13 +28,13 @@ export const useNamecardStore = defineStore('namecard', () => {
           name: res.data.name,
           role: res.data.affiliation,
           description: res.data.title,
-          avatar: res.data.profileImage,
+          profileImage: res.data.profileImage,
           keywords: res.data.keywords,
           email: res.data.email,
           color: res.data.color,
           phone: res.data.phone,
           address: res.data.address,
-          website: res.data.url,
+          url: res.data.url,
         }
 
         sessionStorage.setItem(storageKey, JSON.stringify(mappedData))
