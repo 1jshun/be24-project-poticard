@@ -1,6 +1,10 @@
 <script setup>
 import { computed, ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import matchingApi from '@/api/matching'
+
+const route = useRoute()
+const router = useRouter()
 
 const companies = ref([])
 const loading = ref(false)
@@ -79,6 +83,7 @@ const openDetail = async (companyId) => {
       target.views = detail.views
       target.likes = detail.likes
       target.isFavorite = detail.isFavorite
+      target.isApplied = detail.isApplied
       target.detail = detail.detail
     }
   } catch (error) {
@@ -88,8 +93,17 @@ const openDetail = async (companyId) => {
   }
 }
 
-const closeDetail = () => {
+const closeDetail = async () => {
   selectedCompany.value = null
+
+  if (route.query.jobId) {
+    const nextQuery = { ...route.query }
+    delete nextQuery.jobId
+    await router.replace({
+      path: route.path,
+      query: nextQuery,
+    })
+  }
 }
 
 const toggleFavorite = async (company) => {
@@ -110,6 +124,30 @@ const toggleFavorite = async (company) => {
     }
   } catch (error) {
     alert(error.message || '즐겨찾기 처리에 실패했습니다.')
+  }
+}
+
+const applyCompany = async (company) => {
+  if (!company || company.isApplied) return
+
+  try {
+    const res = await matchingApi.apply(company.id)
+    const result = res?.data || {}
+
+    company.isApplied = Boolean(result.applied)
+
+    const target = companies.value.find((item) => item.id === company.id)
+    if (target) {
+      target.isApplied = company.isApplied
+    }
+
+    if (selectedCompany.value && selectedCompany.value.id === company.id) {
+      selectedCompany.value.isApplied = company.isApplied
+    }
+
+    alert('지원이 완료되었습니다.')
+  } catch (error) {
+    alert(error.message || '지원 처리에 실패했습니다.')
   }
 }
 
@@ -151,8 +189,13 @@ const goNext = () => {
   page.value = Math.min(totalPages.value, page.value + 1)
 }
 
-onMounted(() => {
-  loadCompanies()
+onMounted(async () => {
+  await loadCompanies()
+
+  const jobId = Number(route.query.jobId)
+  if (!Number.isNaN(jobId) && jobId > 0) {
+    await openDetail(jobId)
+  }
 })
 </script>
 
@@ -283,14 +326,28 @@ onMounted(() => {
             </span>
           </div>
 
-          <div class="mt-6 flex items-center justify-between">
+          <div class="mt-6 flex items-center justify-between gap-2">
             <div class="text-sm text-zinc-400 font-bold">업데이트: {{ c.updatedAt || '-' }}</div>
-            <button
-              @click="openDetail(c.id)"
-              class="px-5 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-zinc-900 font-black"
-            >
-              보기
-            </button>
+            <div class="flex items-center gap-2">
+              <button
+                @click="applyCompany(c)"
+                :disabled="c.isApplied"
+                :class="[
+                  'px-4 py-3 rounded-2xl font-black border',
+                  c.isApplied
+                    ? 'bg-zinc-100 text-zinc-400 border-zinc-200 cursor-not-allowed'
+                    : 'bg-white border-zinc-200 hover:bg-zinc-50 text-zinc-900',
+                ]"
+              >
+                {{ c.isApplied ? '지원완료' : '지원하기' }}
+              </button>
+              <button
+                @click="openDetail(c.id)"
+                class="px-5 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-zinc-900 font-black"
+              >
+                보기
+              </button>
+            </div>
           </div>
         </article>
       </section>
@@ -381,6 +438,27 @@ onMounted(() => {
               </p>
             </div>
           </section>
+
+          <div class="mt-8 flex items-center justify-end gap-2 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+            <button
+              @click="applyCompany(selectedCompany)"
+              :disabled="selectedCompany.isApplied"
+              :class="[
+                'px-5 py-3 rounded-2xl font-black border',
+                selectedCompany.isApplied
+                  ? 'bg-zinc-100 text-zinc-400 border-zinc-200 cursor-not-allowed'
+                  : 'bg-white border-zinc-200 hover:bg-zinc-50 text-zinc-900',
+              ]"
+            >
+              {{ selectedCompany.isApplied ? '지원완료' : '지원하기' }}
+            </button>
+            <button
+              @click="closeDetail"
+              class="px-5 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-zinc-900 font-black"
+            >
+              닫기
+            </button>
+          </div>
         </div>
       </div>
     </div>
