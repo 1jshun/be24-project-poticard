@@ -18,42 +18,6 @@ const loginForm = reactive({
   password: '',
 })
 
-// cookie 가져오는 함수
-const getCookie = (name) => {
-  const value = `; ${document.cookie}`
-  const parts = value.split(`; ${name}=`)
-  if (parts.length === 2) return parts.pop().split(';').shift()
-  return null
-}
-
-// cookie 가져와서 userIdx 반환하는 함수
-const getUserFromJwtCookie = (cookieName) => {
-  const token = getCookie(cookieName)
-  if (!token) return null
-
-  try {
-    const base64Url = token.split('.')[1]
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
-
-    // 브라우저의 atob를 이용해 디코딩 후 JSON 파싱
-    const payload = JSON.parse(
-      decodeURIComponent(
-        atob(base64)
-          .split('')
-          .map(function (c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
-          })
-          .join(''),
-      ),
-    )
-
-    return payload // JWT payload 안에 들어있는 idx 반환
-  } catch (e) {
-    console.error('JWT 파싱 실패:', e)
-    return null
-  }
-}
-
 onMounted(() => {
   loginForm.identifier = ''
   loginForm.password = ''
@@ -127,8 +91,8 @@ const login = async () => {
           'BLHgfPga02L2u89uc4xjhbUFTy_U04rQCjGq7o24oxtqfVmAPHTxOmp6xndSHZtGQpmt7gqTFdMXco2gRNP7_p8',
       })
 
-      const userInfo = getUserFromJwtCookie('ATOKEN')
-      const userIdx = userInfo.idx
+      const userInfo = JSON.parse(localStorage.getItem('USERINFO'))
+      const userIdx = userInfo.data.idx
 
       if (!userIdx) {
         console.warn('Invalid user')
@@ -146,14 +110,6 @@ const login = async () => {
   }
 }
 
-// 소셜 로그인 리다이렉트 함수
-const socialLogin = (provider) => {
-  const baseUrl = 'http://localhost:5173/api/oauth2/authorization/'
-  window.location.href = `${baseUrl}${provider}`
-  const user = getUserFromJwtCookie('ATOKEN')
-  user.email = provider+'@social.login'
-  authStore.login(user)
-}
 </script>
 
 <template>
@@ -264,7 +220,7 @@ const socialLogin = (provider) => {
             <!-- 카카오 버튼 -->
             <button 
               type="button" 
-              @click="socialLogin('kakao')"
+              @click="api.social('kakao')"
               class="group flex flex-col items-center gap-2 outline-none"
             >
               <div class="w-14 h-14 bg-[#FEE500] rounded-full flex items-center justify-center shadow-md group-hover:shadow-lg group-hover:scale-110 group-active:scale-95 transition-all">
@@ -278,7 +234,7 @@ const socialLogin = (provider) => {
             <!-- 구글 버튼 -->
             <button 
               type="button" 
-              @click="socialLogin('google')"
+              @click="api.social('google')"
               class="group flex flex-col items-center gap-2 outline-none"
             >
               <div class="w-14 h-14 bg-white border border-gray-100 rounded-full flex items-center justify-center shadow-md group-hover:shadow-lg group-hover:scale-110 group-active:scale-95 transition-all">

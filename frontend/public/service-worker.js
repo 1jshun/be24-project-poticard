@@ -21,7 +21,7 @@ self.addEventListener('push', (event) => {
     }
   }
 
-  const title = payload.senderEmail || '새 메시지'
+  const title = payload.senderName || '새 메시지'
   const options = {
     body: payload.contents || '내용이 없습니다.',
     icon: '/img/icons/android-chrome-192x192.png',
@@ -31,7 +31,8 @@ self.addEventListener('push', (event) => {
     renotify: true,
     data: {
       url: '/chat',
-      roomIdx: payload.roomIdx, // 클릭 시 해당 방으로 이동하기 위한 데이터
+      roomIdx: payload.roomIdx,
+      senderIdx: payload.senderIdx ?? payload.senderId,
     },
   }
 
@@ -48,6 +49,7 @@ self.addEventListener('push', (event) => {
             senderIdx: payload.senderIdx,
             senderEmail: payload.senderEmail,
             senderName: payload.senderName,
+            senderProfileImage: payload.senderProfileImage,
             contents: payload.contents,
             contentsTime: payload.contentsTime,
           },
@@ -58,16 +60,19 @@ self.addEventListener('push', (event) => {
   event.waitUntil(Promise.all([showNotification, pushToClient]))
 })
 
-// 알림 클릭 시 처리
+// 알림 클릭 시 처리 - senderId로 해당 채팅방으로 이동
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
+  const { senderIdx } = event.notification.data || {}
+  const chatUrl = senderIdx != null ? `/chat?senderId=${senderIdx}` : '/chat'
+
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       if (clientList.length > 0) {
         clientList[0].focus()
-        return clientList[0].navigate('/chat')
+        return clientList[0].navigate(chatUrl)
       }
-      return self.clients.openWindow('/chat')
+      return self.clients.openWindow(chatUrl)
     }),
   )
 })

@@ -104,6 +104,20 @@ const getAllKeywords = async () => {
     console.error('포트폴리오 키워드 호출 실패:', error.message)
   }
 }
+export const uploadImage = async (formData) => {
+  const token = localStorage.getItem('token') || ''; 
+  
+  const res = await fetch('/api/portfolio/image-upload', {
+    method: 'POST',
+    body: formData,
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  
+  if (!res.ok) throw new Error('서버 에러 발생');
+  return await res.json();
+}
 
 export default {
   getProjects,  
@@ -120,4 +134,5 @@ export default {
   updateSection,
   deletePortfolio,
   getAllKeywords,
+  uploadImage,
 }

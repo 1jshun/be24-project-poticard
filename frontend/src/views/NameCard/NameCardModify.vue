@@ -3,9 +3,33 @@ import { onMounted, ref, reactive, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import NamecardsFront from '@/components/namecards/NamecardsFront.vue'
 import NamecardsBack from '@/components/namecards/NamecardsBack.vue'
-import { useNamecardStore } from '@/stores/namecardStore'
 import api from '@/api/namecard'
 import portfolioApi from '@/api/portfolio'
+
+const fileInput = ref(null)
+
+const triggerFileInput = () => {
+  fileInput.value.click();
+}
+
+const handleFileChange = (event) =>{
+  const file = event.target.files[0]
+  if (file) {
+    console.log("선택된 파일 : ", file.name)
+    uploadImage(file);
+  }
+}
+
+const uploadImage = async (file) => {
+  try {
+    await api.editProfileImage(file)
+    alert('프로필 이미지가 변경되었습니다.')
+
+    await loadMyCard()
+  } catch (error){
+    console.error('업로드 실패 : ',error)
+  }
+}
 
 const router = useRouter()
 
@@ -20,22 +44,17 @@ const edit = async (cardData) => {
   }
 }
 
-// 1. 초기 더미 데이터 (구조 정의)
+const userInfo = JSON.parse(localStorage.getItem('USERINFO'))
+
 const dummy = {
-  email: "example@example.com",
-  title: "제목",
-  description: "설명",
-  layout: "Type A",
-  color: "YELLOW",
-  affiliation: "포티 컴퍼니",
-  name: "홍길동",
-  avatar: "http://cdn.testprofileimage.api/0100",
-  career: "100년차 개발자",
-  url: "https://porti.example.com/user100",
-  address: "서울특별시 강남구 테헤란로 100",
-  phone: "010-0000-0100",
-  keywords: []
+  email: userInfo.email,
+  title: "등록되지 않은 명함",
+  affiliation: userInfo.affiliation,
+  description:"아래 '수정 완료'를 눌러 최초 등록을 실행해주세요.",
+  name: userInfo.name,
+  career: userInfo.career
 }
+
 
 // 2. 상태 관리
 const cardData = ref({ ...dummy }) 
@@ -45,49 +64,33 @@ const isFlipped = ref(false)
 // 포트폴리오에서 가져온 중복 제거된 키워드 목록
 const availableKeywords = ref([])
 
-// JWT 로직
-let currentUserId = 1
-const getCookie = (name) => {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(';').shift();
-};
-
 const loadMyCard = async () => {
-  isLoading.value = true
-  const token = getCookie('ATOKEN');
-  
-  if (token) {
-    try {
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const payload = JSON.parse(window.atob(base64));
-      currentUserId = payload.idx;
-      
-      const response = await api.getSingleNamecard(currentUserId)
-      if (response) {
-        const responseData = response.data || response
-        cardData.value = { 
-          ...dummy, 
-          userIdx: currentUserId, // ✨ [추가됨] 더미 데이터에도 현재 접속한 유저의 식별자를 강제로 주입
-          ...responseData,
-          keywords: responseData.keywords || [] 
-        }
-      } else {
-        // ✨ 데이터가 아예 없을 때(신규 유저)를 대비한 로직 추가
-        cardData.value = {
-          ...dummy,
-          userIdx: currentUserId,
-          keywords: []
-        }
+const currentUserId = userInfo.idx
+  try {
+  const response = await api.getSingleNamecard(currentUserId)
+    if (response) {
+      const responseData = response.data || response
+      cardData.value = { 
+        ...dummy, 
+        userIdx: currentUserId, // ✨ [추가됨] 더미 데이터에도 현재 접속한 유저의 식별자를 강제로 주입
+        ...responseData,
+        keywords: responseData.keywords || [] ,
+        profileImage: responseData.profileImage
       }
-    } catch (e) {
-      console.error("데이터 로드 실패, 기본값 사용", e);
+    } else {
+      // ✨ 데이터가 아예 없을 때(신규 유저)를 대비한 로직 추가
       cardData.value = {
         ...dummy,
         userIdx: currentUserId,
         keywords: []
       }
+    }
+  } catch (e) {
+    console.error("데이터 로드 실패, 기본값 사용", e);
+    cardData.value = {
+      ...dummy,
+      userIdx: currentUserId,
+      keywords: []
     }
   }
   isLoading.value = false
@@ -279,7 +282,16 @@ const updateColor = (color) => {
               </div>
 
               <div class="mt-8 grid grid-cols-2 md:grid-cols-3 gap-4">
-                <button class="col-span-1 py-4 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-gray-200 rounded-2xl font-bold hover:bg-gray-50 transition-all flex flex-col items-center justify-center gap-1">
+                <input
+                  type="file"
+                  ref="fileInput"
+                  class="hidden"
+                  accept="image/*"
+                  @change="handleFileChange"
+                />
+                <button 
+                  @click="triggerFileInput"
+                  class="col-span-1 py-4 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-gray-200 rounded-2xl font-bold hover:bg-gray-50 transition-all flex flex-col items-center justify-center gap-1">
                   <i class="fa-solid fa-image text-xl mb-1"></i>
                   <span class="text-xs">프로필 이미지 설정</span>
                 </button>

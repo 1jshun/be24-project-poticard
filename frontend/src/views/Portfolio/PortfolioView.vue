@@ -4,39 +4,24 @@ import { useRoute } from 'vue-router'
 import NamecardsFront from '@/components/namecards/NamecardsFront.vue'
 import NamecardsBack from '@/components/namecards/NamecardsBack.vue'
 import { getPortfolioList, getUserPortfolioList, deletePortfolio } from '@/api/portfolio/index.js'
-import { useNamecardStore } from '@/stores/namecardStore'
+import api from '@/api/namecard'
 
 const route = useRoute()
 
-let currentUserId = 1
-const getCookie = (name) => {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(';').shift();
-};
+const userInfo = JSON.parse(localStorage.getItem('USERINFO')) || {}
+const myUserId = userInfo.idx 
+const pageUserId = route.query.userId || myUserId
+const isMyPortfolio = computed(() => myUserId == pageUserId);
 
-const token = getCookie('ATOKEN'); 
-
-if (token) {
-  const base64Url = token.split('.')[1];
-  const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-  const payload = JSON.parse(window.atob(base64));
-  currentUserId = payload.idx;
-}
-
-const store = useNamecardStore()
 const cardData = ref(null)
 const isLoading = ref(true)
 
-const targetUserId = route.query.targetUser || null;
-const isMyPortfolio = computed(() => !targetUserId || targetUserId == currentUserId);
-
 const loadMyCard = async () => {
   isLoading.value = true
-  const fetchId = targetUserId || currentUserId;
-  const response = await store.getNamecard(fetchId)
-  if (response){
-    cardData.value = response
+  // 접속한 페이지 주인의 명함 조회
+  const response = await api.getSingleNamecard(pageUserId)
+  if (response.isSuccess){
+    cardData.value = response.data
   }
   isLoading.value = false
 }
@@ -92,10 +77,10 @@ onMounted(async () => {
 
   try {
     let res;
-    if (targetUserId && targetUserId != currentUserId) {
-      res = await getUserPortfolioList(targetUserId, 0, 10);
-    } else {
+    if (isMyPortfolio.value) {
       res = await getPortfolioList(0, 10);
+    } else {
+      res = await getUserPortfolioList(pageUserId, 0, 10);
     }
     
     const fetchedData = res.data?.result || res.result || res.data?.data?.result || []
@@ -108,7 +93,6 @@ onMounted(async () => {
   }
 })
 </script>
-
 <template>
   <div class="bg-pattern text-gray-800 dark:text-gray-100 transition-colors duration-300 min-h-screen flex flex-col relative">
     <div id="header-placeholder"></div>
@@ -151,7 +135,7 @@ onMounted(async () => {
             class="group bg-white dark:bg-zinc-900 rounded-2xl border border-gray-100 dark:border-zinc-800 overflow-hidden hover:shadow-xl hover:shadow-yellow-100/50 dark:hover:shadow-none hover:-translate-y-1 transition-all duration-300 cursor-pointer">
             
             <div class="w-full h-48 bg-gray-100 dark:bg-zinc-800 relative overflow-hidden">
-              <img v-if="portfolio.image" :src="portfolio.image" alt="Hero Image" class="w-full h-full object-cover" />
+              <img v-if="portfolio.image" :src="portfolio.image" alt="Hero Image" class="w-full h-full object-contain p-2"/>
               <div v-else class="absolute inset-0 flex items-center justify-center text-gray-300 dark:text-zinc-700">
                 <i class="fa-regular fa-image text-4xl"></i>
               </div>

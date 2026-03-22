@@ -12,7 +12,6 @@ const extractedKeywords = ref([])
 const projects = ref([])
 const isAiLoading = ref(false)
 
-// ✨ 1. PRO 유저 여부를 저장할 변수 추가 (기본값 false)
 const isProUser = ref(false)
 
 const ui = reactive({
@@ -52,7 +51,7 @@ const extractKeywords = async () => {
 
   if (!loadingBtn || !tagSection || !nextStepBtn) return
 
-  loadingBtn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> 수정된 내용 저장 및 키워드 분석 중...'
+  loadingBtn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> 확정 및 분석 중...'
   loadingBtn.disabled = true
 
   try {
@@ -83,7 +82,6 @@ const extractKeywords = async () => {
     await portfolioApi.updateKeywords(portfolioIdx, extractedKeywords.value)
 
     tagSection.classList.remove('hidden')
-    tagSection.classList.add('animate-fade-in')
     loadingBtn.classList.add('hidden')
     nextStepBtn.classList.remove('hidden')
     
@@ -96,7 +94,7 @@ const extractKeywords = async () => {
     console.error('내용 및 키워드 저장 실패:', error)
     alert('키워드 추출에 실패했습니다. 포트폴리오 내용을 다시 확인해 주세요.')
     
-    loadingBtn.innerHTML = '내용 확정 및 키워드 추출 <i class="fa-solid fa-wand-sparkles text-point-yellow"></i>'
+    loadingBtn.innerHTML = '내용 확정 및 키워드 추출 <i class="fa-solid fa-wand-sparkles text-yellow-500"></i>'
     loadingBtn.disabled = false
   }
 }
@@ -130,9 +128,8 @@ const makeReview = async (contentToReview) => {
 }
 
 const requestAiReview = async () => {
-  // ✨ 2. 클릭 시 PRO 유저가 아니면 차단 알림 띄우기
   if (!isProUser.value) {
-    alert('PRO가 아닌 사용자는 이용할 수 없습니다.');
+    alert('PRO 요금제 사용자만 이용할 수 있습니다.');
     return;
   }
 
@@ -179,7 +176,6 @@ const activeProject = () => projects.value[ui.projectIndex]
 onMounted(async () => {
   const portfolioIdx = route.query.idx || 1
 
-  // ✨ 3. 꼬여있던 문법 수정 (PRO 유저 확인)
   try {
     const proRes = await checkProUser() 
     if (proRes?.isSuccess) {
@@ -189,7 +185,6 @@ onMounted(async () => {
     console.error('PRO 상태 확인 실패:', error)
   }
 
-  // 기존 섹션 데이터 불러오기 복구
   try {
     const response = await portfolioApi.getPortfolioSections(portfolioIdx)
     if (response?.isSuccess && response?.data) {
@@ -225,113 +220,79 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="bg-pattern text-gray-800 dark:text-gray-200 flex flex-col min-h-screen">
-    <main class="flex-1 pt-10 pb-20 px-4">
-      <div class="max-w-4xl mx-auto">
-        <div class="mb-12 max-w-3xl mx-auto">
-          <div
-            class="flex justify-between text-sm font-bold text-gray-400 dark:text-gray-500 mb-2 px-1 font-poppins"
-          >
-            <span>01. 프로젝트 작성</span>
-            <span class="text-yellow-300">02. 프로젝트 수정 & 확인</span>
-            <span>03. 스타일</span>
-          </div>
-          <div class="w-full h-1.5 bg-gray-200 dark:bg-zinc-800 rounded-full overflow-hidden">
-            <div class="w-2/3 h-full bg-yellow-300 rounded-full transition-all duration-700"></div>
-          </div>
+  <div class="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans transition-colors selection:bg-yellow-200 selection:text-zinc-900 flex flex-col">
+    <main class="flex-1 py-12 px-4 sm:px-6 lg:px-8 max-w-[1400px] mx-auto w-full">
+      
+      <div class="mb-12 max-w-4xl mx-auto text-center">
+        <div class="inline-flex items-center gap-2 px-4 py-2 bg-yellow-100 text-yellow-800 rounded-full text-xs font-black tracking-widest mb-6 uppercase">
+          Step 02
         </div>
+        <h1 class="text-3xl md:text-4xl font-black tracking-tight mb-4">프로젝트 수정 및 확인</h1>
+        <p class="text-zinc-500 dark:text-zinc-400">작성한 내용을 최종 점검하고, 핵심 키워드를 추출하세요.</p>
+        
+        <div class="mt-8 flex justify-center gap-2 text-sm font-bold text-zinc-300 dark:text-zinc-700">
+          <span>작성</span>
+          <span>―</span>
+          <span class="text-yellow-500">수정</span>
+          <span>―</span>
+          <span>스타일</span>
+        </div>
+      </div>
 
-        <div
-          class="bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-2xl shadow-gray-200/40 dark:shadow-none border border-gray-100 dark:border-zinc-800 p-8 md:p-14 relative"
-        >
-          <div
-            class="flex flex-col md:flex-row md:items-start justify-between mb-16 pb-10 border-b border-gray-50 dark:border-zinc-800 gap-6"
-          >
+      <div class="max-w-4xl mx-auto">
+        <div class="bg-white dark:bg-zinc-900 rounded-[2rem] shadow-xl shadow-zinc-200/40 dark:shadow-none border border-zinc-200/60 dark:border-zinc-800 p-8 md:p-14 relative overflow-hidden">
+          
+          <div class="flex flex-col md:flex-row md:items-center justify-between mb-12 border-b border-zinc-100 dark:border-zinc-800 pb-8 gap-6">
             <div>
-              <div
-                class="inline-flex items-center gap-2 px-3 py-1 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-500 rounded-full text-[11px] font-bold mb-4"
-              >
-                <i class="fa-solid fa-pen-to-square"></i> Content Edit
-              </div>
-              <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-3">
-                내용 확정 및 키워드 추출
+              <h2 class="text-2xl font-black text-zinc-900 dark:text-white tracking-tight mb-2">
+                내용 확정 및 키워드 분석
               </h2>
-              <p class="text-gray-500 dark:text-gray-400 leading-relaxed text-sm md:text-base">
-                내용이 확정되면 키워드를 추출해 주세요.<br />
-                <span class="text-point-yellow font-bold">
-                  키워드 추출 후에는 내용 수정이 불가능합니다.
-                </span>
+              <p class="text-zinc-500 dark:text-zinc-400 text-sm">
+                내용이 확정되면 하단의 버튼을 눌러 AI 키워드를 추출해주세요.<br />
+                <span class="text-yellow-500 font-bold">분석 후에는 내용을 수정할 수 없습니다.</span>
               </p>
             </div>
 
-            <button
-              id="top-edit-btn"
-              type="button"
-              class="px-8 py-3 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-gray-300 rounded-2xl font-bold hover:bg-gray-50 dark:hover:bg-zinc-700 transition-all shadow-sm flex items-center justify-center gap-2 shrink-0 text-sm"
-              @click="openEval"
-            >
-              <i class="fa-solid fa-pen text-point-yellow"></i> 내용 수정하기
+            <button id="top-edit-btn" type="button" @click="openEval"
+              class="px-6 py-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 rounded-2xl font-bold hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-all shadow-sm flex items-center justify-center gap-2 text-sm whitespace-nowrap">
+              <i class="fa-solid fa-pen text-yellow-500"></i> 내용 수정하기
             </button>
           </div>
 
-          <div class="space-y-16 mb-20">
-            <div v-for="(project, index) in projects" :key="index">
-              <h3
-                class="text-[10px] font-black text-gray-300 dark:text-zinc-600 mb-4 uppercase tracking-[0.2em]"
-              >
-                {{ project.title }}
+          <div class="space-y-12 mb-16">
+            <div v-for="(project, index) in projects" :key="index" class="relative pl-6 border-l-2 border-zinc-100 dark:border-zinc-800">
+              <div class="absolute w-3 h-3 bg-yellow-400 rounded-full -left-[7px] top-1 ring-4 ring-white dark:ring-zinc-900"></div>
+              <h3 class="text-xs font-black text-zinc-400 mb-4 uppercase tracking-[0.2em]">
+                SEC 0{{ index + 1 }} : {{ project.title }}
               </h3>
-              <div
-                class="text-lg text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line"
-                v-html="project.original"
-              ></div>
+              <div class="text-base text-zinc-700 dark:text-zinc-300 leading-relaxed whitespace-pre-line" v-html="project.original"></div>
             </div>
           </div>
 
-          <div
-            id="keyword-result-section"
-            class="hidden mt-10 p-10 bg-gray-50/50 dark:bg-zinc-800/30 rounded-[2.5rem] border border-gray-100 dark:border-zinc-800 border-dashed relative"
-          >
-            <h4
-              class="text-sm font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2"
-            >
-              <i class="fa-solid fa-check-circle text-green-500"></i>
-              내용 확정 및 키워드 추출이 완료되었습니다.
+          <div id="keyword-result-section" class="hidden mt-10 p-8 bg-zinc-50 dark:bg-zinc-800/50 rounded-[2rem] border border-zinc-200/60 dark:border-zinc-700/50 transition-all duration-500">
+            <h4 class="text-sm font-bold text-zinc-900 dark:text-white mb-6 flex items-center gap-2">
+              <i class="fa-solid fa-check-circle text-emerald-500 text-lg"></i>
+              분석이 완료되었습니다. 추출된 핵심 스택입니다.
             </h4>
-
-            <div class="flex flex-wrap gap-3">
-              <span
-                v-for="(keyword, idx) in extractedKeywords"
-                :key="idx"
-                class="px-5 py-2.5 bg-white dark:bg-zinc-800 border-2 border-point-yellow/20 text-gray-700 dark:text-gray-300 text-sm rounded-2xl font-bold shadow-sm"
-              >
+            <div class="flex flex-wrap gap-2">
+              <span v-for="(keyword, idx) in extractedKeywords" :key="idx"
+                class="px-4 py-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs font-bold rounded-xl shadow-sm">
                 #{{ keyword }}
               </span>
             </div>
           </div>
 
-          <div
-            class="mt-16 flex flex-col md:flex-row justify-end items-center gap-6 pt-10 border-t border-gray-50 dark:border-zinc-800"
-          >
-            <div class="flex items-center gap-3 w-full md:w-auto">
-              <button
-                id="extract-btn"
-                type="button"
-                class="flex-1 md:flex-none px-10 py-3 bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-2xl font-bold shadow-xl hover:bg-black dark:hover:bg-white transform hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
-                @click="extractKeywords()"
-              >
-                내용 확정 및 키워드 추출
-                <i class="fa-solid fa-wand-sparkles text-point-yellow"></i>
-              </button>
+          <div class="mt-12 flex flex-col sm:flex-row justify-end gap-4 pt-8 border-t border-zinc-100 dark:border-zinc-800">
+            <button id="extract-btn" type="button" @click="extractKeywords()"
+              class="px-8 py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-2xl font-black shadow-lg hover:-translate-y-1 transition-all flex items-center justify-center gap-2 w-full sm:w-auto">
+              내용 확정 및 키워드 추출
+              <i class="fa-solid fa-wand-sparkles text-yellow-400"></i>
+            </button>
 
-              <RouterLink
-                id="next-step-btn"
-                :to="{ path: '/portfolio-style', query: { idx: route.query.idx || 1 } }"
-                class="hidden flex-1 md:flex-none px-12 py-3 bg-yellow-50 dark:bg-zinc-800/50 border border-yellow-200 dark:border-yellow-900/30 text-yellow-700 dark:text-yellow-500 rounded-2xl font-black tracking-tight hover:bg-yellow-100 dark:hover:bg-zinc-800 transition-colors animate-fade-in inline-flex items-center justify-center"
-              >
-                스타일 설정하기 <i class="fa-solid fa-arrow-right ml-2 text-lg"></i>
-              </RouterLink>
-            </div>
+            <RouterLink id="next-step-btn" :to="{ path: '/portfolio-style', query: { idx: route.query.idx || 1 } }"
+              class="hidden px-10 py-4 bg-yellow-400 text-zinc-900 rounded-2xl font-black shadow-lg shadow-yellow-400/30 hover:-translate-y-1 hover:shadow-xl hover:shadow-yellow-400/40 transition-all sm:inline-flex items-center justify-center text-center w-full sm:w-auto">
+              스타일 설정하기 <i class="fa-solid fa-arrow-right ml-2 text-lg"></i>
+            </RouterLink>
           </div>
         </div>
       </div>
@@ -340,78 +301,71 @@ onBeforeUnmount(() => {
     <div class="eval-overlay" :class="ui.open ? 'eval-open' : ''" aria-hidden="true">
       <div class="eval-dim" @click="closeEval"></div>
 
-      <section class="eval-modal" role="dialog" aria-modal="true" aria-label="수정 보기">
-        <header class="eval-head">
-          <div class="eval-title">
-            <span class="eval-badge"><i class="fa-solid fa-pen"></i></span>
-            <h2>
-              섹션 수정하기
-              <span class="eval-sub">({{ ui.projectIndex + 1 }} / {{ projects.length }})</span>
-            </h2>
+      <section class="eval-modal bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800" role="dialog" aria-modal="true">
+        
+        <header class="flex items-center justify-between p-5 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-500 flex items-center justify-center text-lg font-black border border-yellow-200 dark:border-yellow-900/50">
+              <i class="fa-solid fa-pen"></i>
+            </div>
+            <div>
+              <h2 class="text-base font-black text-zinc-900 dark:text-white">섹션 내용 수정</h2>
+              <p class="text-[11px] font-bold text-zinc-500 uppercase tracking-widest">{{ ui.projectIndex + 1 }} / {{ projects.length }}</p>
+            </div>
           </div>
-          <button class="eval-x" type="button" aria-label="닫기" @click="closeEval">✕</button>
+          <button @click="closeEval" class="w-10 h-10 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors">
+            ✕
+          </button>
         </header>
 
-        <div class="eval-body">
-          <aside class="eval-side">
-            <p class="eval-side-title">섹션 목록</p>
-            <div class="eval-side-list">
-              <button
-                v-for="(p, idx) in projects"
-                :key="p.title + idx"
-                type="button"
-                class="eval-item"
-                :class="idx === ui.projectIndex ? 'active' : ''"
-                @click="selectProject(idx)"
-              >
-                <span class="eval-num">{{ getCircled(idx + 1) }}</span>
-                <span class="eval-item-text">{{ p.title }}</span>
+        <div class="flex flex-col md:flex-row h-[calc(100%-80px)]">
+          <aside class="w-full md:w-64 border-b md:border-b-0 md:border-r border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/50 p-4 overflow-y-auto">
+            <p class="text-xs font-black text-zinc-400 mb-4 tracking-widest uppercase">Sections</p>
+            <div class="space-y-2">
+              <button v-for="(p, idx) in projects" :key="p.title + idx" @click="selectProject(idx)"
+                :class="['w-full text-left flex items-center gap-3 p-3 rounded-xl transition-all border font-bold text-sm', 
+                idx === ui.projectIndex ? 'bg-white dark:bg-zinc-800 border-yellow-400 ring-2 ring-yellow-400/20 text-zinc-900 dark:text-white' : 'bg-transparent border-transparent text-zinc-500 hover:bg-white dark:hover:bg-zinc-800 border-zinc-200 dark:border-zinc-800']">
+                <span class="w-6 h-6 rounded-lg bg-zinc-100 dark:bg-zinc-700 flex items-center justify-center text-[10px]">{{ getCircled(idx + 1) }}</span>
+                <span class="truncate">{{ p.title }}</span>
               </button>
             </div>
           </aside>
 
-          <main class="eval-main">
-            <section class="eval-card">
-              <div class="eval-card-head">
-                <h3>저장된 현재 내용</h3>
-                <span class="eval-chip">Original</span>
+          <main class="flex-1 p-6 overflow-y-auto space-y-6 bg-white dark:bg-zinc-900">
+            
+            <section class="border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 bg-zinc-50 dark:bg-zinc-800/30">
+              <div class="flex items-center justify-between mb-4 border-b border-zinc-200 dark:border-zinc-700 pb-3">
+                <h3 class="text-sm font-black text-zinc-900 dark:text-white">원본 내용</h3>
+                <span class="text-[10px] font-bold bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 px-2 py-1 rounded-md uppercase tracking-wider">Original</span>
               </div>
-              <div class="eval-text" v-html="activeProject()?.original"></div>
+              <div class="text-sm text-zinc-600 dark:text-zinc-400 whitespace-pre-line leading-relaxed" v-html="activeProject()?.original"></div>
             </section>
 
-            <section class="eval-card">
-              <div class="eval-card-head">
-                <h3>수정본</h3>
-                
-                <button 
-                  @click="requestAiReview" 
-                  :disabled="isAiLoading"
-                  class="text-xs font-bold px-3 py-1.5 rounded-full border transition-all flex items-center gap-1"
-                  :class="isProUser 
-                    ? 'border-yellow-300 text-yellow-700 bg-yellow-50 hover:bg-yellow-100 cursor-pointer' 
-                    : 'border-gray-200 text-gray-400 bg-gray-100 opacity-60 cursor-not-allowed'"
-                >
-                  <i class="fa-solid fa-wand-sparkles"></i> AI 첨삭
+            <section class="border-2 border-dashed border-yellow-300 dark:border-zinc-700 rounded-2xl p-5 bg-yellow-50/30 dark:bg-zinc-800/50">
+              <div class="flex items-center justify-between mb-4 border-b border-zinc-200 dark:border-zinc-700 pb-3">
+                <h3 class="text-sm font-black text-zinc-900 dark:text-white">수정 에디터</h3>
+                <button @click="requestAiReview" :disabled="isAiLoading"
+                  :class="['text-xs font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 border shadow-sm', 
+                  isProUser ? 'bg-yellow-400 border-yellow-500 text-zinc-900 hover:bg-yellow-500' : 'bg-zinc-100 border-zinc-200 text-zinc-400 cursor-not-allowed dark:bg-zinc-800 dark:border-zinc-700']">
+                  <i class="fa-solid fa-wand-sparkles"></i> AI 자동 첨삭
                 </button>
-
               </div>
 
-              <div v-if="isAiLoading" class="py-10 text-center text-gray-500 font-bold">
-                <i class="fa-solid fa-spinner animate-spin text-point-yellow text-2xl mb-2"></i>
-                <p>AI가 작성하신 내용을 다듬고 있습니다...</p>
+              <div v-if="isAiLoading" class="py-12 text-center text-zinc-500 font-bold flex flex-col items-center">
+                <i class="fa-solid fa-circle-notch animate-spin text-yellow-500 text-3xl mb-4"></i>
+                <p>AI가 문장을 매끄럽게 교정하고 있습니다...</p>
               </div>
 
-              <div v-else class="eval-variant">
-                <SectionEditor
-                  v-if="projects[ui.projectIndex]"
-                  :key="ui.projectIndex"
-                  v-model="projects[ui.projectIndex].reviewDraft"
-                  class="w-full bg-white dark:bg-zinc-800 rounded-xl min-h-[170px]"
-                ></SectionEditor>
+              <div v-else>
+                <div class="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-700 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-yellow-400/50 transition-all">
+                  <SectionEditor v-if="projects[ui.projectIndex]" :key="ui.projectIndex" v-model="projects[ui.projectIndex].reviewDraft"
+                    class="w-full min-h-[200px] text-sm text-zinc-900 dark:text-white p-2">
+                  </SectionEditor>
+                </div>
 
-                <div class="eval-actions mt-4">
-                  <button type="button" class="eval-btn ghost" @click="closeEval">취소</button>
-                  <button type="button" class="eval-btn" @click="applyReview">저장</button>
+                <div class="flex justify-end gap-3 mt-5">
+                  <button type="button" @click="closeEval" class="px-5 py-2.5 rounded-xl font-bold text-sm text-zinc-600 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors">취소</button>
+                  <button type="button" @click="applyReview" class="px-5 py-2.5 rounded-xl font-bold text-sm bg-yellow-400 text-zinc-900 hover:bg-yellow-500 shadow-sm transition-colors">임시 저장</button>
                 </div>
               </div>
             </section>
@@ -420,43 +374,15 @@ onBeforeUnmount(() => {
       </section>
     </div>
 
-    <div class="eval-toast" :class="toast.open ? 'show' : ''" role="status" aria-live="polite">
+    <div class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 px-6 py-3 rounded-full font-bold text-sm shadow-xl transition-all duration-300 z-[10000]"
+      :class="toast.open ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'">
       {{ toast.message }}
     </div>
   </div>
 </template>
 
-<style scoped>
-:deep(body) {
-  font-family: 'Noto Sans KR', sans-serif;
-  transition: background-color 0.3s ease;
-}
-
-.bg-pattern {
-  background-color: #f8fafc;
-}
-
-.dark .bg-pattern {
-  background-color: #18181b;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.5s ease-out;
-}
-</style>
-
 <style>
+/* 기존 CSS 변수와 구조를 유지하면서 테마에 맞게 덮어쓰기 */
 html.eval-open,
 html.eval-open body {
   overflow: hidden;
@@ -468,7 +394,7 @@ html.eval-open body {
   z-index: 9999;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .eval-overlay.eval-open {
@@ -479,249 +405,43 @@ html.eval-open body {
 .eval-dim {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
 }
 
 .eval-modal {
-  position: relative;
-  width: min(1080px, calc(100vw - 32px));
-  height: min(720px, calc(100vh - 32px));
-  margin: 16px auto;
-  background: var(--card, #fff);
-  color: var(--text, #111827);
-  border: 1px solid var(--border, #e5e7eb);
-  border-radius: 22px;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.18);
-  overflow: hidden;
-}
-
-.eval-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 16px 18px;
-  border-bottom: 1px solid var(--border, #e5e7eb);
-  background: linear-gradient(180deg, rgba(250, 204, 21, 0.12), transparent);
-}
-
-.eval-title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.eval-badge {
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  border-radius: 12px;
-  background: rgba(250, 204, 21, 0.22);
-  border: 1px solid rgba(250, 204, 21, 0.35);
-  font-weight: 900;
-}
-
-.eval-title h2 {
-  font-size: 18px;
-  font-weight: 900;
-  line-height: 1.2;
-}
-
-.eval-sub {
-  font-size: 12px;
-  font-weight: 800;
-  color: rgba(107, 114, 128, 1);
-  margin-left: 6px;
-}
-
-.eval-x {
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  border: 1px solid var(--border, #e5e7eb);
-  background: transparent;
-  font-size: 18px;
-  cursor: pointer;
-}
-
-.eval-x:hover {
-  background: rgba(0, 0, 0, 0.04);
-}
-
-.eval-body {
-  display: grid;
-  grid-template-columns: 280px 1fr;
-  height: calc(100% - 66px);
-}
-
-.eval-side {
-  border-right: 1px solid var(--border, #e5e7eb);
-  padding: 16px;
-  background: rgba(24, 24, 27, 0.02);
-}
-
-html.dark .eval-side {
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.eval-side-title {
-  font-size: 12px;
-  font-weight: 900;
-  color: rgba(107, 114, 128, 1);
-  margin-bottom: 10px;
-}
-
-.eval-side-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.eval-item {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  padding: 12px 12px;
-  border-radius: 16px;
-  border: 1px solid var(--border, #e5e7eb);
-  background: var(--card, #fff);
-  cursor: pointer;
-  text-align: left;
-}
-
-.eval-item:hover {
-  background: rgba(0, 0, 0, 0.03);
-}
-
-.eval-item.active {
-  border-color: rgba(250, 204, 21, 0.55);
-  box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.18);
-}
-
-.eval-num {
-  width: 28px;
-  height: 28px;
-  display: grid;
-  place-items: center;
-  border-radius: 10px;
-  background: rgba(250, 204, 21, 0.18);
-  font-weight: 900;
-}
-
-.eval-item-text {
-  font-weight: 900;
-}
-
-.eval-main {
-  padding: 16px;
-  overflow: auto;
-}
-
-.eval-card {
-  border: 1px solid var(--border, #e5e7eb);
-  border-radius: 18px;
-  background: var(--card, #fff);
-  padding: 14px;
-  margin-bottom: 14px;
-}
-
-.eval-card-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-.eval-card-head h3 {
-  font-size: 14px;
-  font-weight: 900;
-}
-
-.eval-chip {
-  font-size: 11px;
-  font-weight: 900;
-  color: rgba(107, 114, 128, 1);
-  border: 1px solid var(--border, #e5e7eb);
-  border-radius: 999px;
-  padding: 6px 10px;
-}
-
-.eval-text {
-  font-size: 14px;
-  line-height: 1.7;
-  white-space: pre-line;
-}
-
-.eval-variant {
-  border: 1px dashed rgba(250, 204, 21, 0.55);
-  border-radius: 16px;
-  padding: 12px;
-  background: rgba(250, 204, 21, 0.08);
-}
-
-.eval-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.eval-btn {
-  padding: 10px 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(250, 204, 21, 0.55);
-  background: rgba(250, 204, 21, 1);
-  color: #111827;
-  font-weight: 900;
-  cursor: pointer;
-}
-
-.eval-btn.ghost {
-  background: transparent;
-  color: inherit;
-  border-color: var(--border, #e5e7eb);
-}
-
-.eval-btn.ghost:hover {
-  background: rgba(0, 0, 0, 0.03);
-}
-
-.eval-btn:hover {
-  filter: brightness(0.98);
-}
-
-.eval-toast {
-  position: fixed;
+  position: absolute;
+  top: 50%;
   left: 50%;
-  bottom: 18px;
-  transform: translateX(-50%) translateY(12px);
-  background: rgba(17, 24, 39, 0.92);
-  color: white;
-  padding: 12px 14px;
-  border-radius: 14px;
-  font-weight: 900;
-  font-size: 13px;
-  opacity: 0;
-  pointer-events: none;
-  transition: all 0.2s ease;
-  z-index: 10000;
+  transform: translate(-50%, -48%) scale(0.96);
+  width: min(1000px, calc(100vw - 32px));
+  height: min(760px, calc(100vh - 32px));
+  border-radius: 1.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.eval-toast.show {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
+.eval-overlay.eval-open .eval-modal {
+  transform: translate(-50%, -50%) scale(1);
 }
 
-@media (max-width: 920px) {
-  .eval-body {
-    grid-template-columns: 1fr;
-  }
-
-  .eval-side {
-    border-right: none;
-    border-bottom: 1px solid var(--border, #e5e7eb);
-  }
+/* 모달 내부 스크롤바 디자인 */
+.eval-modal aside::-webkit-scrollbar,
+.eval-modal main::-webkit-scrollbar {
+  width: 6px;
+}
+.eval-modal aside::-webkit-scrollbar-track,
+.eval-modal main::-webkit-scrollbar-track {
+  background: transparent;
+}
+.eval-modal aside::-webkit-scrollbar-thumb,
+.eval-modal main::-webkit-scrollbar-thumb {
+  background-color: #e4e4e7;
+  border-radius: 10px;
+}
+.dark .eval-modal aside::-webkit-scrollbar-thumb,
+.dark .eval-modal main::-webkit-scrollbar-thumb {
+  background-color: #3f3f46;
 }
 </style>

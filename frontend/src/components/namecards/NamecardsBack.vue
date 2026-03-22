@@ -63,7 +63,7 @@ const goToPortfolioList = () => {
   const targetUserId = props.cardInfo?.userIdx || props.cardInfo?.userId || props.cardInfo?.user_id;
   
   if (targetUserId) {
-    router.push({ path: '/portfolio-view', query: { targetUser: targetUserId } })
+    router.push({ path: '/portfolio-view', query: { userId: targetUserId } })
   } else {
     alert('해당 유저의 식별 정보를 찾을 수 없습니다.');
   }
