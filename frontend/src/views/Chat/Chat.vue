@@ -2,8 +2,11 @@
 import { ref, reactive, onMounted, computed, nextTick, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import chatApi from '@/api/chat/index.js'
+import { useChatStore } from '@/stores/useChatStore'
 import SockJS from 'sockjs-client'
 import Stomp from 'stompjs'
+
+const chatStore = useChatStore()
 
 const route = useRoute()
 const router = useRouter()
@@ -40,7 +43,6 @@ let stompClient = null
 const getChatRoomList = async () => {
   try {
     const res = await chatApi.chatRoomList()
-    console.log('채팅방 목록:', res)
     const list = res?.data?.content ?? (Array.isArray(res?.data) ? res.data : res)
     if (Array.isArray(list)) {
       rooms.splice(0, rooms.length, ...list)
@@ -87,7 +89,6 @@ const wsConnect = (roomId, onConnected) => {
     // 채팅방 구독: /sub/chat/room/{roomId}
     stompClient.subscribe(`/sub/chat/room/${roomId}`, (tick) => {
       const recv = JSON.parse(tick.body)
-      console.log(recv)
 
       // 읽음 처리 이벤트: 상대가 채팅방 입장 시 백엔드가 전송. 해당 방의 내 메시지를 모두 읽음으로 갱신
       if (recv.type === 'READ_RECEIPT') {
@@ -166,6 +167,7 @@ const setActiveRoom = async (roomId) => {
 
   // 방 이동
   activeRoomId.value = roomId
+  chatStore.setActiveRoom(roomId)
   console.log('방 이동 성공')
   const room = rooms.find((r) => r.id === roomId)
   if (room) room.unread = 0
@@ -340,6 +342,7 @@ const leaveChat = async () => {
     delete messagePageByRoom.value[roomIdx]
     // 활성 방 해제
     activeRoomId.value = null
+    chatStore.clearActiveRoom()
     isMenuOpen.value = false
   } catch (error) {
     console.error('채팅방 나가기 실패:', error)
@@ -575,45 +578,54 @@ const buildRoomFromPush = (payload) => {
   }
 }
 
-onMounted(async () => {
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.addEventListener('message', (event) => {
-      if (event.data && event.data.type === 'PUSH_RECEIVED') {
-        const payload = event.data.payload ?? event.data
-        const { roomIdx, senderIdx, senderProfileImage, contents, contentsTime } = payload
+// 푸시/SSE 수신 시 채팅방 목록 실시간 갱신 (공통 핸들러)
+const handleNotificationPayload = (payload) => {
+  const { roomIdx, senderIdx, senderProfileImage, contents, contentsTime } = payload ?? {}
 
-        const room = rooms.find(
-          (r) => r.id === Number(roomIdx) || r.opponentIdx === Number(senderIdx),
-        )
-        if (room) {
-          if (activeRoomId.value !== room.id) {
-            room.unread = (room.unread || 0) + 1
-            room.content =
-              contents?.length > 30 ? contents.slice(0, 30) + '...' : contents || room.content
-            room.time = contentsTime ?? room.time ?? room.lastContentsTime
-          }
-          if (senderProfileImage) room.avatar = senderProfileImage
-        } else {
-          // 목록에 없는 새 채팅방 → 실시간으로 추가
-          const newRoom = buildRoomFromPush(payload)
-          if (newRoom) {
-            rooms.unshift(newRoom)
-            // 알림 클릭으로 진입한 경우 해당 방 자동 선택
-            const sid = Number(route.query.senderId)
-            if (!isNaN(sid) && newRoom.opponentIdx === sid) {
-              setActiveRoom(newRoom.id)
-            }
-          } else {
-            getChatRoomList()
-          }
-        }
+  const room = rooms.find(
+    (r) => r.id === Number(roomIdx) || r.opponentIdx === Number(senderIdx),
+  )
+  if (room) {
+    if (activeRoomId.value !== room.id) {
+      room.unread = (room.unread || 0) + 1
+      room.content =
+        contents?.length > 30 ? contents.slice(0, 30) + '...' : contents || room.content
+      room.time = contentsTime ?? room.time ?? room.lastContentsTime
+    }
+    if (senderProfileImage) room.avatar = senderProfileImage
+  } else {
+    const newRoom = buildRoomFromPush(payload)
+    if (newRoom) {
+      rooms.unshift(newRoom)
+      const sid = Number(route.query.senderId)
+      if (!isNaN(sid) && newRoom.opponentIdx === sid) {
+        setActiveRoom(newRoom.id)
       }
-    })
+    } else {
+      getChatRoomList()
+    }
+  }
+}
+
+const onSseNotification = (e) => handleNotificationPayload(e?.detail)
+const onPushMessage = (event) => {
+  if (event.data?.type === 'PUSH_RECEIVED') handleNotificationPayload(event.data.payload ?? event.data)
+}
+
+onMounted(async () => {
+  window.addEventListener('sse-notification', onSseNotification)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', onPushMessage)
   }
   await getChatRoomList()
   await openRoomFromSenderId()
 })
 onUnmounted(() => {
+  window.removeEventListener('sse-notification', onSseNotification)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.removeEventListener('message', onPushMessage)
+  }
+  chatStore.clearActiveRoom()
   if (stompClient) {
     stompClient.disconnect()
   }
