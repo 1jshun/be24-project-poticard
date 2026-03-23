@@ -79,72 +79,53 @@ const makeDetail = (raw = {}) => ({
   process: raw.process || '서류 검토 → 실무 인터뷰 → 최종 합류',
   contactEmail: raw.contactEmail || makeContactEmail(raw.name || raw.companyName),
   contactPhone: raw.contactPhone || '02-0000-0000',
-  employmentType: raw.employmentType || '',
-  deadline: raw.deadline || null,
-  workStart: raw.workStart || null,
-  salaryMin: raw.salaryMin ?? null,
-  salaryMax: raw.salaryMax ?? null,
-  headcount: raw.headcount ?? null,
 })
 
 const normalize = (raw = {}) => {
   const favorites = readSet(favoriteKey())
   const applied = readSet(appliedKey())
   const views = readMap(viewKey())
-
   const id = Number(raw.id ?? raw.idx)
-  const backendFavorite = pickBoolean(raw.isFavorite, raw.favorite)
-  const backendApplied = pickBoolean(raw.isApplied, raw.applied)
-  const fallbackFavorite = favorites.has(id)
-  const fallbackApplied = applied.has(id)
-  const fallbackViews = Number(views[id] ?? 0)
-
-  const skills = Array.isArray(raw.skills) ? raw.skills : []
-  const location = raw.location || ''
-  const remotePossible =
-    typeof raw.remotePossible === 'boolean'
-      ? raw.remotePossible
-      : String(location).toLowerCase().includes('remote')
+  const isFavorite = pickBoolean(raw.isFavorite, raw.favorite)
+  const isApplied = pickBoolean(raw.isApplied, raw.applied)
 
   return {
     id,
     name: raw.name || raw.companyName || '',
     role: raw.role || raw.title || '',
     category: raw.category || 'ALL',
-    location,
+    location: raw.location || '',
     exp: raw.exp || raw.experience || '',
-    skills,
+    skills: Array.isArray(raw.skills) ? raw.skills : [],
     likes: Number(raw.likes ?? raw.favoriteCount ?? 0),
-    views: Number(raw.views ?? raw.viewCount ?? fallbackViews),
+    views: Number(raw.views ?? raw.viewCount ?? views[id] ?? 0),
     updatedAt: raw.updatedAt || '',
     isFavorite:
       typeof raw.isFavorite === 'boolean' || typeof raw.favorite === 'boolean'
-        ? backendFavorite
-        : fallbackFavorite,
+        ? isFavorite
+        : favorites.has(id),
     isApplied:
       typeof raw.isApplied === 'boolean' || typeof raw.applied === 'boolean'
-        ? backendApplied
-        : fallbackApplied,
+        ? isApplied
+        : applied.has(id),
     isMine: pickBoolean(raw.isMine, raw.mine),
-    remotePossible,
+    remotePossible:
+      typeof raw.remotePossible === 'boolean'
+        ? raw.remotePossible
+        : String(raw.location || '').toLowerCase().includes('remote'),
     detail: {
       ...raw,
       ...makeDetail({
         ...raw,
         name: raw.name || raw.companyName || '',
         role: raw.role || raw.title || '',
-        skills,
+        skills: Array.isArray(raw.skills) ? raw.skills : [],
       }),
     },
   }
 }
 
-const buildListQuery = ({
-  keyword = '',
-  category = 'ALL',
-  favoriteOnly = false,
-  sort = 'popular',
-} = {}) => {
+const buildListQuery = ({ keyword = '', category = 'ALL', favoriteOnly = false, sort = 'popular' } = {}) => {
   const params = new URLSearchParams()
   params.set('keyword', keyword || '')
   params.set('category', category || 'ALL')
@@ -160,12 +141,7 @@ const compareMineFirst = (a, b, compare) => {
   return compare(a, b)
 }
 
-const loadMatches = async ({
-  keyword = '',
-  category = 'ALL',
-  favoriteOnly = false,
-  sort = 'popular',
-} = {}) => {
+const loadMatches = async ({ keyword = '', category = 'ALL', favoriteOnly = false, sort = 'popular' } = {}) => {
   const query = buildListQuery({ keyword, category, favoriteOnly, sort })
   const response = await apiFetch(`${PUBLIC_LIST_URL}?${query}`)
   const data = unwrapData(response)
@@ -181,6 +157,7 @@ const list = async ({
   keyword = '',
   category = 'ALL',
   favoriteOnly = false,
+  appliedOnly = false,
   sort = 'popular',
 } = {}) => {
   let results = await loadMatches({ keyword, category, favoriteOnly, sort })
@@ -200,6 +177,10 @@ const list = async ({
 
   if (favoriteOnly) {
     results = results.filter((item) => item.isFavorite)
+  }
+
+  if (appliedOnly) {
+    results = results.filter((item) => item.isApplied)
   }
 
   if (sort === 'views') {
@@ -237,7 +218,6 @@ const detail = async (id) => {
 
 const toggleFavorite = async (id) => {
   const targetId = Number(id)
-
   const response = await apiFetch(PUBLIC_FAVORITE_URL(targetId), {
     method: 'PATCH',
   })
@@ -264,7 +244,6 @@ const toggleFavorite = async (id) => {
 
 const apply = async (id) => {
   const targetId = Number(id)
-
   const response = await apiFetch(PUBLIC_APPLY_URL(targetId), {
     method: 'POST',
   })
@@ -297,9 +276,7 @@ const recommend = async (size = 4) => {
 
   return data
     .map((item) => normalize(item))
-    .sort((a, b) =>
-      compareMineFirst(a, b, (x, y) => (y.likes * 2 + y.views) - (x.likes * 2 + x.views)),
-    )
+    .sort((a, b) => (b.likes * 2 + b.views) - (a.likes * 2 + a.views))
     .slice(0, size)
 }
 

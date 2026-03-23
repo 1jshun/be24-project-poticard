@@ -12,6 +12,7 @@ const loadError = ref('')
 const detailLoading = ref(false)
 const selectedCompany = ref(null)
 const favoriteOnly = ref(false)
+const appliedOnly = ref(false)
 
 const q = ref('')
 const sort = ref('popular')
@@ -61,6 +62,7 @@ const loadCompanies = async () => {
       keyword: q.value,
       category: category.value,
       favoriteOnly: favoriteOnly.value,
+      appliedOnly: appliedOnly.value,
       sort: sort.value,
     })
   } catch (error) {
@@ -71,6 +73,33 @@ const loadCompanies = async () => {
   }
 }
 
+const buildLoginRedirect = () => ({
+  path: '/login',
+  query: {
+    type: 'personal',
+    redirect: route.fullPath || '/matching',
+  },
+})
+
+const hasLoginUser = () => {
+  try {
+    return Boolean(localStorage.getItem('USERINFO'))
+  } catch (error) {
+    return false
+  }
+}
+
+const syncCompany = (companyId, payload = {}) => {
+  const target = companies.value.find((company) => company.id === companyId)
+  if (target) {
+    Object.assign(target, payload)
+  }
+
+  if (selectedCompany.value && selectedCompany.value.id === companyId) {
+    Object.assign(selectedCompany.value, payload)
+  }
+}
+
 const openDetail = async (companyId) => {
   detailLoading.value = true
 
@@ -78,14 +107,14 @@ const openDetail = async (companyId) => {
     const detail = await matchingApi.detail(companyId)
     selectedCompany.value = detail
 
-    const target = companies.value.find((company) => company.id === companyId)
-    if (target) {
-      target.views = detail.views
-      target.likes = detail.likes
-      target.isFavorite = detail.isFavorite
-      target.isApplied = detail.isApplied
-      target.detail = detail.detail
-    }
+    syncCompany(companyId, {
+      views: detail.views,
+      likes: detail.likes,
+      isFavorite: detail.isFavorite,
+      isApplied: detail.isApplied,
+      isMine: detail.isMine,
+      detail: detail.detail,
+    })
   } catch (error) {
     alert(error.message || '상세 정보를 불러오지 못했습니다.')
   } finally {
@@ -111,13 +140,10 @@ const toggleFavorite = async (company) => {
     const res = await matchingApi.toggleFavorite(company.id)
     const result = res?.data || {}
 
-    company.isFavorite = Boolean(result.favorite)
-    company.likes = Number(result.favoriteCount ?? company.likes)
-
-    if (selectedCompany.value && selectedCompany.value.id === company.id) {
-      selectedCompany.value.isFavorite = company.isFavorite
-      selectedCompany.value.likes = company.likes
-    }
+    syncCompany(company.id, {
+      isFavorite: Boolean(result.favorite),
+      likes: Number(result.favoriteCount ?? company.likes),
+    })
 
     if (favoriteOnly.value) {
       await loadCompanies()
@@ -128,26 +154,35 @@ const toggleFavorite = async (company) => {
 }
 
 const applyCompany = async (company) => {
-  if (!company || company.isApplied) return
+  if (!company || company.isApplied || company.isMine) return
+
+  if (!hasLoginUser()) {
+    alert('로그인이 필요한 기능입니다. 개인계정으로 로그인해 주세요.')
+    router.push(buildLoginRedirect())
+    return
+  }
 
   try {
     const res = await matchingApi.apply(company.id)
     const result = res?.data || {}
 
-    company.isApplied = Boolean(result.applied)
+    syncCompany(company.id, {
+      isApplied: Boolean(result.applied),
+    })
 
-    const target = companies.value.find((item) => item.id === company.id)
-    if (target) {
-      target.isApplied = company.isApplied
-    }
-
-    if (selectedCompany.value && selectedCompany.value.id === company.id) {
-      selectedCompany.value.isApplied = company.isApplied
+    if (appliedOnly.value) {
+      await loadCompanies()
     }
 
     alert('지원이 완료되었습니다.')
   } catch (error) {
-    alert(error.message || '지원 처리에 실패했습니다.')
+    const message = error?.message || '지원 처리에 실패했습니다.'
+    if (message.includes('로그인')) {
+      alert('로그인이 필요한 기능입니다. 개인계정으로 로그인해 주세요.')
+      router.push(buildLoginRedirect())
+      return
+    }
+    alert(message)
   }
 }
 
@@ -167,11 +202,17 @@ const resetFilters = async () => {
   category.value = 'ALL'
   selectedSkills.value = []
   favoriteOnly.value = false
+  appliedOnly.value = false
   page.value = 1
   await loadCompanies()
 }
 
 const changeFavoriteOnly = async () => {
+  page.value = 1
+  await loadCompanies()
+}
+
+const changeAppliedOnly = async () => {
   page.value = 1
   await loadCompanies()
 }
@@ -207,7 +248,7 @@ onMounted(async () => {
           <h1 class="text-3xl font-extrabold tracking-tight">채용 공고</h1>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-wrap">
           <button
             @click="favoriteOnly = !favoriteOnly; changeFavoriteOnly()"
             :class="[
@@ -218,6 +259,17 @@ onMounted(async () => {
             ]"
           >
             즐겨찾기만
+          </button>
+          <button
+            @click="appliedOnly = !appliedOnly; changeAppliedOnly()"
+            :class="[
+              'px-4 py-2.5 rounded-2xl font-bold border transition',
+              appliedOnly
+                ? 'bg-indigo-600 text-white border-indigo-500'
+                : 'border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900',
+            ]"
+          >
+            지원한 회사
           </button>
           <button
             @click="resetFilters"
@@ -298,11 +350,24 @@ onMounted(async () => {
         <article
           v-for="c in pagedCompanies"
           :key="c.id"
-          class="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 hover:border-amber-300 transition shadow-sm"
+          :class="[
+            'rounded-3xl border bg-white dark:bg-zinc-900 p-6 transition shadow-sm',
+            c.isMine
+              ? 'border-amber-300 ring-2 ring-amber-200/70 bg-amber-50/40 dark:bg-zinc-900'
+              : 'border-zinc-200 dark:border-zinc-800 hover:border-amber-300',
+          ]"
         >
           <div class="flex items-start justify-between gap-3">
             <div>
-              <p class="text-sm text-zinc-500 font-bold">{{ c.category }} · {{ c.location || '미정' }}</p>
+              <div class="flex items-center gap-2 flex-wrap">
+                <p class="text-sm text-zinc-500 font-bold">{{ c.category }} · {{ c.location || '미정' }}</p>
+                <span
+                  v-if="c.isMine"
+                  class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-black"
+                >
+                  내 공고
+                </span>
+              </div>
               <h3 class="mt-2 text-2xl font-black leading-tight">{{ c.name }}</h3>
               <p class="mt-1 text-lg font-bold text-zinc-700 dark:text-zinc-200">{{ c.role }}</p>
               <p class="mt-1 text-zinc-500 font-medium">{{ c.exp }}</p>
@@ -331,15 +396,17 @@ onMounted(async () => {
             <div class="flex items-center gap-2">
               <button
                 @click="applyCompany(c)"
-                :disabled="c.isApplied"
+                :disabled="c.isApplied || c.isMine"
                 :class="[
                   'px-4 py-3 rounded-2xl font-black border',
-                  c.isApplied
-                    ? 'bg-zinc-100 text-zinc-400 border-zinc-200 cursor-not-allowed'
-                    : 'bg-white border-zinc-200 hover:bg-zinc-50 text-zinc-900',
+                  c.isMine
+                    ? 'bg-amber-50 text-amber-700 border-amber-200 cursor-default'
+                    : c.isApplied
+                      ? 'bg-zinc-100 text-zinc-400 border-zinc-200 cursor-not-allowed'
+                      : 'bg-white border-zinc-200 hover:bg-zinc-50 text-zinc-900',
                 ]"
               >
-                {{ c.isApplied ? '지원완료' : '지원하기' }}
+                {{ c.isMine ? '내 공고' : c.isApplied ? '지원완료' : '지원하기' }}
               </button>
               <button
                 @click="openDetail(c.id)"
@@ -378,7 +445,15 @@ onMounted(async () => {
       <div class="relative w-full max-w-3xl rounded-[28px] border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-7 shadow-2xl max-h-[85vh] overflow-y-auto">
         <div class="flex items-start justify-between gap-4">
           <div>
-            <p class="text-sm text-zinc-500 font-bold">{{ selectedCompany.category }} · {{ selectedCompany.location || '미정' }}</p>
+            <div class="flex items-center gap-2 flex-wrap">
+              <p class="text-sm text-zinc-500 font-bold">{{ selectedCompany.category }} · {{ selectedCompany.location || '미정' }}</p>
+              <span
+                v-if="selectedCompany.isMine"
+                class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-black"
+              >
+                내 공고
+              </span>
+            </div>
             <h2 class="mt-2 text-3xl font-black">{{ selectedCompany.name }}</h2>
             <p class="mt-1 text-xl font-bold text-zinc-700 dark:text-zinc-200">{{ selectedCompany.role }}</p>
           </div>
@@ -442,15 +517,17 @@ onMounted(async () => {
           <div class="mt-8 flex items-center justify-end gap-2 pt-4 border-t border-zinc-200 dark:border-zinc-800">
             <button
               @click="applyCompany(selectedCompany)"
-              :disabled="selectedCompany.isApplied"
+              :disabled="selectedCompany.isApplied || selectedCompany.isMine"
               :class="[
                 'px-5 py-3 rounded-2xl font-black border',
-                selectedCompany.isApplied
-                  ? 'bg-zinc-100 text-zinc-400 border-zinc-200 cursor-not-allowed'
-                  : 'bg-white border-zinc-200 hover:bg-zinc-50 text-zinc-900',
+                selectedCompany.isMine
+                  ? 'bg-amber-50 text-amber-700 border-amber-200 cursor-default'
+                  : selectedCompany.isApplied
+                    ? 'bg-zinc-100 text-zinc-400 border-zinc-200 cursor-not-allowed'
+                    : 'bg-white border-zinc-200 hover:bg-zinc-50 text-zinc-900',
               ]"
             >
-              {{ selectedCompany.isApplied ? '지원완료' : '지원하기' }}
+              {{ selectedCompany.isMine ? '내 공고' : selectedCompany.isApplied ? '지원완료' : '지원하기' }}
             </button>
             <button
               @click="closeDetail"
