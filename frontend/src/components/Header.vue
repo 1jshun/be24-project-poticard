@@ -192,6 +192,14 @@ const confirmLogout = () => {
   document.cookie = 'ATOKEN=; Max-Age=0; path=/'
   document.cookie = 'RTOKEN=; Max-Age=0; path=/'
 
+  // 로그아웃 상태를 서비스 워커에 전달 (푸시 알림 미표시)
+  if ('serviceWorker' in navigator) {
+    const isLoggedIn = authStore.checkLogin()
+    navigator.serviceWorker.ready.then((reg) => {
+      reg.active?.postMessage({ type: 'SET_LOGIN_STATE', isLoggedIn })
+    })
+  }
+
   window.dispatchEvent(new Event('auth-changed'))
 
   router.push('/')
