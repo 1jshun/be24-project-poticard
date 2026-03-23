@@ -15,6 +15,7 @@ const getUserInfo = async () => {
   const authStore = useAuthStore()
   try {
     const res = await api.getMyInfo()
+    console.log(res.data)
     authStore.login(res.data)
     return res
   } catch (error) {
@@ -261,13 +262,24 @@ const getMiniCardStyle = (idx) => {
             v-for="job in recommendJobs"
             :key="job.id"
             @click="goRecommendDetail(job.id)"
-            class="bg-white p-7 rounded-[2rem] border border-slate-200 hover:border-yellow-400 hover:shadow-xl transition-all cursor-pointer shadow-sm group"
+            :class="[
+              'bg-white p-7 rounded-[2rem] border hover:border-yellow-400 hover:shadow-xl transition-all cursor-pointer shadow-sm group',
+              job.isMine ? 'border-amber-300 bg-amber-50/40 ring-2 ring-amber-200/70' : 'border-slate-200',
+            ]"
           >
-            <div class="flex justify-between mb-4">
-              <span
-                class="text-[10px] font-black text-yellow-600 bg-yellow-50 px-3 py-1 rounded-md border border-yellow-100">
-                HOT
-              </span>
+            <div class="flex justify-between mb-4 items-start gap-3">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span
+                  class="text-[10px] font-black text-yellow-600 bg-yellow-50 px-3 py-1 rounded-md border border-yellow-100">
+                  HOT
+                </span>
+                <span
+                  v-if="job.isMine"
+                  class="text-[10px] font-black text-amber-700 bg-amber-100 px-3 py-1 rounded-md border border-amber-200"
+                >
+                  내 공고
+                </span>
+              </div>
               <button type="button" @click.stop="toggleJobFavorite(job)">
                 <i
                   :class="job.isFavorite
@@ -361,7 +373,7 @@ const getMiniCardStyle = (idx) => {
   width: 100%;
   height: 100%;
   transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
-  transform-style: preserve-3d; /* 자식들의 3D 상태 유지 */
+  transform-style: preserve-3d;
 }
 
 /* 카드가 뒤집혔을 때의 상태 */
@@ -376,7 +388,7 @@ const getMiniCardStyle = (idx) => {
   height: 100%;
   top: 0;
   left: 0;
-  backface-visibility: hidden; /* ★ 핵심: 뒤집혔을 때 안보이게 함 */
+  backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   border-radius: 1rem;
   overflow: hidden;

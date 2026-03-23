@@ -477,11 +477,6 @@ const openNamecard = () => {
           <div class="p-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[20px] shadow-sm">
             <h4 class="font-extrabold mb-4">내 프로필 요약</h4>
             <div class="space-y-4" v-if="summary.profile">
-              <div>
-                <p class="text-[11px] text-zinc-400 font-bold uppercase">관심 분야</p>
-                <p class="font-bold">{{ summary.profile.affiliation || summary.profile.role || '개인 사용자' }}</p>
-                <p class="text-sm text-zinc-500 mt-1">{{ summary.profile.name }}</p>
-              </div>
               <div class="flex flex-wrap gap-2">
                 <span
                   v-for="tag in (summary.namecard?.keywords || []).slice(0, 3)"

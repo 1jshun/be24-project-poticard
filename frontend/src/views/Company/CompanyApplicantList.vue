@@ -1,84 +1,130 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-
-// 명함 컴포넌트 불러오기
+import { apiFetch } from '@/plugins/interceptor'
 import NamecardsFront from '@/components/namecards/NamecardsFront.vue'
 import NamecardsBack from '@/components/namecards/NamecardsBack.vue'
 
 const router = useRouter()
 const route = useRoute()
 
-const jobTitle = ref('[플랫폼본부] 프렌차이즈시너지그룹 AI 에이전트 엔지니어 (AI 어시스턴트)')
+const jobTitle = ref('')
+const companyIdx = ref(null)
+const isLoading = ref(false)
+const loadError = ref('')
+const hasAnyJob = ref(true)
 
-// 모달 및 명함 상태
 const isModalOpen = ref(false)
 const isFlipped = ref(false)
 const selectedApplicant = ref(null)
 
-// 지원자 상태 필터
 const currentFilter = ref('ALL')
+const applicants = ref([])
 
-// 지원자 목록 데이터
-const applicants = ref([
-  {
-    id: 101,
-    name: '김철수',
-    email: 'chulsu.kim@example.com',
-    role: 'Backend Developer',
-    experience: '경력 5년',
-    education: '한국대학교 컴퓨터공학 전공',
-    appliedAt: '2026-01-15',
-    status: 'NEW',
-    isFavorite: false,
-    tags: ['Java', 'Spring', 'MySQL'],
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Chulsu',
-  },
-  {
-    id: 102,
-    name: '이영희',
-    email: 'younghee.lee@example.com',
-    role: 'AI Researcher',
-    experience: '신입',
-    education: '미래과학대학교 AI학부 졸업',
-    appliedAt: '2026-01-16',
-    status: 'INTERVIEW',
-    isFavorite: true,
-    tags: ['Python', 'PyTorch', 'NLP'],
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Younghee',
-  },
-  {
-    id: 103,
-    name: '박민준',
-    email: 'minjun.park@example.com',
-    role: 'Frontend Developer',
-    experience: '경력 3년',
-    education: '글로벌대학교 소프트웨어공학',
-    appliedAt: '2026-01-14',
-    status: 'PASSED',
-    isFavorite: false,
-    tags: ['Vue.js', 'React', 'TypeScript'],
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Minjun',
-  },
-])
+const favoriteKey = computed(() => {
+  if (!companyIdx.value) return 'COMPANY_APPLICANT_FAVORITES_EMPTY'
+  return `COMPANY_APPLICANT_FAVORITES_${companyIdx.value}`
+})
 
-// 즐겨찾기 토글
-const toggleFavorite = (id) => {
-  const applicant = applicants.value.find((a) => a.id === id)
-  if (applicant) applicant.isFavorite = !applicant.isFavorite
+const readFavoriteSet = () => {
+  try {
+    const raw = localStorage.getItem(favoriteKey.value)
+    return new Set(raw ? JSON.parse(raw) : [])
+  } catch (error) {
+    return new Set()
+  }
 }
 
-// 필터링 목록
+const writeFavoriteSet = (value) => {
+  localStorage.setItem(favoriteKey.value, JSON.stringify(Array.from(value)))
+}
+
+const applyFavoriteState = (items = []) => {
+  const favorites = readFavoriteSet()
+  return items.map((item) => ({
+    ...item,
+    isFavorite: favorites.has(item.id),
+  }))
+}
+
+const loadFirstCompanyJobId = async () => {
+  const res = await apiFetch('/company/list?page=0&size=100')
+  const data = res?.data || {}
+  const firstJob = Array.isArray(data.companyList) ? data.companyList[0] : null
+
+  if (!firstJob?.idx) {
+    hasAnyJob.value = false
+    return null
+  }
+
+  hasAnyJob.value = true
+  return Number(firstJob.idx)
+}
+
+const fetchApplicants = async () => {
+  isLoading.value = true
+  loadError.value = ''
+
+  try {
+    let targetJobId = Number(route.query.jobId)
+
+    if (Number.isNaN(targetJobId) || targetJobId <= 0) {
+      targetJobId = await loadFirstCompanyJobId()
+
+      if (!targetJobId) {
+        applicants.value = []
+        jobTitle.value = ''
+        companyIdx.value = null
+        return
+      }
+
+      await router.replace({
+        path: '/company/applicantlist',
+        query: { jobId: String(targetJobId) },
+      })
+    }
+
+    const res = await apiFetch(`/company/application/list/${targetJobId}`)
+    const data = res?.data || {}
+
+    companyIdx.value = Number(data.companyIdx ?? targetJobId)
+    jobTitle.value = data.title || ''
+    applicants.value = applyFavoriteState(Array.isArray(data.applicantsList) ? data.applicantsList : [])
+    hasAnyJob.value = true
+  } catch (error) {
+    console.error('지원자 목록 조회 실패:', error)
+    applicants.value = []
+    companyIdx.value = null
+    loadError.value = error?.message || '지원자 목록을 불러오지 못했습니다.'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const toggleFavorite = (id) => {
+  const applicant = applicants.value.find((a) => a.id === id)
+  if (!applicant) return
+
+  applicant.isFavorite = !applicant.isFavorite
+
+  const favorites = readFavoriteSet()
+  if (applicant.isFavorite) {
+    favorites.add(id)
+  } else {
+    favorites.delete(id)
+  }
+  writeFavoriteSet(favorites)
+}
+
 const filteredApplicants = computed(() => {
   if (currentFilter.value === 'ALL') return applicants.value
   if (currentFilter.value === 'FAVORITE') return applicants.value.filter((a) => a.isFavorite)
   return applicants.value.filter((a) => a.status === currentFilter.value)
 })
 
-// 명함 열기
 const openCard = (applicant) => {
   selectedApplicant.value = applicant
-  isFlipped.value = false // 초기화
+  isFlipped.value = false
   isModalOpen.value = true
 }
 
@@ -88,6 +134,17 @@ const closeCard = () => {
 }
 
 const goBack = () => router.push('/company/joblist')
+
+onMounted(() => {
+  fetchApplicants()
+})
+
+watch(
+  () => route.query.jobId,
+  () => {
+    fetchApplicants()
+  },
+)
 </script>
 
 <template>
@@ -102,7 +159,8 @@ const goBack = () => router.push('/company/joblist')
           </svg>
           공고 목록으로 돌아가기
         </button>
-        <h1 class="text-3xl font-bold tracking-tight mb-2">{{ jobTitle }}</h1>
+        <h1 class="text-3xl font-bold tracking-tight mb-2">{{ jobTitle || '지원자 보기' }}</h1>
+        <p v-if="loadError" class="text-sm font-bold text-rose-500">{{ loadError }}</p>
       </div>
 
       <div
@@ -132,7 +190,17 @@ const goBack = () => router.push('/company/joblist')
           <div class="col-span-2 text-right">프로필</div>
         </div>
 
-        <div class="divide-y divide-zinc-50 dark:divide-zinc-800">
+        <div v-if="!hasAnyJob && !isLoading" class="py-20 text-center">
+          <div class="text-4xl mb-4 text-zinc-300">📄</div>
+          <p class="text-zinc-500 font-medium">등록된 공고가 없습니다.</p>
+        </div>
+
+        <div v-else-if="!isLoading && filteredApplicants.length === 0" class="py-20 text-center">
+          <div class="text-4xl mb-4 text-zinc-300">🙋</div>
+          <p class="text-zinc-500 font-medium">아직 지원한 사람이 없습니다.</p>
+        </div>
+
+        <div v-else class="divide-y divide-zinc-50 dark:divide-zinc-800">
           <div v-for="applicant in filteredApplicants" :key="applicant.id"
             class="p-8 hover:bg-zinc-50/50 dark:hover:bg-zinc-950 transition-colors group">
             <div class="grid grid-cols-1 lg:grid-cols-12 items-center gap-6">
@@ -162,13 +230,13 @@ const goBack = () => router.push('/company/joblist')
 
               <div class="lg:col-span-3 text-center">
                 <p class="text-sm font-bold text-zinc-700 dark:text-zinc-200">
-                  {{ applicant.experience }}
+                  {{ applicant.experience || '-' }}
                 </p>
-                <p class="text-xs text-zinc-400 mt-1">{{ applicant.education }}</p>
+                <p class="text-xs text-zinc-400 mt-1">{{ applicant.education || '-' }}</p>
               </div>
 
               <div class="lg:col-span-2 text-center text-sm font-medium text-zinc-500">
-                {{ applicant.appliedAt }}
+                {{ applicant.appliedAt || '-' }}
               </div>
 
               <div class="lg:col-span-2 flex justify-end items-center">
@@ -183,18 +251,18 @@ const goBack = () => router.push('/company/joblist')
       </div>
     </main>
 
-    <div v-if="isModalOpen && selectedApplicant" class="fixed inset-0 z-50 flex items-center justify-center p-6">
+    <div v-if="isModalOpen && selectedApplicant?.cardInfo" class="fixed inset-0 z-50 flex items-center justify-center p-6">
       <div class="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm" @click="closeCard"></div>
 
       <div class="perspective-container w-[450px] aspect-[1.58/1]">
         <div class="card-object shadow-2xl cursor-pointer" :class="{ 'is-flipped': isFlipped }"
           @click="isFlipped = !isFlipped">
           <div class="w-full h-full card-face card-front bg-white rounded-2xl overflow-hidden">
-            <NamecardsFront class="w-full h-full" :userId="selectedApplicant.id" />
+            <NamecardsFront class="w-full h-full" :cardInfo="selectedApplicant.cardInfo" />
           </div>
 
           <div class="w-full h-full card-face card-back bg-white rounded-2xl overflow-hidden">
-            <NamecardsBack class="w-full h-full" :userId="selectedApplicant.id" />
+            <NamecardsBack class="w-full h-full" :cardInfo="selectedApplicant.cardInfo" />
           </div>
         </div>
 
@@ -226,7 +294,6 @@ const goBack = () => router.push('/company/joblist')
   position: relative;
   width: 100%;
   height: 100%;
-  /* 변수 적용 */
   transition: transform var(--flip-duration, 0.7s) var(--flip-easing, ease-in-out);
   transform-style: preserve-3d;
 }
@@ -255,7 +322,6 @@ const goBack = () => router.push('/company/joblist')
   z-index: 1;
 }
 
-/* 기존 유틸리티 스타일 유지 */
 .rounded-\[2\.5rem\] {
   border-radius: 2.5rem;
 }

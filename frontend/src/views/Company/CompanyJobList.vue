@@ -244,7 +244,7 @@ const deleteJob = async (jobId) => {
                     class="px-4 py-3 rounded-xl border border-rose-200 text-rose-500 hover:bg-rose-50 transition text-sm font-bold">
                     삭제
                   </button>
-                  <RouterLink :to="`/company/applicantlist`"
+                  <RouterLink :to="{ path: '/company/applicantlist', query: { jobId: String(job.id) } }"
                     class="inline-flex items-center justify-center px-6 py-3 rounded-xl font-bold bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:opacity-90 transition shadow-md">
                     지원자 보기
                   </RouterLink>
