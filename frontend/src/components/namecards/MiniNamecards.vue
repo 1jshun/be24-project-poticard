@@ -99,7 +99,7 @@ const colorClasses = computed(() => {
           class="w-10 h-10 rounded-full border-2 border-white dark:border-zinc-800 shadow-sm overflow-hidden transition-colors duration-500 bg-gray-50 dark:bg-zinc-800"
           :class="colorClasses.avatarBorder"
         >
-          <img :src="cardInfo.avatar" alt="Avatar" class="w-full h-full object-cover" />
+          <img :src="cardInfo.profileImage" alt="Avatar" class="w-full h-full object-cover" />
         </div>
 
         <!-- 화살표 아이콘 (색상 연동) -->
