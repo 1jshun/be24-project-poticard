@@ -116,7 +116,7 @@ const markAllReadAndClose = (e) => {
 
 const addNotificationFromPush = (payload) => {
   const { senderIdx, senderName, contents } = payload || {}
-  if (senderIdx == null) return
+  if (senderIdx == null || !authStore.isLogin) return
 
   // 발신자 본인에게는 알림 표시 안 함 (받는 사람에게만 표시)
   let myIdx = authStore.userInfo?.idx
@@ -181,8 +181,12 @@ const cancelLogout = () => (showLogoutConfirm.value = false)
 const confirmLogout = () => {
   try {
     authStore.logout()
-  } catch { }
-
+  } catch (err) {
+    console.error('logout error: ', err)
+  }
+  
+  notifications.value = []
+  hasUnread.value = false
   showNotiPopup.value = false
   closeUserMenu()
 
@@ -191,6 +195,12 @@ const confirmLogout = () => {
   sessionStorage.removeItem('ATOKEN')
   document.cookie = 'ATOKEN=; Max-Age=0; path=/'
   document.cookie = 'RTOKEN=; Max-Age=0; path=/'
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then((reg) => {
+      reg.active?.postMessage({ type: 'SET_LOGIN_STATE', isLoggedIn: false })
+    })
+  }
 
   window.dispatchEvent(new Event('auth-changed'))
 
