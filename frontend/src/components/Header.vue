@@ -181,12 +181,8 @@ const cancelLogout = () => (showLogoutConfirm.value = false)
 const confirmLogout = () => {
   try {
     authStore.logout()
-  } catch (err) {
-    console.error('logout error: ', err)
-  }
-  
-  notifications.value = []
-  hasUnread.value = false
+  } catch { }
+
   showNotiPopup.value = false
   closeUserMenu()
 
@@ -195,12 +191,6 @@ const confirmLogout = () => {
   sessionStorage.removeItem('ATOKEN')
   document.cookie = 'ATOKEN=; Max-Age=0; path=/'
   document.cookie = 'RTOKEN=; Max-Age=0; path=/'
-
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.ready.then((reg) => {
-      reg.active?.postMessage({ type: 'SET_LOGIN_STATE', isLoggedIn: false })
-    })
-  }
 
   window.dispatchEvent(new Event('auth-changed'))
 
