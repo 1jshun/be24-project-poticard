@@ -71,13 +71,13 @@ const login = async () => {
     const user = await api.getMyInfo()
     authStore.login(user)
 
-    // 로그인 상태를 서비스 워커에 전달 (푸시 알림 표시 허용)
+    // 로그인 상태를 서비스 워커에 전달 (푸시 팝업 알림 표시 허용)
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.ready.then((reg) => {
         reg.active?.postMessage({ type: 'SET_LOGIN_STATE', isLoggedIn: true })
       })
     }
-
+    
     // redirect 쿼리가 있으면 우선 사용, 없으면 타입에 따라 분기
     let redirect = route.query.redirect
     if (!redirect) {
@@ -107,11 +107,8 @@ const login = async () => {
       }
 
       await api.subscribePush(subscription, userIdx)
-
-      console.log('Web Push subscribed!')
     } catch (pushError) {
       // 푸시 구독 실패는 로그인은 성공한 상태이므로 경고만 띄움
-      console.warn('Web Push subscription failed:', pushError)
     }
   } catch (e) {
     serverError.value = e?.userMessage || '로그인 실패'

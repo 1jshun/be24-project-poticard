@@ -4,13 +4,10 @@ let isLoggedIn = true // 기본값: 알림 표시 (상태 미전달 시)
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'SET_LOGIN_STATE') {
     isLoggedIn = !!event.data.isLoggedIn
-    console.log('[Service Worker] isLoggedIn:', isLoggedIn)
   }
 })
 
 self.addEventListener('push', (event) => {
-  console.log('[Service Worker] Push Received.')
-
   // 1. 기본값 설정 (Payload: roomIdx, senderIdx, senderEmail, contents, contentsTime)
   let payload = {
     roomIdx: 0,
@@ -19,14 +16,12 @@ self.addEventListener('push', (event) => {
     senderName: 'SenderName',
     senderProfileImage: 'SenderImage',
     contents: '',
-    contentsTime: Date.now(),
   }
 
   // 2. 데이터 파싱
   if (event.data) {
     try {
       payload = event.data.json()
-      console.log('[Service Worker] Payload:', payload)
     } catch (e) {
       console.error('[Service Worker] JSON Parsing failed:', e)
       payload.contents = event.data.text()
@@ -34,10 +29,7 @@ self.addEventListener('push', (event) => {
   }
 
   // 로그아웃 상태면 팝업 알림 표시하지 않음
-  if (!isLoggedIn) {
-    console.log('[Service Worker] Skip notification (user logged out)')
-    return
-  }
+  if (!isLoggedIn) return
 
   const title = payload.senderName || '새 메시지'
   const options = {
@@ -54,28 +46,8 @@ self.addEventListener('push', (event) => {
     },
   }
 
-  const showNotification = self.registration.showNotification(title, options)
-
-  const pushToClient = self.clients
-    .matchAll({ type: 'window', includeUncontrolled: true })
-    .then((clientList) => {
-      clientList.forEach((client) => {
-        client.postMessage({
-          type: 'PUSH_RECEIVED',
-          payload: {
-            roomIdx: payload.roomIdx,
-            senderIdx: payload.senderIdx,
-            senderEmail: payload.senderEmail,
-            senderName: payload.senderName,
-            senderProfileImage: payload.senderProfileImage,
-            contents: payload.contents,
-            contentsTime: payload.contentsTime,
-          },
-        })
-      })
-    })
-
-  event.waitUntil(Promise.all([showNotification, pushToClient]))
+  // Push는 팝업 알림만 표시 (헤더/채팅목록 실시간 갱신은 SSE로 처리)
+  event.waitUntil(self.registration.showNotification(title, options))
 })
 
 // 알림 클릭 시 처리 - senderId로 해당 채팅방으로 이동
