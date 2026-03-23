@@ -1,3 +1,9 @@
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'LOGOUT_EVENT') {
+    console.log('[Service Worker] Init')
+  }
+})
+
 self.addEventListener('push', (event) => {
   console.log('[Service Worker] Push Received.')
 
@@ -5,7 +11,9 @@ self.addEventListener('push', (event) => {
   let payload = {
     roomIdx: 0,
     senderIdx: 0,
-    senderEmail: 'System',
+    senderEmail: 'SenderEmail',
+    senderName: 'SenderName',
+    senderProfileImage: 'SenderImage',
     contents: '',
     contentsTime: Date.now(),
   }
