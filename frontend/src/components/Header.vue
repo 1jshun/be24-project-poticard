@@ -116,7 +116,7 @@ const markAllReadAndClose = (e) => {
 
 const addNotificationFromPush = (payload) => {
   const { senderIdx, senderName, contents } = payload || {}
-  if (senderIdx == null) return
+  if (senderIdx == null || !authStore.isLogin) return
 
   // 발신자 본인에게는 알림 표시 안 함 (받는 사람에게만 표시)
   let myIdx = authStore.userInfo?.idx

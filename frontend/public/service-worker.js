@@ -1,3 +1,13 @@
+// 로그인 상태 (true: 로그인됨 → 알림 표시, false: 로그아웃 → 알림 미표시)
+let isLoggedIn = true // 기본값: 알림 표시 (상태 미전달 시)
+
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SET_LOGIN_STATE') {
+    isLoggedIn = !!event.data.isLoggedIn
+    console.log('[Service Worker] isLoggedIn:', isLoggedIn)
+  }
+})
+
 self.addEventListener('push', (event) => {
   console.log('[Service Worker] Push Received.')
 
@@ -5,7 +15,9 @@ self.addEventListener('push', (event) => {
   let payload = {
     roomIdx: 0,
     senderIdx: 0,
-    senderEmail: 'System',
+    senderEmail: 'SenderEmail',
+    senderName: 'SenderName',
+    senderProfileImage: 'SenderImage',
     contents: '',
     contentsTime: Date.now(),
   }
@@ -19,6 +31,12 @@ self.addEventListener('push', (event) => {
       console.error('[Service Worker] JSON Parsing failed:', e)
       payload.contents = event.data.text()
     }
+  }
+
+  // 로그아웃 상태면 팝업 알림 표시하지 않음
+  if (!isLoggedIn) {
+    console.log('[Service Worker] Skip notification (user logged out)')
+    return
   }
 
   const title = payload.senderName || '새 메시지'
