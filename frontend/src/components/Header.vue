@@ -409,7 +409,7 @@ onBeforeUnmount(() => {
                   <div class="pc-mini-card">
                     <div class="pc-mini-head">
                       <div class="pc-mini-avatar">
-                        <img :src="`https://api.dicebear.com/9.x/avataaars/svg?seed=${cardName}`" alt="avatar" />
+                        <img :src="`${authStore.userInfo.profileImage}`" alt="avatar" />
                       </div>
 
                       <div class="pc-mini-main">
