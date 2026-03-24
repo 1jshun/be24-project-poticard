@@ -12,7 +12,6 @@ const loadError = ref('')
 const detailLoading = ref(false)
 const selectedCompany = ref(null)
 const favoriteOnly = ref(false)
-const appliedOnly = ref(false)
 
 const q = ref('')
 const sort = ref('popular')
@@ -62,7 +61,6 @@ const loadCompanies = async () => {
       keyword: q.value,
       category: category.value,
       favoriteOnly: favoriteOnly.value,
-      appliedOnly: appliedOnly.value,
       sort: sort.value,
     })
   } catch (error) {
@@ -73,20 +71,24 @@ const loadCompanies = async () => {
   }
 }
 
-const buildLoginRedirect = () => ({
-  path: '/login',
-  query: {
-    type: 'personal',
-    redirect: route.fullPath || '/matching',
-  },
-})
-
-const hasLoginUser = () => {
-  try {
-    return Boolean(localStorage.getItem('USERINFO'))
-  } catch (error) {
-    return false
+const buildLoginRedirect = () => {
+  return {
+    path: '/login',
+    query: {
+      type: 'personal',
+      redirect: route.fullPath || '/matching',
+    },
   }
+}
+
+const requirePersonalLogin = () => {
+  if (localStorage.getItem('USERINFO')) {
+    return true
+  }
+
+  alert('로그인이 필요한 기능입니다. 개인계정으로 로그인해 주세요.')
+  router.push(buildLoginRedirect())
+  return false
 }
 
 const syncCompany = (companyId, payload = {}) => {
@@ -140,10 +142,13 @@ const toggleFavorite = async (company) => {
     const res = await matchingApi.toggleFavorite(company.id)
     const result = res?.data || {}
 
-    syncCompany(company.id, {
-      isFavorite: Boolean(result.favorite),
-      likes: Number(result.favoriteCount ?? company.likes),
-    })
+    company.isFavorite = Boolean(result.favorite)
+    company.likes = Number(result.favoriteCount ?? company.likes)
+
+    if (selectedCompany.value && selectedCompany.value.id === company.id) {
+      selectedCompany.value.isFavorite = company.isFavorite
+      selectedCompany.value.likes = company.likes
+    }
 
     if (favoriteOnly.value) {
       await loadCompanies()
@@ -156,9 +161,7 @@ const toggleFavorite = async (company) => {
 const applyCompany = async (company) => {
   if (!company || company.isApplied || company.isMine) return
 
-  if (!hasLoginUser()) {
-    alert('로그인이 필요한 기능입니다. 개인계정으로 로그인해 주세요.')
-    router.push(buildLoginRedirect())
+  if (!requirePersonalLogin()) {
     return
   }
 
@@ -170,18 +173,16 @@ const applyCompany = async (company) => {
       isApplied: Boolean(result.applied),
     })
 
-    if (appliedOnly.value) {
-      await loadCompanies()
-    }
-
     alert('지원이 완료되었습니다.')
   } catch (error) {
     const message = error?.message || '지원 처리에 실패했습니다.'
+
     if (message.includes('로그인')) {
       alert('로그인이 필요한 기능입니다. 개인계정으로 로그인해 주세요.')
       router.push(buildLoginRedirect())
       return
     }
+
     alert(message)
   }
 }
@@ -202,17 +203,11 @@ const resetFilters = async () => {
   category.value = 'ALL'
   selectedSkills.value = []
   favoriteOnly.value = false
-  appliedOnly.value = false
   page.value = 1
   await loadCompanies()
 }
 
 const changeFavoriteOnly = async () => {
-  page.value = 1
-  await loadCompanies()
-}
-
-const changeAppliedOnly = async () => {
   page.value = 1
   await loadCompanies()
 }
@@ -248,7 +243,7 @@ onMounted(async () => {
           <h1 class="text-3xl font-extrabold tracking-tight">채용 공고</h1>
         </div>
 
-        <div class="flex items-center gap-2 flex-wrap">
+        <div class="flex items-center gap-2">
           <button
             @click="favoriteOnly = !favoriteOnly; changeFavoriteOnly()"
             :class="[
@@ -259,17 +254,6 @@ onMounted(async () => {
             ]"
           >
             즐겨찾기만
-          </button>
-          <button
-            @click="appliedOnly = !appliedOnly; changeAppliedOnly()"
-            :class="[
-              'px-4 py-2.5 rounded-2xl font-bold border transition',
-              appliedOnly
-                ? 'bg-indigo-600 text-white border-indigo-500'
-                : 'border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900',
-            ]"
-          >
-            지원한 회사
           </button>
           <button
             @click="resetFilters"
