@@ -187,6 +187,38 @@ const applyCompany = async (company) => {
   }
 }
 
+const cancelCompany = async (company) => {
+  if (!company || !company.isApplied || company.isMine) return
+
+  if (!requirePersonalLogin()) {
+    return
+  }
+
+  const confirmed = window.confirm('지원한 공고를 취소할까요?')
+  if (!confirmed) return
+
+  try {
+    const res = await matchingApi.cancelApply(company.id)
+    const result = res?.data || {}
+
+    syncCompany(company.id, {
+      isApplied: Boolean(result.applied),
+    })
+
+    alert('지원이 취소되었습니다.')
+  } catch (error) {
+    const message = error?.message || '지원 취소에 실패했습니다.'
+
+    if (message.includes('로그인')) {
+      alert('로그인이 필요한 기능입니다. 개인계정으로 로그인해 주세요.')
+      router.push(buildLoginRedirect())
+      return
+    }
+
+    alert(message)
+  }
+}
+
 const toggleSkill = (skill) => {
   const index = selectedSkills.value.indexOf(skill)
   if (index >= 0) {
@@ -379,18 +411,24 @@ onMounted(async () => {
             <div class="text-sm text-zinc-400 font-bold">업데이트: {{ c.updatedAt || '-' }}</div>
             <div class="flex items-center gap-2">
               <button
+                v-if="!c.isMine && c.isApplied"
+                @click="cancelCompany(c)"
+                class="px-4 py-3 rounded-2xl font-black border border-rose-200 text-rose-500 hover:bg-rose-50"
+              >
+                지원취소
+              </button>
+              <button
+                v-else
                 @click="applyCompany(c)"
-                :disabled="c.isApplied || c.isMine"
+                :disabled="c.isMine"
                 :class="[
                   'px-4 py-3 rounded-2xl font-black border',
                   c.isMine
                     ? 'bg-amber-50 text-amber-700 border-amber-200 cursor-default'
-                    : c.isApplied
-                      ? 'bg-zinc-100 text-zinc-400 border-zinc-200 cursor-not-allowed'
-                      : 'bg-white border-zinc-200 hover:bg-zinc-50 text-zinc-900',
+                    : 'bg-white border-zinc-200 hover:bg-zinc-50 text-zinc-900',
                 ]"
               >
-                {{ c.isMine ? '내 공고' : c.isApplied ? '지원완료' : '지원하기' }}
+                {{ c.isMine ? '내 공고' : '지원하기' }}
               </button>
               <button
                 @click="openDetail(c.id)"
@@ -500,18 +538,24 @@ onMounted(async () => {
 
           <div class="mt-8 flex items-center justify-end gap-2 pt-4 border-t border-zinc-200 dark:border-zinc-800">
             <button
+              v-if="!selectedCompany.isMine && selectedCompany.isApplied"
+              @click="cancelCompany(selectedCompany)"
+              class="px-5 py-3 rounded-2xl font-black border border-rose-200 text-rose-500 hover:bg-rose-50"
+            >
+              지원취소
+            </button>
+            <button
+              v-else
               @click="applyCompany(selectedCompany)"
-              :disabled="selectedCompany.isApplied || selectedCompany.isMine"
+              :disabled="selectedCompany.isMine"
               :class="[
                 'px-5 py-3 rounded-2xl font-black border',
                 selectedCompany.isMine
                   ? 'bg-amber-50 text-amber-700 border-amber-200 cursor-default'
-                  : selectedCompany.isApplied
-                    ? 'bg-zinc-100 text-zinc-400 border-zinc-200 cursor-not-allowed'
-                    : 'bg-white border-zinc-200 hover:bg-zinc-50 text-zinc-900',
+                  : 'bg-white border-zinc-200 hover:bg-zinc-50 text-zinc-900',
               ]"
             >
-              {{ selectedCompany.isMine ? '내 공고' : selectedCompany.isApplied ? '지원완료' : '지원하기' }}
+              {{ selectedCompany.isMine ? '내 공고' : '지원하기' }}
             </button>
             <button
               @click="closeDetail"
