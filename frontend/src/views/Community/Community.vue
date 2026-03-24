@@ -2,6 +2,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/api/community/index'
+import namecardApi from '@/api/namecard'
 import NamecardsFront from '@/components/namecards/NamecardsFront.vue'
 import NamecardsBack from '@/components/namecards/NamecardsBack.vue'
 
@@ -69,20 +70,20 @@ const formatTimeAgo = (dateString) => {
 }
 
 const mapPost = (item) => ({
-  id: item.postId,
+  id: item.postId ?? item.idx,
   cat: item.category,
-  solved: item.isSolved,
+  solved: Boolean(item.isSolved ?? item.solved ?? false),
   title: item.title,
-  author: item.author,
+  author: item.author ?? item.writer ?? '알 수 없음',
   writerIdx: item.writerIdx,
   tags: Array.isArray(item.tags) ? item.tags : [],
-  like: Number(item.likes ?? 0),
-  comment: Number(item.replys ?? 0),
-  view: Number(item.views ?? 0),
+  like: Number(item.likes ?? item.likesCount ?? 0),
+  comment: Number(item.replys ?? item.commentCount ?? 0),
+  view: Number(item.views ?? item.viewCount ?? 0),
   time: formatTimeAgo(item.createdAt),
-  body: item.body ?? '',
-  isFavorite: Boolean(item.isFavorite),
-  isOwner: Boolean(item.isOwner),
+  body: item.body ?? item.contents ?? '',
+  isFavorite: Boolean(item.isFavorite ?? item.favorite ?? false),
+  isOwner: Boolean(item.isOwner ?? item.owner ?? false),
   createdAt: item.createdAt,
 })
 
@@ -123,18 +124,21 @@ const myCardInfo = computed(() => {
   if (!card || !profile) return null
 
   return {
-    role: card.title || profile.affiliation || 'Poticard User',
-    name: card.name || profile.name,
-    description: [profile.affiliation, profile.career].filter(Boolean).join(' · '),
-    avatar:
+    userIdx: card.userIdx || profile.idx || null,
+    title: card.title || profile.affiliation || '등록된 명함',
+    affiliation: card.affiliation || profile.affiliation || '',
+    name: card.name || profile.name || '',
+    profileImage:
       card.profileImage ||
       profile.profileImage ||
       `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(profile.name || 'Poticard')}`,
+    description: card.description || [profile.affiliation, profile.career].filter(Boolean).join(' · '),
     keywords: Array.isArray(card.keywords) ? card.keywords : [],
-    website: card.url || '',
-    email: card.email || profile.email,
-    phone: card.phone || profile.phone,
-    address: card.address || profile.address,
+    url: card.url || '',
+    email: card.email || profile.email || '',
+    phone: card.phone || profile.phone || '',
+    address: card.address || profile.address || '',
+    color: card.color || 'YELLOW',
   }
 })
 
@@ -154,6 +158,26 @@ const fetchAllPosts = async () => {
     posts.value = []
   } finally {
     isLoading.value = false
+  }
+}
+
+const fetchMyNamecard = async () => {
+  const profile = summary.value.profile || fallbackProfile.value
+  const userIdx = profile?.idx
+  if (!userIdx) return
+
+  try {
+    const res = await namecardApi.getSingleNamecard(userIdx)
+    const data = res?.data || res || null
+
+    if (data) {
+      summary.value = {
+        ...summary.value,
+        namecard: data,
+      }
+    }
+  } catch (error) {
+    // 명함이 없으면 그대로 둠
   }
 }
 
@@ -179,6 +203,10 @@ const fetchSummary = async () => {
   } finally {
     summaryLoading.value = false
   }
+
+  if (!summary.value.namecard) {
+    await fetchMyNamecard()
+  }
 }
 
 onMounted(async () => {
@@ -195,8 +223,8 @@ const filteredPosts = computed(() => {
   if (q) {
     list = list.filter(
       (p) =>
-        p.title.toLowerCase().includes(q) ||
-        p.author.toLowerCase().includes(q) ||
+        (p.title || '').toLowerCase().includes(q) ||
+        (p.author || '').toLowerCase().includes(q) ||
         p.tags.some((t) => t.toLowerCase().includes(q)),
     )
   }
@@ -333,11 +361,16 @@ const removeComment = async (commentId) => {
   }
 }
 
-const openNamecard = () => {
+const openNamecard = async () => {
+  if (!myCardInfo.value) {
+    await fetchMyNamecard()
+  }
+
   if (!myCardInfo.value) {
     alert('등록된 내 명함이 없습니다.')
     return
   }
+
   cardFlipped.value = false
   cardModalOpen.value = true
 }
@@ -535,8 +568,6 @@ const openNamecard = () => {
             <h4 class="font-extrabold mb-4">내 프로필 요약</h4>
             <div class="space-y-4" v-if="profileSummary">
               <div>
-                <p class="text-[11px] text-zinc-400 font-bold uppercase">관심 분야</p>
-                <p class="font-bold">{{ profileSummary.affiliation || profileSummary.role || '개인 사용자' }}</p>
                 <p class="text-sm text-zinc-500 mt-1">{{ profileSummary.name }}</p>
               </div>
               <div class="flex flex-wrap gap-2">
