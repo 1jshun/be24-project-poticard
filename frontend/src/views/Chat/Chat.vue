@@ -2,8 +2,14 @@
 import { ref, reactive, onMounted, computed, nextTick, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import chatApi from '@/api/chat/index.js'
+import namecardApi from '@/api/namecard/index.js'
+import { useChatStore } from '@/stores/useChatStore'
+import NamecardsFront from '@/components/namecards/NamecardsFront.vue'
+import NamecardsBack from '@/components/namecards/NamecardsBack.vue'
 import SockJS from 'sockjs-client'
 import Stomp from 'stompjs'
+
+const chatStore = useChatStore()
 
 const route = useRoute()
 const router = useRouter()
@@ -25,6 +31,41 @@ const isLoadingMore = ref(false)
 const isCardOpen = ref(false)
 const isFlipped = ref(false)
 const isMenuOpen = ref(false)
+const opponentCardInfo = ref(null)
+
+function buildCardInfoForNamecards(room, apiPayload = null) {
+  const d =
+    apiPayload != null && typeof (apiPayload?.data ?? apiPayload) === 'object'
+      ? apiPayload?.data ?? apiPayload
+      : {}
+  const profileRaw = d.profileImage ?? d.avatar ?? room?.avatar ?? ''
+  const profileImage =
+    profileRaw && !String(profileRaw).startsWith('http')
+      ? `/api${String(profileRaw).startsWith('/') ? '' : '/'}${profileRaw}`
+      : profileRaw || 'https://api.dicebear.com/7.x/avataaars/svg?seed=user'
+  const rawKw = d.keywords ?? d.tags ?? room?.tags ?? []
+  const keywords = Array.isArray(rawKw) ? rawKw.map((t) => String(t).replace(/^#/, '')) : []
+  const opponentUserId = room?.opponentIdx ?? d.userIdx ?? d.userId ?? d.user_id ?? d.idx
+  return {
+    userIdx: opponentUserId,
+    userId: opponentUserId,
+    affiliation: d.affiliation ?? d.company ?? room?.company ?? '',
+    title: d.title ?? d.career ?? d.role ?? room?.role ?? '',
+    name: d.userName ?? d.name ?? room?.name ?? '상대방',
+    description: d.description ?? d.intro ?? room?.intro ?? '',
+    profileImage,
+    keywords,
+    url: d.url ?? '',
+    email: d.email ?? '',
+    phone: d.phone ?? '',
+    address: d.address ?? '',
+    color: d.color ?? 'YELLOW',
+  }
+}
+
+const toggleFlip = () => {
+  isFlipped.value = !isFlipped.value
+}
 
 const selectedFiles = ref([])
 const currentUploadType = ref(null) // 'IMAGE' 또는 'DOC'
@@ -40,7 +81,6 @@ let stompClient = null
 const getChatRoomList = async () => {
   try {
     const res = await chatApi.chatRoomList()
-    console.log('채팅방 목록:', res)
     const list = res?.data?.content ?? (Array.isArray(res?.data) ? res.data : res)
     if (Array.isArray(list)) {
       rooms.splice(0, rooms.length, ...list)
@@ -87,7 +127,6 @@ const wsConnect = (roomId, onConnected) => {
     // 채팅방 구독: /sub/chat/room/{roomId}
     stompClient.subscribe(`/sub/chat/room/${roomId}`, (tick) => {
       const recv = JSON.parse(tick.body)
-      console.log(recv)
 
       // 읽음 처리 이벤트: 상대가 채팅방 입장 시 백엔드가 전송. 해당 방의 내 메시지를 모두 읽음으로 갱신
       if (recv.type === 'READ_RECEIPT') {
@@ -166,7 +205,7 @@ const setActiveRoom = async (roomId) => {
 
   // 방 이동
   activeRoomId.value = roomId
-  console.log('방 이동 성공')
+  chatStore.setActiveRoom(roomId)
   const room = rooms.find((r) => r.id === roomId)
   if (room) room.unread = 0
   isMenuOpen.value = false
@@ -299,10 +338,26 @@ const onMessageAreaScroll = async () => {
   }
 }
 
-const toggleCard = () => {
+const toggleCard = async () => {
+  if (!activeRoom.value) {
+    alert('채팅방을 선택해주세요.')
+    return
+  }
   isFlipped.value = false
-  isCardOpen.value = !isCardOpen.value
+  const opening = !isCardOpen.value
+  isCardOpen.value = opening
   isMenuOpen.value = false
+  if (!opening) return
+  const room = activeRoom.value
+  opponentCardInfo.value = buildCardInfoForNamecards(room, null)
+  try {
+    if (room.opponentIdx != null) {
+      const res = await namecardApi.getSingleNamecard(room.opponentIdx)
+      opponentCardInfo.value = buildCardInfoForNamecards(room, res)
+    }
+  } catch {
+    opponentCardInfo.value = buildCardInfoForNamecards(room, null)
+  }
 }
 
 /* 부가 기능 로직 */
@@ -340,6 +395,7 @@ const leaveChat = async () => {
     delete messagePageByRoom.value[roomIdx]
     // 활성 방 해제
     activeRoomId.value = null
+    chatStore.clearActiveRoom()
     isMenuOpen.value = false
   } catch (error) {
     console.error('채팅방 나가기 실패:', error)
@@ -461,7 +517,10 @@ const handleSend = async () => {
 
 const startVideoCall = () => {
   if (!activeRoomId.value) return alert('대상을 선택해주세요.')
-  window.location.href = `/video-chat?id=${activeRoom.value.id}&name=${encodeURIComponent(activeRoom.value.name)}`
+  const opponentIdx = activeRoom.value?.opponentIdx
+  const qs = new URLSearchParams({ id: activeRoom.value.id, name: activeRoom.value.name })
+  if (opponentIdx != null) qs.set('opponentIdx', opponentIdx)
+  window.location.href = `/video-chat?${qs}`
 }
 
 // 생성 API 응답으로 room 객체 생성 (목록에 없을 때 추가용)
@@ -575,45 +634,54 @@ const buildRoomFromPush = (payload) => {
   }
 }
 
-onMounted(async () => {
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.addEventListener('message', (event) => {
-      if (event.data && event.data.type === 'PUSH_RECEIVED') {
-        const payload = event.data.payload ?? event.data
-        const { roomIdx, senderIdx, senderProfileImage, contents, contentsTime } = payload
+// 푸시/SSE 수신 시 채팅방 목록 실시간 갱신 (공통 핸들러)
+const handleNotificationPayload = (payload) => {
+  const { roomIdx, senderIdx, senderProfileImage, contents, contentsTime } = payload ?? {}
 
-        const room = rooms.find(
-          (r) => r.id === Number(roomIdx) || r.opponentIdx === Number(senderIdx),
-        )
-        if (room) {
-          if (activeRoomId.value !== room.id) {
-            room.unread = (room.unread || 0) + 1
-            room.content =
-              contents?.length > 30 ? contents.slice(0, 30) + '...' : contents || room.content
-            room.time = contentsTime ?? room.time ?? room.lastContentsTime
-          }
-          if (senderProfileImage) room.avatar = senderProfileImage
-        } else {
-          // 목록에 없는 새 채팅방 → 실시간으로 추가
-          const newRoom = buildRoomFromPush(payload)
-          if (newRoom) {
-            rooms.unshift(newRoom)
-            // 알림 클릭으로 진입한 경우 해당 방 자동 선택
-            const sid = Number(route.query.senderId)
-            if (!isNaN(sid) && newRoom.opponentIdx === sid) {
-              setActiveRoom(newRoom.id)
-            }
-          } else {
-            getChatRoomList()
-          }
-        }
+  const room = rooms.find(
+    (r) => r.id === Number(roomIdx) || r.opponentIdx === Number(senderIdx),
+  )
+  if (room) {
+    if (activeRoomId.value !== room.id) {
+      room.unread = (room.unread || 0) + 1
+      room.content =
+        contents?.length > 30 ? contents.slice(0, 30) + '...' : contents || room.content
+      room.time = contentsTime ?? room.time ?? room.lastContentsTime
+    }
+    if (senderProfileImage) room.avatar = senderProfileImage
+  } else {
+    const newRoom = buildRoomFromPush(payload)
+    if (newRoom) {
+      rooms.unshift(newRoom)
+      const sid = Number(route.query.senderId)
+      if (!isNaN(sid) && newRoom.opponentIdx === sid) {
+        setActiveRoom(newRoom.id)
       }
-    })
+    } else {
+      getChatRoomList()
+    }
+  }
+}
+
+const onSseNotification = (e) => handleNotificationPayload(e?.detail)
+const onPushMessage = (event) => {
+  if (event.data?.type === 'PUSH_RECEIVED') handleNotificationPayload(event.data.payload ?? event.data)
+}
+
+onMounted(async () => {
+  window.addEventListener('sse-notification', onSseNotification)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', onPushMessage)
   }
   await getChatRoomList()
   await openRoomFromSenderId()
 })
 onUnmounted(() => {
+  window.removeEventListener('sse-notification', onSseNotification)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.removeEventListener('message', onPushMessage)
+  }
+  chatStore.clearActiveRoom()
   if (stompClient) {
     stompClient.disconnect()
   }
@@ -626,92 +694,27 @@ onUnmounted(() => {
   >
     <transition name="fade">
       <div
-        v-if="isCardOpen"
+        v-if="isCardOpen && opponentCardInfo"
         @click.self="toggleCard"
         class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
       >
         <transition name="card-pop" appear>
-          <div
-            class="relative w-full max-w-md aspect-[1.58/1] perspective-1000"
-            @click="isFlipped = !isFlipped"
-          >
+          <div class="scene w-full max-w-md aspect-[1.58/1] cursor-pointer group relative">
             <div
-              :class="[
-                'relative w-full h-full transform-style-3d shadow-2xl rounded-2xl duration-700 cursor-pointer',
-                isFlipped ? 'flipped' : '',
-              ]"
+              class="card-object w-full h-full relative shadow-2xl rounded-2xl transition-all duration-500"
+              :class="{ 'is-flipped': isFlipped }"
+              @click="toggleFlip"
             >
-              <div
-                class="absolute inset-0 w-full h-full bg-white rounded-2xl border border-slate-100 p-8 backface-hidden overflow-hidden"
-              >
-                <div class="absolute top-0 right-0 w-32 h-32 bg-amber-400/20 rounded-bl-full"></div>
-                <div class="flex flex-col justify-between h-full relative z-10 text-left">
-                  <div class="flex justify-between items-start">
-                    <div class="pr-4">
-                      <p class="text-xs font-bold text-amber-600 uppercase tracking-widest mb-1">
-                        {{ activeRoom.role }}
-                      </p>
-                      <h2 class="text-3xl font-black text-slate-900 tracking-tight mb-2">
-                        {{ activeRoom.name }}
-                      </h2>
-                      <p class="text-sm text-slate-500 leading-relaxed whitespace-pre-line">
-                        {{ activeRoom.intro }}
-                      </p>
-                    </div>
-                    <div
-                      class="w-20 h-20 rounded-full border-4 border-slate-50 shadow-md overflow-hidden bg-slate-100 flex-shrink-0"
-                    >
-                      <img :src="activeRoom.avatar" class="w-full h-full object-cover" />
-                    </div>
-                  </div>
-                  <div class="space-y-4">
-                    <div class="flex flex-wrap gap-2">
-                      <span
-                        v-for="tag in activeRoom.tags"
-                        :key="tag"
-                        class="px-2.5 py-1 bg-slate-50 border border-slate-100 text-slate-600 text-[10px] font-bold rounded-md"
-                        >#{{ tag }}</span
-                      >
-                    </div>
-                    <div class="pt-4 border-t border-slate-100 flex justify-between items-center">
-                      <div class="flex gap-3 text-slate-400">
-                        <i
-                          class="fa-brands fa-github text-xl hover:text-slate-900 transition-colors"
-                        ></i>
-                        <i
-                          class="fa-solid fa-envelope text-xl hover:text-slate-900 transition-colors"
-                        ></i>
-                      </div>
-                      <i class="fa-solid fa-qrcode text-3xl text-slate-800 opacity-80"></i>
-                    </div>
-                  </div>
+              <div class="card-face card-front rounded-2xl overflow-hidden">
+                <NamecardsFront :cardInfo="opponentCardInfo" />
+                <div
+                  class="absolute bottom-4 right-4 z-20 text-xs text-gray-400 dark:text-zinc-500 animate-pulse pointer-events-none"
+                >
+                  Click to flip <i class="fa-solid fa-rotate ml-1"></i>
                 </div>
               </div>
-              <div
-                class="absolute inset-0 w-full h-full bg-slate-900 rounded-2xl p-8 backface-hidden rotate-y-180 text-white flex flex-col justify-center shadow-2xl"
-              >
-                <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
-                  <span class="w-1.5 h-6 bg-amber-400 rounded-full"></span> Contact Info
-                </h3>
-                <div class="space-y-4 text-base opacity-90">
-                  <div class="flex items-center gap-3">
-                    <i class="fa-solid fa-phone w-5 text-amber-400"></i> 010-****-{{
-                      activeRoom.id
-                    }}000
-                  </div>
-                  <div class="flex items-center gap-3">
-                    <i class="fa-solid fa-link w-5 text-amber-400"></i>
-                    {{ activeRoom.company.toLowerCase().replace(' ', '') }}.com
-                  </div>
-                  <div class="flex items-center gap-3">
-                    <i class="fa-solid fa-location-dot w-5 text-amber-400"></i> Seoul, South Korea
-                  </div>
-                </div>
-                <p
-                  class="mt-8 text-[10px] uppercase tracking-widest text-slate-500 text-center font-bold"
-                >
-                  Click to see front side
-                </p>
+              <div class="card-face card-back rounded-2xl overflow-hidden">
+                <NamecardsBack :cardInfo="opponentCardInfo" :hidePortfolioBtn="false" />
               </div>
             </div>
           </div>
@@ -1174,24 +1177,37 @@ onUnmounted(() => {
   background-color: #18181b;
 }
 
-.perspective-1000 {
+/* 명함 플립 (PortfolioView.vue와 동일) */
+.scene {
   perspective: 1000px;
 }
 
-.transform-style-3d {
+.card-object {
+  transition: transform 0.7s cubic-bezier(0.4, 0.2, 0.2, 1);
   transform-style: preserve-3d;
 }
 
-.backface-hidden {
+.card-object.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.card-face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
+  overflow: hidden;
 }
 
-.rotate-y-180 {
+.card-back {
   transform: rotateY(180deg);
 }
 
-.flipped {
-  transform: rotateY(180deg);
+.card-front {
+  transform: rotateY(0deg);
 }
 
 /* Custom Scrollbar */

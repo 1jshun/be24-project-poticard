@@ -3,6 +3,7 @@ import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { initHeader } from '@/assets/js/Header.js'
 import useAuthStore from '@/stores/useAuthStore'
+import { useChatStore } from '@/stores/useChatStore'
 import '@/assets/css/Header.css'
 import brandLogo from '@/image/poticard-logo.png'
 
@@ -22,6 +23,7 @@ const handleSearch = () => {
   searchQuery.value = ''
 }
 const authStore = useAuthStore()
+const chatStore = useChatStore()
 const router = useRouter()
 
 const showAuthModal = ref(false)
@@ -79,14 +81,58 @@ watch(userMenuOpen, (open) => {
   document.documentElement.classList.toggle('user-open', open)
 })
 
+// SSE 연결 (실시간 알림 - 푸시 권한 없어도 동작)
+let sseEventSource = null
+
+const getUserId = () => {
+  let id = authStore.userInfo?.idx ?? authStore.userInfo?.id ?? authStore.userInfo?.data?.idx
+  if (id == null) {
+    try {
+      const u = JSON.parse(localStorage.getItem('USERINFO') || '{}')
+      id = u?.idx ?? u?.id ?? u?.data?.idx
+    } catch {}
+  }
+  return id
+}
+
+const startSse = () => {
+  if (sseEventSource) return
+  const userId = getUserId()
+  if (!userId) return
+  const url = `/api/sse/subscribe/${userId}`
+  sseEventSource = new EventSource(url)
+  sseEventSource.addEventListener('notification', (e) => {
+    try {
+      const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data
+      addNotificationFromPush(data)
+      window.dispatchEvent(new CustomEvent('sse-notification', { detail: data }))
+    } catch (err) {}
+  })
+  sseEventSource.onerror = () => {
+    sseEventSource?.close()
+    sseEventSource = null
+  }
+}
+
+const closeSse = () => {
+  if (sseEventSource) {
+    sseEventSource.close()
+    sseEventSource = null
+  }
+}
+
 watch(
   () => authStore.isLogin,
   (isLogin) => {
     if (!isLogin) {
       showNotiPopup.value = false
       closeUserMenu()
+      closeSse()
+    } else {
+      startSse()
     }
   },
+  { immediate: true },
 )
 
 const onDocClick = (e) => {
@@ -115,14 +161,22 @@ const markAllReadAndClose = (e) => {
 }
 
 const addNotificationFromPush = (payload) => {
-  const { senderIdx, senderName, contents } = payload || {}
+  const p = payload || {}
+  const senderIdx = p.senderIdx ?? p.senderId
+  const senderName = p.senderName ?? p.senderUsername
+  const contents = p.contents ?? p.content
+  const roomIdx = p.roomIdx != null ? Number(p.roomIdx) : null
   if (senderIdx == null || !authStore.isLogin) return
 
+  // 현재 보고 있는 채팅방에서 온 메시지는 헤더 알림 스킵 (STOMP로 이미 수신)
+  if (roomIdx != null && chatStore.activeRoomId === roomIdx) return
+
   // 발신자 본인에게는 알림 표시 안 함 (받는 사람에게만 표시)
-  let myIdx = authStore.userInfo?.idx
+  let myIdx = authStore.userInfo?.idx ?? authStore.userInfo?.id
   if (myIdx == null) {
     try {
-      myIdx = JSON.parse(localStorage.getItem('USERINFO') || '{}')?.idx
+      const u = JSON.parse(localStorage.getItem('USERINFO') || '{}')
+      myIdx = u?.idx ?? u?.id ?? u?.data?.idx
     } catch {}
   }
   if (myIdx != null && Number(senderIdx) === Number(myIdx)) return
@@ -192,6 +246,16 @@ const confirmLogout = () => {
   document.cookie = 'ATOKEN=; Max-Age=0; path=/'
   document.cookie = 'RTOKEN=; Max-Age=0; path=/'
 
+  closeSse()
+
+  // 로그아웃 상태를 서비스 워커에 전달 (푸시 팝업 알림 미표시)
+  if ('serviceWorker' in navigator) {
+    const isLoggedIn = authStore.checkLogin()
+    navigator.serviceWorker.ready.then((reg) => {
+      reg.active?.postMessage({ type: 'SET_LOGIN_STATE', isLoggedIn })
+    })
+  }
+
   window.dispatchEvent(new Event('auth-changed'))
 
   router.push('/')
@@ -224,6 +288,7 @@ onMounted(() => {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('message', handlePushNotification)
   }
+  if (authStore.isLogin) startSse()
 })
 onBeforeUnmount(() => {
   document.removeEventListener('click', onDocClick)
@@ -232,6 +297,7 @@ onBeforeUnmount(() => {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.removeEventListener('message', handlePushNotification)
   }
+  closeSse()
   document.documentElement.classList.remove('user-open')
 })
 </script>
