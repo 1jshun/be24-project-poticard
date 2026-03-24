@@ -4,6 +4,7 @@ const PUBLIC_LIST_URL = '/company/public/list'
 const PUBLIC_DETAIL_URL = (id) => `/company/public/read/${id}`
 const PUBLIC_FAVORITE_URL = (id) => `/company/public/favorite/${id}`
 const PUBLIC_APPLY_URL = (id) => `/company/public/apply/${id}`
+const PUBLIC_CANCEL_URL = (id) => `/company/public/cancel/${id}`
 const PUBLIC_RECOMMEND_URL = (size) => `/company/public/recommend?size=${size}`
 
 const getUserKey = () => {
@@ -105,7 +106,7 @@ const normalize = (raw = {}) => {
         ? isFavorite
         : favorites.has(id),
     isApplied:
-      typeof raw.isApplied === 'boolean' || typeof raw.applied === 'boolean'
+      typeof raw.isFavorite === 'boolean' || typeof raw.applied === 'boolean' || typeof raw.isApplied === 'boolean'
         ? isApplied
         : applied.has(id),
     isMine: pickBoolean(raw.isMine, raw.mine),
@@ -266,6 +267,27 @@ const apply = async (id) => {
   }
 }
 
+const cancelApply = async (id) => {
+  const targetId = Number(id)
+  const response = await apiFetch(PUBLIC_CANCEL_URL(targetId), {
+    method: 'DELETE',
+  })
+
+  const result = unwrapData(response) || {}
+  const applied = readSet(appliedKey())
+  applied.delete(targetId)
+  writeSet(appliedKey(), applied)
+
+  return {
+    data: {
+      companyIdx: targetId,
+      applied: Boolean(result.applied ?? false),
+      applicants: Number(result.applicants ?? 0),
+      newApplicants: Number(result.newApplicants ?? 0),
+    },
+  }
+}
+
 const recommend = async (size = 4) => {
   const response = await apiFetch(PUBLIC_RECOMMEND_URL(size))
   const data = unwrapData(response)
@@ -280,4 +302,4 @@ const recommend = async (size = 4) => {
     .slice(0, size)
 }
 
-export default { list, detail, toggleFavorite, apply, recommend }
+export default { list, detail, toggleFavorite, apply, cancelApply, recommend }
