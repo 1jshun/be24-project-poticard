@@ -34,6 +34,25 @@ const formatCreatedAt = (value) => {
   return value
 }
 
+const isPrivateJob = (job) => !job.publicOpen
+
+const getStatusLabel = (job) => {
+  if (isPrivateJob(job)) return '비공개'
+  return job.status === 'RECRUITING' ? '채용 중' : '마감됨'
+}
+
+const getStatusClass = (job) => {
+  if (isPrivateJob(job)) {
+    return 'bg-amber-50 dark:bg-amber-900/20 text-amber-600'
+  }
+
+  if (job.status === 'RECRUITING') {
+    return 'bg-green-50 dark:bg-green-900/20 text-green-600'
+  }
+
+  return 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500'
+}
+
 const fetchJobs = async () => {
   isLoading.value = true
 
@@ -50,6 +69,7 @@ const fetchJobs = async () => {
       newApplicants: Number(item.newApplicants ?? 0),
       deadline: item.deadline || '-',
       status: item.status,
+      publicOpen: Boolean(item.publicOpen),
       createdAt: formatCreatedAt(item.createdAt),
     }))
 
@@ -86,10 +106,11 @@ const stats = computed(() => {
 
 const filteredJobs = computed(() => {
   if (currentFilter.value === 'ALL') return jobs.value
-  return jobs.value.filter((j) => j.status === currentFilter.value)
+  if (currentFilter.value === 'PRIVATE') return jobs.value.filter((j) => !j.publicOpen)
+  if (currentFilter.value === 'RECRUITING') return jobs.value.filter((j) => j.publicOpen && j.status === 'RECRUITING')
+  if (currentFilter.value === 'CLOSED') return jobs.value.filter((j) => j.publicOpen && j.status === 'CLOSED')
+  return jobs.value
 })
-
-const getStatusLabel = (status) => (status === 'RECRUITING' ? '채용 중' : '마감됨')
 
 const goEdit = (jobId) => {
   router.push({ path: '/company/jobcreate', query: { jobId } })
@@ -178,6 +199,12 @@ const deleteJob = async (jobId) => {
             ">
             채용 중
           </button>
+          <button @click="currentFilter = 'PRIVATE'" :class="currentFilter === 'PRIVATE'
+            ? 'text-indigo-600 border-b-2 border-indigo-600 pb-4 font-bold'
+            : 'text-zinc-400 pb-4 font-medium hover:text-zinc-600 transition-colors'
+            ">
+            비공개
+          </button>
           <button @click="currentFilter = 'CLOSED'" :class="currentFilter === 'CLOSED'
             ? 'text-indigo-600 border-b-2 border-indigo-600 pb-4 font-bold'
             : 'text-zinc-400 pb-4 font-medium hover:text-zinc-600 transition-colors'
@@ -194,11 +221,9 @@ const deleteJob = async (jobId) => {
                 <div class="flex items-center gap-3 mb-3">
                   <span :class="[
                     'px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider',
-                    job.status === 'RECRUITING'
-                      ? 'bg-green-50 dark:bg-green-900/20 text-green-600'
-                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500',
+                    getStatusClass(job),
                   ]">
-                    {{ getStatusLabel(job.status) }}
+                    {{ getStatusLabel(job) }}
                   </span>
                   <span class="text-xs font-bold text-zinc-400 uppercase tracking-widest">{{
                     job.category
