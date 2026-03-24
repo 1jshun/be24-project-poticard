@@ -17,25 +17,23 @@
     </div>
 
     <aside class="side-panel" id="sidePanel" :class="{ collapsed: sideCollapsed }">
-      <div class="p-6">
-        <div class="flex items-center gap-4 mb-6 text-left">
-          <div class="w-12 h-12 bg-zinc-800 rounded-2xl overflow-hidden">
+      <div class="p-6 text-zinc-100">
+        <div class="flex items-center gap-4 mb-6 text-left min-w-0">
+          <div class="w-12 h-12 shrink-0 bg-zinc-700/80 rounded-2xl overflow-hidden ring-1 ring-white/10">
             <img :src="partnerInfo?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'"
               class="w-full h-full object-cover" :alt="partnerInfo?.name || 'avatar'" />
           </div>
-          <div>
-            <h2 class="font-black text-lg">{{ partnerInfo?.name || 'Kim Poti' }}</h2>
-            <p class="text-[10px] text-yellow-400 font-bold uppercase">Live Session</p>
+          <div class="min-w-0 flex-1">
+            <h2 class="font-black text-lg text-white truncate" :title="partnerInfo?.name || '상대방'">
+              {{ partnerInfo?.name || '상대방' }}
+            </h2>
+            <p class="text-[10px] text-yellow-400 font-bold uppercase tracking-wide mt-0.5">Live Session</p>
           </div>
         </div>
         <div class="grid grid-cols-1 gap-2">
           <button type="button" @click="openModal('cardModal')"
-            class="w-full py-3 bg-white/5 rounded-xl text-sm font-bold border border-white/10">
+            class="w-full py-3 rounded-xl text-sm font-bold text-white bg-white/10 hover:bg-white/15 border border-white/15 shadow-inner transition-colors">
             명함 상세보기
-          </button>
-          <button type="button" @click="openModal('authModal')"
-            class="w-full py-3 bg-yellow-400 text-black rounded-xl text-sm font-black">
-            권한 관리
           </button>
         </div>
       </div>
@@ -132,102 +130,23 @@
       </div>
     </div>
 
-    <!-- Card Modal -->
+    <!-- Card Modal (PortfolioView.vue 명함 플립과 동일 구조) -->
     <div id="cardModal" class="modal" :class="{ open: modals.cardModal }" @click="onBackdropClick('cardModal', $event)">
-      <div class="relative w-full max-w-md aspect-[1.58/1] perspective-1000">
-        <div id="card-inner" class="relative w-full h-full transform-style-3d shadow-2xl rounded-2xl cursor-pointer"
-          :class="{ flipped: cardFlipped }" @click="flipCard">
-          <div
-            class="absolute inset-0 w-full h-full bg-white dark:bg-zinc-900 rounded-2xl border border-gray-100 dark:border-zinc-800 p-8 backface-hidden overflow-hidden">
-            <div class="absolute top-0 right-0 w-32 h-32 bg-yellow-400/20 rounded-bl-full"></div>
-            <div class="flex flex-col justify-between h-full relative z-10 text-left text-gray-900 dark:text-white">
-              <div class="flex justify-between items-start">
-                <div>
-                  <p class="text-xs font-bold text-yellow-500 uppercase mb-1">
-                    {{ partnerInfo?.role || 'UX/UI Designer' }}
-                  </p>
-                  <h2 class="text-3xl font-black mb-2">{{ partnerInfo?.name || 'Kim Poti' }}</h2>
-                  <p class="text-sm opacity-60 whitespace-pre-line">
-                    {{ partnerInfo?.intro || '사용자 경험을 디자인하는\n디자이너 김포티입니다.' }}
-                  </p>
-                </div>
-                <div class="w-20 h-20 rounded-full border-4 border-white dark:border-zinc-800 overflow-hidden">
-                  <img :src="partnerInfo?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'"
-                    class="w-full h-full object-cover" :alt="partnerInfo?.name || 'avatar'" />
-                </div>
-              </div>
-              <div class="pt-4 border-t border-gray-100 dark:border-zinc-800 flex justify-between items-center">
-                <div class="flex gap-2 flex-wrap">
-                  <span v-for="tag in partnerInfo?.tags || ['Figma']" :key="tag"
-                    class="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 text-[10px] font-bold rounded">#{{ tag }}</span>
-                </div>
-                <i class="fa-solid fa-qrcode text-3xl opacity-80"></i>
-              </div>
+      <div v-if="partnerCardInfo" class="scene w-full max-w-md aspect-[1.58/1] cursor-pointer group">
+        <div
+          class="card-object w-full h-full relative shadow-2xl rounded-2xl transition-all duration-500"
+          :class="{ 'is-flipped': cardFlipped }"
+          @click="toggleFlip"
+        >
+          <div class="card-face card-front rounded-2xl overflow-hidden bg-white">
+            <NamecardsFront :cardInfo="partnerCardInfo" />
+            <div class="absolute bottom-4 right-4 z-20 text-xs text-gray-400 animate-pulse pointer-events-none">
+              Click to flip <i class="fa-solid fa-rotate ml-1"></i>
             </div>
           </div>
-
-          <div
-            class="absolute inset-0 w-full h-full bg-zinc-900 dark:bg-white rounded-2xl border border-zinc-800 dark:border-gray-200 p-8 backface-hidden rotate-y-180 text-white dark:text-gray-900">
-            <div class="flex flex-col h-full relative z-10 text-left">
-              <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
-                <span class="w-1.5 h-6 bg-yellow-400 rounded-full"></span> Contact Info
-              </h3>
-              <div class="space-y-4 flex-1 text-sm">
-                <div class="flex items-center gap-3">
-                  <i class="fa-solid fa-phone text-yellow-500"></i>
-                  <span>010-****-{{ partnerInfo?.id || '0000' }}000</span>
-                </div>
-                <div class="flex items-center gap-3">
-                  <i class="fa-solid fa-link text-yellow-500"></i>
-                  <span>{{ partnerInfo?.company?.toLowerCase().replace(' ', '') || 'kimpoti' }}.com</span>
-                </div>
-                <div class="flex items-center gap-3">
-                  <i class="fa-solid fa-location-dot text-yellow-500"></i>
-                  <span>Seoul, South Korea</span>
-                </div>
-              </div>
-              <div class="text-right opacity-40 text-[10px] font-bold uppercase">Poticard</div>
-            </div>
+          <div class="card-face card-back rounded-2xl overflow-hidden">
+            <NamecardsBack :cardInfo="partnerCardInfo" :hidePortfolioBtn="false" />
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Auth Modal -->
-    <div id="authModal" class="modal" :class="{ open: modals.authModal }" @click="onBackdropClick('authModal', $event)">
-      <div class="bg-zinc-900 border border-white/10 rounded-[40px] p-10 w-full max-w-5xl shadow-3xl">
-        <div class="flex justify-between items-end mb-8 text-left">
-          <div>
-            <h3 class="text-3xl font-black mb-2">포트폴리오 권한 관리</h3>
-            <p id="selectionCount" class="text-yellow-400 text-sm font-bold">
-              {{ selectionCountText }}
-            </p>
-          </div>
-        </div>
-
-        <div class="portfolio-scroll thin-scroll" id="portfolioList" @wheel.prevent="onPortfolioWheel">
-          <div v-for="p in portfolios" :key="p.id" class="portfolio-item text-left"
-            :class="{ selected: selectedIds.has(p.id) }" @click="togglePortfolio(p.id)">
-            <h4 class="font-black text-xl mb-3">{{ p.title }}</h4>
-            <p class="text-[13px] text-zinc-400 leading-relaxed h-20 overflow-hidden">
-              {{ p.desc }}
-            </p>
-            <div class="flex gap-2 mt-4">
-              <span v-for="t in p.tags" :key="t" class="px-2 py-1 bg-black/40 text-[10px] font-bold rounded">#{{ t
-              }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="flex gap-4 mt-10">
-          <button type="button" @click="closeModal('authModal')"
-            class="flex-1 py-5 bg-zinc-800 rounded-2xl font-bold text-zinc-400">
-            취소
-          </button>
-          <button type="button" @click="confirmAuth"
-            class="flex-1 py-5 bg-yellow-400 text-black rounded-2xl font-black">
-            권한 부여하기
-          </button>
         </div>
       </div>
     </div>
@@ -243,6 +162,9 @@ import { useRouter, useRoute } from 'vue-router'
 import SockJS from 'sockjs-client'
 import Stomp from 'stompjs'
 import chatApi from '@/api/chat/index.js'
+import namecardApi from '@/api/namecard/index.js'
+import NamecardsFront from '@/components/namecards/NamecardsFront.vue'
+import NamecardsBack from '@/components/namecards/NamecardsBack.vue'
 
 const senderId = Math.random().toString(36).substring(2, 9)
 
@@ -257,6 +179,65 @@ const route = useRoute()
 
 /* 상대방 정보 */
 const partnerInfo = ref(null)
+const partnerCardInfo = ref(null)
+
+function buildCardInfoForVideo(room, apiPayload = null) {
+  const d =
+    apiPayload != null && typeof (apiPayload?.data ?? apiPayload) === 'object'
+      ? apiPayload?.data ?? apiPayload
+      : {}
+  const qOid =
+    route.query.opponentIdx != null && String(route.query.opponentIdx) !== ''
+      ? Number(route.query.opponentIdx)
+      : null
+  const profileRaw = d.profileImage ?? d.avatar ?? room?.avatar ?? ''
+  const profileImage =
+    profileRaw && !String(profileRaw).startsWith('http')
+      ? `/api${String(profileRaw).startsWith('/') ? '' : '/'}${profileRaw}`
+      : profileRaw || 'https://api.dicebear.com/7.x/avataaars/svg?seed=user'
+  const rawKw = d.keywords ?? d.tags ?? room?.tags ?? []
+  const keywords = Array.isArray(rawKw) ? rawKw.map((t) => String(t).replace(/^#/, '')) : []
+  const opponentUserId =
+    (Number.isFinite(qOid) ? qOid : undefined) ??
+    room?.opponentIdx ??
+    d.userIdx ??
+    d.userId ??
+    d.user_id ??
+    d.idx
+  return {
+    userIdx: opponentUserId,
+    userId: opponentUserId,
+    affiliation: d.affiliation ?? d.company ?? room?.company ?? '',
+    title: d.title ?? d.career ?? d.role ?? room?.role ?? '',
+    name: d.userName ?? d.name ?? room?.name ?? '상대방',
+    description: d.description ?? d.intro ?? room?.intro ?? '',
+    profileImage,
+    keywords,
+    url: d.url ?? '',
+    email: d.email ?? '',
+    phone: d.phone ?? '',
+    address: d.address ?? '',
+    color: d.color ?? 'YELLOW',
+  }
+}
+
+async function loadPartnerCardInfo() {
+  const room = partnerInfo.value
+  const qOid =
+    route.query.opponentIdx != null && String(route.query.opponentIdx) !== ''
+      ? Number(route.query.opponentIdx)
+      : null
+  const opponentIdx = Number.isFinite(qOid) ? qOid : room?.opponentIdx
+  partnerCardInfo.value = buildCardInfoForVideo(room, null)
+  try {
+    if (opponentIdx != null && !Number.isNaN(Number(opponentIdx))) {
+      const res = await namecardApi.getSingleNamecard(Number(opponentIdx))
+      partnerCardInfo.value = buildCardInfoForVideo(room, res)
+    }
+  } catch {
+    partnerCardInfo.value = buildCardInfoForVideo(room, null)
+  }
+}
 
 /* UI state */
 const micOn = ref(true)
@@ -264,6 +245,10 @@ const camOn = ref(true)
 const sideCollapsed = ref(false)
 const localEnlarged = ref(false)
 const cardFlipped = ref(false)
+
+function toggleFlip() {
+  cardFlipped.value = !cardFlipped.value
+}
 
 const sharePreviewVisible = ref(false)
 const sharePreviewFullSize = ref(false)
@@ -540,6 +525,10 @@ async function openModal(id) {
   if (id === 'authModal') {
     await loadPortfolios()
   }
+  if (id === 'cardModal') {
+    cardFlipped.value = false
+    await loadPartnerCardInfo()
+  }
 }
 
 function closeModal(id) {
@@ -552,10 +541,6 @@ function onBackdropClick(id, e) {
 
 function toggleSidePanel() {
   sideCollapsed.value = !sideCollapsed.value
-}
-
-function flipCard() {
-  cardFlipped.value = !cardFlipped.value
 }
 
 function toggleEnlarge() {
@@ -593,8 +578,9 @@ async function loadPartnerInfo() {
     }
 
     const res = await chatApi.chatRoomList()
-    if (res && res.data) {
-      const room = res.data.find((r) => r.id === roomId)
+    const list = res?.data?.content ?? (Array.isArray(res?.data) ? res.data : res)
+    if (list && Array.isArray(list)) {
+      const room = list.find((r) => r.id === roomId)
       if (room) {
         partnerInfo.value = room
         console.log('상대방 정보 로드 완료:', room)
@@ -615,11 +601,8 @@ async function loadPartnerInfo() {
 
 /* lifecycle */
 onMounted(async () => {
-  document.documentElement.classList.add('dark')
-
   // 상대방 정보 가져오기
   await loadPartnerInfo()
-
   initWebSocket()
   // 카메라/마이크는 CALL 버튼 클릭 시 요청 (사용자 동작 후에 요청)
 })
@@ -731,11 +714,12 @@ onBeforeUnmount(() => {
   top: 0;
   left: 24px;
   width: 320px;
-  background: rgba(18, 18, 20, 0.9);
+  background: rgba(18, 18, 20, 0.92);
   backdrop-filter: blur(20px);
   border-radius: 0 0 20px 20px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-top: none;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
   transition: transform 0.4s ease;
   z-index: 50;
 }
@@ -751,10 +735,12 @@ onBeforeUnmount(() => {
   transform: translateX(-50%);
   width: 54px;
   height: 32px;
-  background: rgba(18, 18, 20, 0.9);
-  border: 1px solid var(--border);
-  border-top: none;
+  background: rgba(18, 18, 20, 0.92);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 0 0 12px 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -824,25 +810,37 @@ onBeforeUnmount(() => {
   display: flex;
 }
 
-.perspective-1000 {
+/* 명함 플립 (PortfolioView.vue와 동일) */
+.scene {
   perspective: 1000px;
 }
 
-.transform-style-3d {
+.card-object {
+  transition: transform 0.7s cubic-bezier(0.4, 0.2, 0.2, 1);
   transform-style: preserve-3d;
-  transition: transform 0.6s ease;
 }
 
-.backface-hidden {
+.card-object.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.card-face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
+  overflow: hidden;
 }
 
-.rotate-y-180 {
+.card-back {
   transform: rotateY(180deg);
 }
 
-.flipped {
-  transform: rotateY(180deg);
+.card-front {
+  transform: rotateY(0deg);
 }
 
 .portfolio-scroll {
