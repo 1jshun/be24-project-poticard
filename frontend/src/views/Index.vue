@@ -391,4 +391,48 @@ const getMiniCardStyle = (idx) => {
   opacity: 0;
   transform: translateY(-15px);
 }
+
+
+/* 부모 컨테이너: 3D 효과의 깊이감 설정 */
+.perspective-container {
+  perspective: 1200px;
+}
+
+/* 카드 객체: 실제로 회전하는 부분 */
+.card-object {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d; /* 자식들의 3D 상태 유지 */
+}
+
+/* 카드가 뒤집혔을 때의 상태 */
+.card-object.is-flipped {
+  transform: rotateY(180deg);
+}
+
+/* 앞면과 뒷면 공통 설정 */
+.card-face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  backface-visibility: hidden; /* ★ 핵심: 뒤집혔을 때 안보이게 함 */
+  -webkit-backface-visibility: hidden;
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+/* 앞면 */
+.card-front {
+  z-index: 2;
+  transform: rotateY(0deg);
+}
+
+/* 뒷면: 처음부터 180도 뒤집어 놓음 */
+.card-back {
+  transform: rotateY(180deg);
+}
 </style>
