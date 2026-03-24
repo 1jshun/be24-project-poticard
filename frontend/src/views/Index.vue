@@ -24,7 +24,7 @@ const getUserInfo = async () => {
   }
 }
 
-const pageOfToday = 45
+const pageOfToday = 1
 
 const store = namecardListStore()
 
