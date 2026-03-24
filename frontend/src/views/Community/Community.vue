@@ -2,7 +2,6 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/api/community/index'
-import matchingApi from '@/api/matching'
 import NamecardsFront from '@/components/namecards/NamecardsFront.vue'
 import NamecardsBack from '@/components/namecards/NamecardsBack.vue'
 
@@ -24,6 +23,20 @@ const summary = ref({
   myComments: [],
 })
 
+const categoryOptions = [
+  { value: 'ALL', label: '전체' },
+  { value: 'QNA', label: '질문/답변' },
+  { value: 'SHOWCASE', label: '작품/자랑' },
+  { value: 'CAREER', label: '취업/커리어' },
+  { value: 'STUDY', label: '스터디' },
+  { value: 'FREE', label: '자유' },
+]
+
+const tabOptions = [
+  { value: 'FEED', label: '전체 글' },
+  { value: 'FOLLOW', label: '인기 글' },
+]
+
 const state = reactive({
   cat: 'ALL',
   tab: 'FEED',
@@ -35,6 +48,11 @@ const state = reactive({
   pageSize: 4,
   scope: 'ALL',
 })
+
+const categoryLabel = (value) => {
+  const target = categoryOptions.find((item) => item.value === value)
+  return target ? target.label : value
+}
 
 const formatTimeAgo = (dateString) => {
   if (!dateString) return '-'
@@ -68,9 +86,40 @@ const mapPost = (item) => ({
   createdAt: item.createdAt,
 })
 
+const getStoredUserInfo = () => {
+  try {
+    const raw = localStorage.getItem('USERINFO')
+    if (!raw) return null
+
+    const parsed = JSON.parse(raw)
+    return parsed?.data || parsed || null
+  } catch (error) {
+    return null
+  }
+}
+
+const fallbackProfile = computed(() => {
+  const userInfo = getStoredUserInfo()
+  if (!userInfo) return null
+
+  return {
+    idx: userInfo.idx ?? userInfo.id ?? null,
+    email: userInfo.email || '',
+    name: userInfo.name || '',
+    phone: userInfo.phone || '',
+    role: userInfo.role || '',
+    affiliation: userInfo.affiliation || userInfo.affilliation || '',
+    career: userInfo.career || '',
+    address: userInfo.address || '',
+    profileImage: userInfo.profileImage || userInfo.profile_image || '',
+  }
+})
+
+const profileSummary = computed(() => summary.value.profile || fallbackProfile.value)
+
 const myCardInfo = computed(() => {
   const card = summary.value.namecard
-  const profile = summary.value.profile
+  const profile = profileSummary.value
   if (!card || !profile) return null
 
   return {
@@ -178,6 +227,7 @@ const resetFilters = async () => {
   state.onlySolved = false
   state.page = 1
   state.scope = 'ALL'
+  state.tab = 'FEED'
   myMenuOpen.value = false
   await fetchAllPosts()
 }
@@ -187,6 +237,13 @@ const changeScope = async (scope) => {
   state.page = 1
   myMenuOpen.value = false
   await fetchAllPosts()
+}
+
+const changeTab = (tab) => {
+  state.tab = tab
+  if (tab === 'FOLLOW') {
+    state.sort = 'HOT'
+  }
 }
 
 const loadMore = () => state.page++
@@ -329,17 +386,17 @@ const openNamecard = () => {
                 <span class="text-[11px] text-zinc-400 font-bold uppercase tracking-wider">카테고리</span>
                 <div class="grid grid-cols-2 gap-2 mt-2">
                   <button
-                    v-for="cat in ['ALL', 'QNA', 'SHOWCASE', 'CAREER', 'STUDY', 'FREE']"
-                    :key="cat"
-                    @click="state.cat = cat; state.page = 1"
+                    v-for="cat in categoryOptions"
+                    :key="cat.value"
+                    @click="state.cat = cat.value; state.page = 1"
                     :class="[
                       'px-3 py-2 rounded-xl text-sm font-bold border transition-all',
-                      state.cat === cat
+                      state.cat === cat.value
                         ? 'bg-zinc-900 text-white border-zinc-900 dark:bg-zinc-100 dark:text-zinc-900'
                         : 'border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400',
                     ]"
                   >
-                    {{ cat === 'ALL' ? '전체' : cat }}
+                    {{ cat.label }}
                   </button>
                 </div>
               </div>
@@ -389,15 +446,15 @@ const openNamecard = () => {
               </div>
               <div class="flex p-1 bg-zinc-100 dark:bg-zinc-800 rounded-2xl">
                 <button
-                  v-for="t in ['FEED', 'FOLLOW']"
-                  :key="t"
-                  @click="state.tab = t"
+                  v-for="tab in tabOptions"
+                  :key="tab.value"
+                  @click="changeTab(tab.value)"
                   :class="[
                     'px-4 py-2 rounded-xl text-sm font-black transition-all',
-                    state.tab === t ? 'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white' : 'text-zinc-400',
+                    state.tab === tab.value ? 'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white' : 'text-zinc-400',
                   ]"
                 >
-                  {{ t }}
+                  {{ tab.label }}
                 </button>
               </div>
             </div>
@@ -418,7 +475,7 @@ const openNamecard = () => {
               <div class="flex justify-between items-start gap-4">
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-2 mb-3">
-                    <span class="px-2 py-0.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-[10px] font-black text-zinc-500">{{ post.cat }}</span>
+                    <span class="px-2 py-0.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-[10px] font-black text-zinc-500">{{ categoryLabel(post.cat) }}</span>
                     <span
                       v-if="post.cat === 'QNA'"
                       :class="post.solved ? 'px-2 py-0.5 rounded-lg text-[10px] font-black bg-emerald-100 text-emerald-600' : 'px-2 py-0.5 rounded-lg text-[10px] font-black bg-amber-100 text-amber-600'"
@@ -476,7 +533,12 @@ const openNamecard = () => {
         <aside class="col-span-12 lg:col-span-3 space-y-5">
           <div class="p-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[20px] shadow-sm">
             <h4 class="font-extrabold mb-4">내 프로필 요약</h4>
-            <div class="space-y-4" v-if="summary.profile">
+            <div class="space-y-4" v-if="profileSummary">
+              <div>
+                <p class="text-[11px] text-zinc-400 font-bold uppercase">관심 분야</p>
+                <p class="font-bold">{{ profileSummary.affiliation || profileSummary.role || '개인 사용자' }}</p>
+                <p class="text-sm text-zinc-500 mt-1">{{ profileSummary.name }}</p>
+              </div>
               <div class="flex flex-wrap gap-2">
                 <span
                   v-for="tag in (summary.namecard?.keywords || []).slice(0, 3)"
@@ -514,13 +576,13 @@ const openNamecard = () => {
       </div>
     </main>
 
-    <div v-if="selectedPost" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div v-if="selectedPost" class="fixed inset-0 z-50 flex items-center justify-center p-5">
       <div class="absolute inset-0 bg-zinc-950/60" @click="closeDetail"></div>
-      <div class="relative w-full max-w-3xl max-h-[85vh] overflow-y-auto rounded-[28px] border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-2xl">
+      <div class="relative w-full max-w-4xl rounded-[28px] border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-7 shadow-2xl max-h-[88vh] overflow-y-auto">
         <div class="flex items-start justify-between gap-4">
-          <div>
-            <div class="flex items-center gap-2 mb-3">
-              <span class="px-2 py-0.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-[10px] font-black text-zinc-500">{{ selectedPost.cat }}</span>
+          <div class="min-w-0">
+            <div class="flex items-center gap-2 mb-3 flex-wrap">
+              <span class="px-2 py-0.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-[10px] font-black text-zinc-500">{{ categoryLabel(selectedPost.cat) }}</span>
               <span
                 v-if="selectedPost.cat === 'QNA'"
                 :class="selectedPost.solved ? 'px-2 py-0.5 rounded-lg text-[10px] font-black bg-emerald-100 text-emerald-600' : 'px-2 py-0.5 rounded-lg text-[10px] font-black bg-amber-100 text-amber-600'"
@@ -529,58 +591,98 @@ const openNamecard = () => {
               </span>
               <span class="text-xs text-zinc-400 font-medium">{{ selectedPost.time }}</span>
             </div>
-            <h2 class="text-2xl font-black">{{ selectedPost.title }}</h2>
-            <p class="mt-2 text-sm text-zinc-500 font-bold">작성자 {{ selectedPost.author }}</p>
+            <h2 class="text-2xl md:text-3xl font-black leading-tight">{{ selectedPost.title }}</h2>
+            <div class="mt-3 text-sm text-zinc-500">
+              작성자 <span class="font-bold text-zinc-700 dark:text-zinc-300 ml-1">{{ selectedPost.author }}</span>
+            </div>
           </div>
-          <button @click="closeDetail" class="px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 font-bold">닫기</button>
+
+          <div class="flex items-center gap-2 shrink-0">
+            <button
+              v-if="selectedPost.isOwner"
+              @click="goEdit(selectedPost.id)"
+              class="px-4 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 font-bold hover:bg-zinc-50 dark:hover:bg-zinc-800"
+            >
+              수정
+            </button>
+            <button
+              v-if="selectedPost.isOwner"
+              @click="removePost(selectedPost.id)"
+              class="px-4 py-2 rounded-xl border border-rose-200 text-rose-500 font-bold hover:bg-rose-50"
+            >
+              삭제
+            </button>
+            <button @click="closeDetail" class="px-4 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 font-bold">닫기</button>
+          </div>
         </div>
 
-        <div class="mt-4 flex flex-wrap gap-2">
+        <div class="mt-6 flex flex-wrap gap-2">
           <span
             v-for="tag in selectedPost.tags"
             :key="tag"
-            class="px-2.5 py-1 rounded-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 text-xs font-bold text-zinc-500"
+            class="px-3 py-1 rounded-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 text-xs font-bold text-zinc-500"
           >
             #{{ tag }}
           </span>
         </div>
 
-        <div class="mt-5 flex items-center gap-4 text-sm font-bold text-zinc-500">
+        <div class="mt-6 text-base leading-8 whitespace-pre-wrap text-zinc-700 dark:text-zinc-200">
+          {{ selectedPost.body }}
+        </div>
+
+        <div class="mt-6 flex items-center gap-4 text-sm font-bold text-zinc-500">
           <button @click="toggleFavorite(selectedPost)" :class="selectedPost.isFavorite ? 'text-rose-500' : ''">❤️ {{ selectedPost.like }}</button>
           <span>💬 {{ selectedPost.comment }}</span>
           <span>👁 {{ selectedPost.view }}</span>
         </div>
 
-        <div class="mt-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-5 whitespace-pre-wrap leading-7 text-sm text-zinc-700 dark:text-zinc-200">
-          {{ detailLoading ? '불러오는 중...' : selectedPost.body }}
-        </div>
+        <div class="mt-8 border-t border-zinc-200 dark:border-zinc-800 pt-6">
+          <h3 class="text-lg font-extrabold mb-4">댓글</h3>
 
-        <div class="mt-8">
-          <div class="flex items-center justify-between">
-            <h3 class="text-lg font-extrabold">댓글 {{ selectedPost.comment }}</h3>
-            <div v-if="selectedPost.isOwner" class="flex items-center gap-2">
-              <button @click="goEdit(selectedPost.id)" class="px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 text-xs font-bold">수정</button>
-              <button @click="removePost(selectedPost.id)" class="px-3 py-2 rounded-xl border border-rose-200 text-rose-500 text-xs font-bold">삭제</button>
-            </div>
-          </div>
-
-          <div class="mt-4 flex gap-2">
-            <input v-model="commentInput" class="flex-1 px-4 py-3 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950" placeholder="댓글을 입력하세요" />
-            <button @click="submitComment" class="px-4 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-zinc-900 font-black">등록</button>
-          </div>
-
-          <div class="mt-4 space-y-3">
-            <div v-for="comment in selectedPost.comments || []" :key="comment.idx" class="rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4">
-              <div class="flex items-start justify-between gap-4">
+          <div class="space-y-3">
+            <div
+              v-for="comment in selectedPost.comments"
+              :key="comment.idx"
+              class="rounded-2xl border border-zinc-100 dark:border-zinc-800 p-4"
+            >
+              <div class="flex items-start justify-between gap-3">
                 <div>
-                  <p class="text-sm font-bold">{{ comment.writer }}</p>
-                  <p class="text-xs text-zinc-400 mt-1">{{ formatTimeAgo(comment.createdAt) }}</p>
+                  <div class="text-sm font-bold">{{ comment.writer }}</div>
+                  <div class="text-xs text-zinc-400 mt-1">{{ formatTimeAgo(comment.createdAt) }}</div>
                 </div>
-                <button v-if="comment.owner" @click="removeComment(comment.idx)" class="text-xs font-bold text-rose-500">삭제</button>
+
+                <button
+                  v-if="comment.owner"
+                  @click="removeComment(comment.idx)"
+                  class="text-xs font-bold text-rose-500 hover:text-rose-600"
+                >
+                  삭제
+                </button>
               </div>
-              <p class="mt-3 text-sm whitespace-pre-wrap leading-6">{{ comment.contents }}</p>
+
+              <div class="mt-3 whitespace-pre-wrap text-sm text-zinc-700 dark:text-zinc-200">
+                {{ comment.contents }}
+              </div>
             </div>
-            <div v-if="(selectedPost.comments || []).length === 0" class="text-sm text-zinc-400 font-bold">첫 댓글을 남겨보세요.</div>
+
+            <div v-if="selectedPost.comments.length === 0" class="text-sm text-zinc-400 font-bold">
+              아직 댓글이 없습니다.
+            </div>
+          </div>
+
+          <div class="mt-5 flex gap-3">
+            <textarea
+              v-model="commentInput"
+              rows="3"
+              placeholder="댓글을 입력하세요"
+              class="flex-1 px-4 py-3 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 resize-none"
+            />
+            <button
+              @click="submitComment"
+              class="px-5 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-zinc-900 font-black self-end"
+            >
+              등록
+            </button>
           </div>
         </div>
       </div>
@@ -588,15 +690,27 @@ const openNamecard = () => {
 
     <div v-if="cardModalOpen && myCardInfo" class="fixed inset-0 z-50 flex items-center justify-center p-6">
       <div class="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm" @click="cardModalOpen = false"></div>
-      <div class="perspective-container w-[450px] aspect-[1.58/1] relative z-10">
+
+      <div class="perspective-container w-[450px] aspect-[1.58/1]">
         <div class="card-object shadow-2xl cursor-pointer" :class="{ 'is-flipped': cardFlipped }" @click="cardFlipped = !cardFlipped">
           <div class="w-full h-full card-face card-front bg-white rounded-2xl overflow-hidden">
             <NamecardsFront class="w-full h-full" :cardInfo="myCardInfo" />
           </div>
+
           <div class="w-full h-full card-face card-back bg-white rounded-2xl overflow-hidden">
             <NamecardsBack class="w-full h-full" :cardInfo="myCardInfo" />
           </div>
         </div>
+
+        <button
+          @click.stop="cardModalOpen = false"
+          class="absolute -top-12 right-0 text-white/80 hover:text-white transition-colors flex items-center gap-1 font-bold"
+        >
+          <span>Close</span>
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
     </div>
   </div>
@@ -611,15 +725,41 @@ const openNamecard = () => {
   background-color: #18181b;
 }
 
-.perspective-container { perspective: 1200px; }
+.perspective-container {
+  perspective: 1200px;
+  position: relative;
+  z-index: 60;
+}
+
 .card-object {
   position: relative;
   width: 100%;
   height: 100%;
-  transition: transform 0.7s ease-in-out;
+  transition: transform var(--flip-duration, 0.7s) var(--flip-easing, ease-in-out);
   transform-style: preserve-3d;
 }
-.card-object.is-flipped { transform: rotateY(180deg); }
-.card-face { position: absolute; inset: 0; backface-visibility: hidden; }
-.card-back { transform: rotateY(180deg); }
+
+.card-object.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.card-face {
+  position: absolute;
+  inset: 0;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.1);
+}
+
+.card-front {
+  transform: rotateY(0deg);
+  z-index: 2;
+}
+
+.card-back {
+  transform: rotateY(180deg);
+  z-index: 1;
+}
 </style>
