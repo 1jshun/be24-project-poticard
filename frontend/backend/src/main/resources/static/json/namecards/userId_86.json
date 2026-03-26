@@ -1,0 +1,30 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "86",
+    "name": "서채원",
+    "email": "user86@poticard.com",
+    "url": "github.com/user86",
+    "affiliation": "Product Manager",
+    "namecard_title": "서채원입니다. Product Manager로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "M",
+    "keywords": [
+      "Node.js",
+      "Django",
+      "Svelte",
+      "Vue.js"
+    ],
+    "style": {
+      "color": "black",
+      "typoFont": "Serif",
+      "cardTexture": "Plastic",
+      "logo": "true",
+      "qrcode": "false",
+      "avatar": "https://api.dicebear.com/7.x/notionists/svg?seed=fryy8"
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "postId": "2",
+    "category": "TIPS",
+    "isQNA": false,
+    "isSolved": false,
+    "title": "재택근무 장단점 후기",
+    "author": "성훈",
+    "likes": "97",
+    "replys": "36",
+    "tags": [
+      "Java",
+      "Vue"
+    ],
+    "createdAt": "2025-02-22-01:38:00"
+  }
+}

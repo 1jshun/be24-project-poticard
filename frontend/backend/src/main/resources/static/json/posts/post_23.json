@@ -1,0 +1,21 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "postId": "23",
+    "category": "QNA",
+    "isQNA": true,
+    "isSolved": true,
+    "title": "Spring Boot 배포 중 에러 발생",
+    "author": "서연",
+    "likes": "34",
+    "replys": "4",
+    "tags": [
+      "TypeScript",
+      "Vue",
+      "Java"
+    ],
+    "createdAt": "2025-12-16-06:55:40"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "21",
+    "name": "윤지호",
+    "email": "user21@poticard.com",
+    "url": "github.com/user21",
+    "affiliation": "Student",
+    "namecard_title": "윤지호입니다. Student로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "F",
+    "keywords": [
+      "TypeScript",
+      "Go",
+      "Rust"
+    ],
+    "style": {
+      "color": "gray",
+      "typoFont": "Cursive",
+      "cardTexture": "Glass",
+      "logo": "false",
+      "qrcode": "true",
+      "avatar": "https://api.dicebear.com/7.x/open-peeps/svg?seed=s4g8eu"
+    }
+  }
+}

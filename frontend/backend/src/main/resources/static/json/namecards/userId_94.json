@@ -1,0 +1,28 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "94",
+    "name": "오수아",
+    "email": "user94@poticard.com",
+    "url": "github.com/user94",
+    "affiliation": "Frontend Dev",
+    "namecard_title": "오수아입니다. Frontend Dev로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "M",
+    "keywords": [
+      "Docker",
+      "Django"
+    ],
+    "style": {
+      "color": "green",
+      "typoFont": "Cursive",
+      "cardTexture": "Glass",
+      "logo": "true",
+      "qrcode": "true",
+      "avatar": "https://api.dicebear.com/7.x/notionists/svg?seed=0x3l9s"
+    }
+  }
+}

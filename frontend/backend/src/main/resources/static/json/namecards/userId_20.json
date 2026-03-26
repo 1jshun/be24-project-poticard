@@ -1,0 +1,29 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "20",
+    "name": "장시우",
+    "email": "user20@poticard.com",
+    "url": "github.com/user20",
+    "affiliation": "Backend Dev",
+    "namecard_title": "장시우입니다. Backend Dev로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "F",
+    "keywords": [
+      "Rust",
+      "React",
+      "Python"
+    ],
+    "style": {
+      "color": "blue",
+      "typoFont": "Sans-serif",
+      "cardTexture": "Glass",
+      "logo": "false",
+      "qrcode": "false",
+      "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=0fly99"
+    }
+  }
+}

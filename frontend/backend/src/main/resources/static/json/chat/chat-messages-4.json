@@ -1,0 +1,38 @@
+{
+    "success": true,
+    "code": 20000,
+    "message": "OK",
+    "data": {
+        "roomId": 4,
+        "roomStatus": "ACTIVE", 
+        "host": {
+            "userId": 5,
+            "userName": "심준보"
+        },
+        "guest": {
+            "userId": 1,
+            "userName": "김포티"
+        },
+        "messages": [ 
+            {
+                "messageId": 1,
+                "senderId": 5,
+                "content": "수업좀 열심히 들어라",
+                "contentType": "TEXT",
+                "isRead": true,
+                "createdAt": "2026-01-13T21:03:00Z",
+                "updatedAt": "2026-01-13T21:03:00Z"
+            },
+	    {
+                "messageId": 2,
+                "senderId": 1,
+                "content": "넵 ㅈㅅ요",
+                "contentType": "TEXT",
+                "isRead": true,
+                "createdAt": "2026-01-13T21:04:00Z",
+                "updatedAt": "2026-01-13T21:04:00Z"
+            }
+        ],
+        "totalMessageCount" : 2
+    }
+}

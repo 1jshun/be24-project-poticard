@@ -1,0 +1,29 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "57",
+    "name": "박채원",
+    "email": "user57@poticard.com",
+    "url": "github.com/user57",
+    "affiliation": "Frontend Dev",
+    "namecard_title": "박채원입니다. Frontend Dev로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "F",
+    "keywords": [
+      "AWS",
+      "Django",
+      "React"
+    ],
+    "style": {
+      "color": "blue",
+      "typoFont": "Cursive",
+      "cardTexture": "Wood",
+      "logo": "true",
+      "qrcode": "false",
+      "avatar": "https://api.dicebear.com/7.x/notionists/svg?seed=q0y9hn"
+    }
+  }
+}

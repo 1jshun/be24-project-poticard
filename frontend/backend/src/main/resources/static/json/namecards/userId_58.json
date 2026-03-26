@@ -1,0 +1,28 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "58",
+    "name": "이민지",
+    "email": "user58@poticard.com",
+    "url": "github.com/user58",
+    "affiliation": "UI/UX Designer",
+    "namecard_title": "이민지입니다. UI/UX Designer로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "F",
+    "keywords": [
+      "Kubernetes",
+      "AWS"
+    ],
+    "style": {
+      "color": "orange",
+      "typoFont": "Cursive",
+      "cardTexture": "Glass",
+      "logo": "true",
+      "qrcode": "true",
+      "avatar": "https://api.dicebear.com/7.x/micah/svg?seed=olz5eh"
+    }
+  }
+}

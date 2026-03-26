@@ -1,0 +1,28 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "6",
+    "name": "권지아",
+    "email": "user6@poticard.com",
+    "url": "github.com/user6",
+    "affiliation": "Full Stack Dev",
+    "namecard_title": "권지아입니다. Full Stack Dev로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "M",
+    "keywords": [
+      "Spring",
+      "Rust"
+    ],
+    "style": {
+      "color": "purple",
+      "typoFont": "Serif",
+      "cardTexture": "Glass",
+      "logo": "true",
+      "qrcode": "false",
+      "avatar": "https://api.dicebear.com/7.x/lorelei/svg?seed=hbjyf"
+    }
+  }
+}

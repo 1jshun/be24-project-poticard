@@ -1,0 +1,30 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "36",
+    "name": "오윤서",
+    "email": "user36@poticard.com",
+    "url": "github.com/user36",
+    "affiliation": "Backend Dev",
+    "namecard_title": "오윤서입니다. Backend Dev로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "F",
+    "keywords": [
+      "Rust",
+      "Docker",
+      "React",
+      "Kubernetes"
+    ],
+    "style": {
+      "color": "blue",
+      "typoFont": "Sans-serif",
+      "cardTexture": "Plastic",
+      "logo": "false",
+      "qrcode": "false",
+      "avatar": "https://api.dicebear.com/7.x/miniavs/svg?seed=laqypq"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "postId": "11",
+    "category": "TIPS",
+    "isQNA": false,
+    "isSolved": false,
+    "title": "올해 개발 트렌드 정리",
+    "author": "준호",
+    "likes": "100",
+    "replys": "46",
+    "tags": [
+      "Figma",
+      "React",
+      "Tailwind"
+    ],
+    "createdAt": "2025-11-06-05:57:00"
+  }
+}

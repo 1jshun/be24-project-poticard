@@ -1,0 +1,47 @@
+{
+	"success": true,
+	"code": 20000,
+	"message": "success",
+	"data": [
+		{
+			"portfolio_name": "Fintech App 2.0",
+			"portfolio_summary": "사용자 100만 명을 위한 결제 모듈 최적화 및 접근성 개선 프로젝트입니다.",
+			"keywords": [
+				"#Mobile",
+				"#Fintech"
+			]
+		},
+		{
+			"portfolio_name": "Design System",
+			"portfolio_summary": "아토믹 디자인 기반의 전사 시스템 구축입니다. 50개 이상의 컴포넌트 표준화.",
+			"keywords": [
+				"#Figma",
+				"#Atomic"
+			]
+		},
+		{
+			"portfolio_name": "Poticard Service",
+			"portfolio_summary": "개인 브랜딩과 명함 공유를 결합한 새로운 소셜 플랫폼입니다.",
+			"keywords": [
+				"#Web",
+				"#React"
+			]
+		},
+		{
+			"portfolio_name": "Eco-Tracker App",
+			"portfolio_summary": "탄소 배출량을 실시간으로 추적하고 사용자간 친환경 챌린지를 공유하는 모바일 애플리케이션입니다.",
+			"keywords": [
+				"#Flutter",
+				"#Firebase"
+			]
+		},
+		{
+			"portfolio_name": "Smart-Inventory System",
+			"portfolio_summary": "AI 기반 수요 예측 알고리즘을 활용하여 중소기업의 재고 관리 효율을 극대화하는 ERP 솔루션입니다.",
+			"keywords": [
+				"#Spring Boot",
+				"#AI"
+			]
+		}
+	]
+}

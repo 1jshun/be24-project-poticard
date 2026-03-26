@@ -1,0 +1,29 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "85",
+    "name": "김민지",
+    "email": "user85@poticard.com",
+    "url": "github.com/user85",
+    "affiliation": "Backend Dev",
+    "namecard_title": "김민지입니다. Backend Dev로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "M",
+    "keywords": [
+      "Svelte",
+      "Go",
+      "Angular"
+    ],
+    "style": {
+      "color": "purple",
+      "typoFont": "Monospace",
+      "cardTexture": "Glass",
+      "logo": "false",
+      "qrcode": "false",
+      "avatar": "https://api.dicebear.com/7.x/notionists/svg?seed=2zm8ag"
+    }
+  }
+}

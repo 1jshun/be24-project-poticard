@@ -1,0 +1,29 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "102",
+    "name": "이영희",
+    "email": "younghee.lee@example.com",
+    "url": "github.com/user102",
+    "affiliation": "AI Researcher",
+    "namecard_title": "이영희입니다. AI Researcher 로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "F",
+    "keywords": [
+      "Python",
+      "PyTorch",
+      "NLP"
+    ],
+    "style": {
+      "color": "gray",
+      "typoFont": "Monospace",
+      "cardTexture": "Wood",
+      "logo": "false",
+      "qrcode": "false",
+      "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=Younghee"
+    }
+  }
+}

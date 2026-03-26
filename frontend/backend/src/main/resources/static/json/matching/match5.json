@@ -1,0 +1,13 @@
+{
+  "id": 6,
+  "name": "BlueOrbit",
+  "role": "Fullstack Engineer",
+  "category": "Fullstack",
+  "location": "Seoul",
+  "exp": "주니어",
+  "skills": ["React", "Node", "MySQL"],
+  "badges": ["인기"],
+  "likes": 65,
+  "views": 780,
+  "updatedAt": "2026-01-05"
+}

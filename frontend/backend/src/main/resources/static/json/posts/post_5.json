@@ -1,0 +1,20 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "postId": "5",
+    "category": "RECRUIT",
+    "isQNA": false,
+    "isSolved": false,
+    "title": "개발자 키보드 추천 부탁드립니다",
+    "author": "철수",
+    "likes": "1",
+    "replys": "9",
+    "tags": [
+      "Java",
+      "TypeScript"
+    ],
+    "createdAt": "2025-03-14-09:57:13"
+  }
+}

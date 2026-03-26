@@ -1,0 +1,30 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "28",
+    "name": "황시우",
+    "email": "user28@poticard.com",
+    "url": "github.com/user28",
+    "affiliation": "Data Scientist",
+    "namecard_title": "황시우입니다. Data Scientist로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "M",
+    "keywords": [
+      "Python",
+      "Django",
+      "AWS",
+      "Svelte"
+    ],
+    "style": {
+      "color": "blue",
+      "typoFont": "Serif",
+      "cardTexture": "Glass",
+      "logo": "false",
+      "qrcode": "true",
+      "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=nwulyo"
+    }
+  }
+}

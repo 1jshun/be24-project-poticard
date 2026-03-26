@@ -1,0 +1,13 @@
+{
+  "id": 1,
+  "name": "DevOops Labs",
+  "role": "Backend Engineer",
+  "category": "Backend",
+  "location": "Seoul",
+  "exp": "신입/주니어",
+  "skills": ["Spring", "JPA", "MySQL", "Redis"],
+  "badges": ["추천", "빠른채용"],
+  "likes": 112,
+  "views": 1840,
+  "updatedAt": "2026-01-12"
+}

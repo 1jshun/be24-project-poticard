@@ -1,0 +1,2007 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": [
+    {
+      "user_id": "1",
+      "name": "장하윤",
+      "email": "user1@poticard.com",
+      "url": "github.com/user1",
+      "affiliation": "DevOps Engineer",
+      "namecard_title": "장하윤입니다. 문제를 해결하는 엔지니어",
+      "keywords": [
+        "C++",
+        "Vue.js",
+        "Go"
+      ],
+      "style": {
+        "color": "gray",
+        "typoFont": "Monospace",
+        "cardTexture": "Paper",
+        "logo": "false",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "2",
+      "name": "송지호",
+      "email": "user2@poticard.com",
+      "url": "github.com/user2",
+      "affiliation": "Data Scientist",
+      "namecard_title": "송지호입니다. 사용자 경험을 디자인하는 디자이너",
+      "keywords": [
+        "Figma",
+        "JavaScript",
+        "Docker"
+      ],
+      "style": {
+        "color": "red",
+        "typoFont": "Nanum Gothic",
+        "cardTexture": "Metal",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "3",
+      "name": "최수아",
+      "email": "user3@poticard.com",
+      "url": "github.com/user3",
+      "affiliation": "Product Manager",
+      "namecard_title": "최수아입니다. 문제를 해결하는 엔지니어",
+      "keywords": [
+        "Java",
+        "Python",
+        "Kotlin"
+      ],
+      "style": {
+        "color": "white",
+        "typoFont": "Pretendard",
+        "cardTexture": "Fabric",
+        "logo": "true",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "4",
+      "name": "윤지우",
+      "email": "user4@poticard.com",
+      "url": "github.com/user4",
+      "affiliation": "Backend Developer",
+      "namecard_title": "윤지우입니다. 사용자 경험을 디자인하는 디자이너",
+      "keywords": [
+        "React",
+        "TypeScript",
+        "JavaScript"
+      ],
+      "style": {
+        "color": "blue",
+        "typoFont": "Nanum Gothic",
+        "cardTexture": "Paper",
+        "logo": "true",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "5",
+      "name": "김하은",
+      "email": "user5@poticard.com",
+      "url": "github.com/user5",
+      "affiliation": "DevOps Engineer",
+      "namecard_title": "김하은입니다. 함께 자라기를 실천하는 리더",
+      "keywords": [
+        "Python",
+        "Vue.js",
+        "Swift"
+      ],
+      "style": {
+        "color": "green",
+        "typoFont": "Serif",
+        "cardTexture": "Metal",
+        "logo": "true",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "6",
+      "name": "정주원",
+      "email": "user6@poticard.com",
+      "url": "github.com/user6",
+      "affiliation": "DevOps Engineer",
+      "namecard_title": "정주원입니다. 함께 자라기를 실천하는 리더",
+      "keywords": [
+        "Vue.js",
+        "React",
+        "C++"
+      ],
+      "style": {
+        "color": "orange",
+        "typoFont": "Serif",
+        "cardTexture": "Fabric",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "7",
+      "name": "장민준",
+      "email": "user7@poticard.com",
+      "url": "github.com/user7",
+      "affiliation": "Backend Developer",
+      "namecard_title": "장민준입니다. 코드로 가치를 만드는 사람",
+      "keywords": [
+        "React",
+        "TypeScript",
+        "JavaScript"
+      ],
+      "style": {
+        "color": "green",
+        "typoFont": "Sans-serif",
+        "cardTexture": "Metal",
+        "logo": "false",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "8",
+      "name": "오서준",
+      "email": "user8@poticard.com",
+      "url": "github.com/user8",
+      "affiliation": "Backend Developer",
+      "namecard_title": "오서준입니다. 성장을 즐기는 개발자",
+      "keywords": [
+        "React",
+        "Go",
+        "TypeScript"
+      ],
+      "style": {
+        "color": "gray",
+        "typoFont": "Nanum Gothic",
+        "cardTexture": "Metal",
+        "logo": "false",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "9",
+      "name": "장서윤",
+      "email": "user9@poticard.com",
+      "url": "github.com/user9",
+      "affiliation": "Full Stack Developer",
+      "namecard_title": "장서윤입니다. 성장을 즐기는 개발자",
+      "keywords": [
+        "Go",
+        "Kotlin",
+        "Python"
+      ],
+      "style": {
+        "color": "orange",
+        "typoFont": "Nanum Gothic",
+        "cardTexture": "None",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "10",
+      "name": "김서현",
+      "email": "user10@poticard.com",
+      "url": "github.com/user10",
+      "affiliation": "Product Manager",
+      "namecard_title": "김서현입니다. 사용자 경험을 디자인하는 디자이너",
+      "keywords": [
+        "AWS",
+        "React",
+        "Docker"
+      ],
+      "style": {
+        "color": "white",
+        "typoFont": "Monospace",
+        "cardTexture": "Paper",
+        "logo": "false",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "11",
+      "name": "강지호",
+      "email": "user11@poticard.com",
+      "url": "github.com/user11",
+      "affiliation": "Product Manager",
+      "namecard_title": "강지호입니다. 함께 자라기를 실천하는 리더",
+      "keywords": [
+        "Go",
+        "Spring",
+        "Python"
+      ],
+      "style": {
+        "color": "black",
+        "typoFont": "Sans-serif",
+        "cardTexture": "Wood",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "12",
+      "name": "한민준",
+      "email": "user12@poticard.com",
+      "url": "github.com/user12",
+      "affiliation": "DevOps Engineer",
+      "namecard_title": "한민준입니다. 데이터로 세상을 보는 분석가",
+      "keywords": [
+        "Spring",
+        "JavaScript",
+        "Swift"
+      ],
+      "style": {
+        "color": "orange",
+        "typoFont": "Monospace",
+        "cardTexture": "Wood",
+        "logo": "true",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "13",
+      "name": "최채원",
+      "email": "user13@poticard.com",
+      "url": "github.com/user13",
+      "affiliation": "Data Scientist",
+      "namecard_title": "최채원입니다. 성장을 즐기는 개발자",
+      "keywords": [
+        "Spring",
+        "Swift",
+        "Java"
+      ],
+      "style": {
+        "color": "white",
+        "typoFont": "Pretendard",
+        "cardTexture": "Fabric",
+        "logo": "true",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "14",
+      "name": "송도윤",
+      "email": "user14@poticard.com",
+      "url": "github.com/user14",
+      "affiliation": "Full Stack Developer",
+      "namecard_title": "송도윤입니다. 문제를 해결하는 엔지니어",
+      "keywords": [
+        "Java",
+        "Vue.js",
+        "TypeScript"
+      ],
+      "style": {
+        "color": "purple",
+        "typoFont": "Pretendard",
+        "cardTexture": "None",
+        "logo": "true",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "15",
+      "name": "조준우",
+      "email": "user15@poticard.com",
+      "url": "github.com/user15",
+      "affiliation": "Frontend Developer",
+      "namecard_title": "조준우입니다. 문제를 해결하는 엔지니어",
+      "keywords": [
+        "Rust",
+        "Python",
+        "Kotlin"
+      ],
+      "style": {
+        "color": "blue",
+        "typoFont": "Sans-serif",
+        "cardTexture": "Wood",
+        "logo": "true",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "16",
+      "name": "조준우",
+      "email": "user16@poticard.com",
+      "url": "github.com/user16",
+      "affiliation": "DevOps Engineer",
+      "namecard_title": "조준우입니다. 데이터로 세상을 보는 분석가",
+      "keywords": [
+        "Python",
+        "AWS",
+        "Kotlin"
+      ],
+      "style": {
+        "color": "red",
+        "typoFont": "Pretendard",
+        "cardTexture": "Paper",
+        "logo": "true",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "17",
+      "name": "정지우",
+      "email": "user17@poticard.com",
+      "url": "github.com/user17",
+      "affiliation": "Frontend Developer",
+      "namecard_title": "정지우입니다. 문제를 해결하는 엔지니어",
+      "keywords": [
+        "Python",
+        "Swift",
+        "Kotlin"
+      ],
+      "style": {
+        "color": "black",
+        "typoFont": "Pretendard",
+        "cardTexture": "Wood",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "18",
+      "name": "오수아",
+      "email": "user18@poticard.com",
+      "url": "github.com/user18",
+      "affiliation": "DevOps Engineer",
+      "namecard_title": "오수아입니다. 코드로 가치를 만드는 사람",
+      "keywords": [
+        "Go",
+        "AWS",
+        "React"
+      ],
+      "style": {
+        "color": "gray",
+        "typoFont": "Sans-serif",
+        "cardTexture": "None",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "19",
+      "name": "황서준",
+      "email": "user19@poticard.com",
+      "url": "github.com/user19",
+      "affiliation": "DevOps Engineer",
+      "namecard_title": "황서준입니다. 데이터로 세상을 보는 분석가",
+      "keywords": [
+        "Figma",
+        "Java",
+        "Python"
+      ],
+      "style": {
+        "color": "red",
+        "typoFont": "Pretendard",
+        "cardTexture": "Fabric",
+        "logo": "false",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "20",
+      "name": "오서윤",
+      "email": "user20@poticard.com",
+      "url": "github.com/user20",
+      "affiliation": "Data Scientist",
+      "namecard_title": "오서윤입니다. 코드로 가치를 만드는 사람",
+      "keywords": [
+        "AWS",
+        "Java",
+        "Docker"
+      ],
+      "style": {
+        "color": "gray",
+        "typoFont": "Serif",
+        "cardTexture": "Metal",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "21",
+      "name": "신지호",
+      "email": "user21@poticard.com",
+      "url": "github.com/user21",
+      "affiliation": "Product Manager",
+      "namecard_title": "신지호입니다. 사용자 경험을 디자인하는 디자이너",
+      "keywords": [
+        "Python",
+        "Go",
+        "Rust"
+      ],
+      "style": {
+        "color": "green",
+        "typoFont": "Serif",
+        "cardTexture": "Paper",
+        "logo": "false",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "22",
+      "name": "서예성",
+      "email": "user22@poticard.com",
+      "url": "github.com/user22",
+      "affiliation": "Data Scientist",
+      "namecard_title": "서예성입니다. 코드로 가치를 만드는 사람",
+      "keywords": [
+        "Java",
+        "React",
+        "Go"
+      ],
+      "style": {
+        "color": "orange",
+        "typoFont": "Sans-serif",
+        "cardTexture": "Wood",
+        "logo": "true",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "23",
+      "name": "장예성",
+      "email": "user23@poticard.com",
+      "url": "github.com/user23",
+      "affiliation": "Backend Developer",
+      "namecard_title": "장예성입니다. 함께 자라기를 실천하는 리더",
+      "keywords": [
+        "Java",
+        "Docker",
+        "Figma"
+      ],
+      "style": {
+        "color": "orange",
+        "typoFont": "Sans-serif",
+        "cardTexture": "Metal",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "24",
+      "name": "황준우",
+      "email": "user24@poticard.com",
+      "url": "github.com/user24",
+      "affiliation": "Full Stack Developer",
+      "namecard_title": "황준우입니다. 사용자 경험을 디자인하는 디자이너",
+      "keywords": [
+        "Java",
+        "Figma",
+        "Swift"
+      ],
+      "style": {
+        "color": "black",
+        "typoFont": "Serif",
+        "cardTexture": "Paper",
+        "logo": "true",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "25",
+      "name": "전수아",
+      "email": "user25@poticard.com",
+      "url": "github.com/user25",
+      "affiliation": "Full Stack Developer",
+      "namecard_title": "전수아입니다. 함께 자라기를 실천하는 리더",
+      "keywords": [
+        "Rust",
+        "AWS",
+        "Vue.js"
+      ],
+      "style": {
+        "color": "green",
+        "typoFont": "Monospace",
+        "cardTexture": "None",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "26",
+      "name": "장서준",
+      "email": "user26@poticard.com",
+      "url": "github.com/user26",
+      "affiliation": "DevOps Engineer",
+      "namecard_title": "장서준입니다. 성장을 즐기는 개발자",
+      "keywords": [
+        "AWS",
+        "Rust",
+        "Spring"
+      ],
+      "style": {
+        "color": "purple",
+        "typoFont": "Pretendard",
+        "cardTexture": "Metal",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "27",
+      "name": "윤민서",
+      "email": "user27@poticard.com",
+      "url": "github.com/user27",
+      "affiliation": "Product Manager",
+      "namecard_title": "윤민서입니다. 함께 자라기를 실천하는 리더",
+      "keywords": [
+        "Rust",
+        "Python",
+        "Figma"
+      ],
+      "style": {
+        "color": "white",
+        "typoFont": "Serif",
+        "cardTexture": "None",
+        "logo": "true",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "28",
+      "name": "조시우",
+      "email": "user28@poticard.com",
+      "url": "github.com/user28",
+      "affiliation": "DevOps Engineer",
+      "namecard_title": "조시우입니다. 코드로 가치를 만드는 사람",
+      "keywords": [
+        "Figma",
+        "JavaScript",
+        "Python"
+      ],
+      "style": {
+        "color": "black",
+        "typoFont": "Serif",
+        "cardTexture": "Fabric",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "29",
+      "name": "이하은",
+      "email": "user29@poticard.com",
+      "url": "github.com/user29",
+      "affiliation": "Backend Developer",
+      "namecard_title": "이하은입니다. 코드로 가치를 만드는 사람",
+      "keywords": [
+        "Python",
+        "Go",
+        "JavaScript"
+      ],
+      "style": {
+        "color": "green",
+        "typoFont": "Serif",
+        "cardTexture": "Metal",
+        "logo": "false",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "30",
+      "name": "한지호",
+      "email": "user30@poticard.com",
+      "url": "github.com/user30",
+      "affiliation": "Data Scientist",
+      "namecard_title": "한지호입니다. 데이터로 세상을 보는 분석가",
+      "keywords": [
+        "C++",
+        "Java",
+        "Swift"
+      ],
+      "style": {
+        "color": "red",
+        "typoFont": "Monospace",
+        "cardTexture": "Wood",
+        "logo": "true",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "31",
+      "name": "황지아",
+      "email": "user31@poticard.com",
+      "url": "github.com/user31",
+      "affiliation": "UI/UX Designer",
+      "namecard_title": "황지아입니다. 사용자 경험을 디자인하는 디자이너",
+      "keywords": [
+        "Python",
+        "Kotlin",
+        "C++"
+      ],
+      "style": {
+        "color": "blue",
+        "typoFont": "Pretendard",
+        "cardTexture": "Paper",
+        "logo": "true",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "32",
+      "name": "서지유",
+      "email": "user32@poticard.com",
+      "url": "github.com/user32",
+      "affiliation": "Backend Developer",
+      "namecard_title": "서지유입니다. 데이터로 세상을 보는 분석가",
+      "keywords": [
+        "Docker",
+        "Java",
+        "Figma"
+      ],
+      "style": {
+        "color": "green",
+        "typoFont": "Serif",
+        "cardTexture": "Wood",
+        "logo": "true",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "33",
+      "name": "윤준우",
+      "email": "user33@poticard.com",
+      "url": "github.com/user33",
+      "affiliation": "Frontend Developer",
+      "namecard_title": "윤준우입니다. 성장을 즐기는 개발자",
+      "keywords": [
+        "Figma",
+        "Docker",
+        "Python"
+      ],
+      "style": {
+        "color": "orange",
+        "typoFont": "Monospace",
+        "cardTexture": "Fabric",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "34",
+      "name": "박민서",
+      "email": "user34@poticard.com",
+      "url": "github.com/user34",
+      "affiliation": "Backend Developer",
+      "namecard_title": "박민서입니다. 함께 자라기를 실천하는 리더",
+      "keywords": [
+        "C++",
+        "Vue.js",
+        "Figma"
+      ],
+      "style": {
+        "color": "blue",
+        "typoFont": "Pretendard",
+        "cardTexture": "Paper",
+        "logo": "false",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "35",
+      "name": "윤민준",
+      "email": "user35@poticard.com",
+      "url": "github.com/user35",
+      "affiliation": "UI/UX Designer",
+      "namecard_title": "윤민준입니다. 문제를 해결하는 엔지니어",
+      "keywords": [
+        "Figma",
+        "C++",
+        "Docker"
+      ],
+      "style": {
+        "color": "purple",
+        "typoFont": "Nanum Gothic",
+        "cardTexture": "Fabric",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "36",
+      "name": "조주원",
+      "email": "user36@poticard.com",
+      "url": "github.com/user36",
+      "affiliation": "Data Scientist",
+      "namecard_title": "조주원입니다. 성장을 즐기는 개발자",
+      "keywords": [
+        "Swift",
+        "Go",
+        "Rust"
+      ],
+      "style": {
+        "color": "gray",
+        "typoFont": "Monospace",
+        "cardTexture": "Metal",
+        "logo": "true",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "37",
+      "name": "서현우",
+      "email": "user37@poticard.com",
+      "url": "github.com/user37",
+      "affiliation": "Backend Developer",
+      "namecard_title": "서현우입니다. 사용자 경험을 디자인하는 디자이너",
+      "keywords": [
+        "Vue.js",
+        "React",
+        "Python"
+      ],
+      "style": {
+        "color": "yellow",
+        "typoFont": "Pretendard",
+        "cardTexture": "Wood",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "38",
+      "name": "서시우",
+      "email": "user38@poticard.com",
+      "url": "github.com/user38",
+      "affiliation": "Full Stack Developer",
+      "namecard_title": "서시우입니다. 함께 자라기를 실천하는 리더",
+      "keywords": [
+        "Vue.js",
+        "Figma",
+        "Swift"
+      ],
+      "style": {
+        "color": "black",
+        "typoFont": "Nanum Gothic",
+        "cardTexture": "None",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "39",
+      "name": "한채원",
+      "email": "user39@poticard.com",
+      "url": "github.com/user39",
+      "affiliation": "DevOps Engineer",
+      "namecard_title": "한채원입니다. 함께 자라기를 실천하는 리더",
+      "keywords": [
+        "JavaScript",
+        "Rust",
+        "C++"
+      ],
+      "style": {
+        "color": "orange",
+        "typoFont": "Monospace",
+        "cardTexture": "Paper",
+        "logo": "false",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "40",
+      "name": "윤민서",
+      "email": "user40@poticard.com",
+      "url": "github.com/user40",
+      "affiliation": "Backend Developer",
+      "namecard_title": "윤민서입니다. 문제를 해결하는 엔지니어",
+      "keywords": [
+        "C++",
+        "JavaScript",
+        "Figma"
+      ],
+      "style": {
+        "color": "orange",
+        "typoFont": "Pretendard",
+        "cardTexture": "Wood",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "41",
+      "name": "강서준",
+      "email": "user41@poticard.com",
+      "url": "github.com/user41",
+      "affiliation": "UI/UX Designer",
+      "namecard_title": "강서준입니다. 코드로 가치를 만드는 사람",
+      "keywords": [
+        "Swift",
+        "Python",
+        "AWS"
+      ],
+      "style": {
+        "color": "green",
+        "typoFont": "Pretendard",
+        "cardTexture": "Metal",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "42",
+      "name": "박지우",
+      "email": "user42@poticard.com",
+      "url": "github.com/user42",
+      "affiliation": "Full Stack Developer",
+      "namecard_title": "박지우입니다. 문제를 해결하는 엔지니어",
+      "keywords": [
+        "Figma",
+        "Go",
+        "TypeScript"
+      ],
+      "style": {
+        "color": "gray",
+        "typoFont": "Sans-serif",
+        "cardTexture": "Metal",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "43",
+      "name": "신지호",
+      "email": "user43@poticard.com",
+      "url": "github.com/user43",
+      "affiliation": "Backend Developer",
+      "namecard_title": "신지호입니다. 사용자 경험을 디자인하는 디자이너",
+      "keywords": [
+        "TypeScript",
+        "Rust",
+        "AWS"
+      ],
+      "style": {
+        "color": "white",
+        "typoFont": "Sans-serif",
+        "cardTexture": "Metal",
+        "logo": "true",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "44",
+      "name": "조하은",
+      "email": "user44@poticard.com",
+      "url": "github.com/user44",
+      "affiliation": "Frontend Developer",
+      "namecard_title": "조하은입니다. 문제를 해결하는 엔지니어",
+      "keywords": [
+        "Python",
+        "Vue.js",
+        "AWS"
+      ],
+      "style": {
+        "color": "white",
+        "typoFont": "Monospace",
+        "cardTexture": "Fabric",
+        "logo": "false",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "45",
+      "name": "박수아",
+      "email": "user45@poticard.com",
+      "url": "github.com/user45",
+      "affiliation": "Frontend Developer",
+      "namecard_title": "박수아입니다. 문제를 해결하는 엔지니어",
+      "keywords": [
+        "AWS",
+        "Docker",
+        "React"
+      ],
+      "style": {
+        "color": "white",
+        "typoFont": "Sans-serif",
+        "cardTexture": "Paper",
+        "logo": "true",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "46",
+      "name": "서지호",
+      "email": "user46@poticard.com",
+      "url": "github.com/user46",
+      "affiliation": "Full Stack Developer",
+      "namecard_title": "서지호입니다. 코드로 가치를 만드는 사람",
+      "keywords": [
+        "Rust",
+        "Swift",
+        "Spring"
+      ],
+      "style": {
+        "color": "blue",
+        "typoFont": "Nanum Gothic",
+        "cardTexture": "Metal",
+        "logo": "false",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "47",
+      "name": "서지유",
+      "email": "user47@poticard.com",
+      "url": "github.com/user47",
+      "affiliation": "Backend Developer",
+      "namecard_title": "서지유입니다. 성장을 즐기는 개발자",
+      "keywords": [
+        "AWS",
+        "React",
+        "Kotlin"
+      ],
+      "style": {
+        "color": "blue",
+        "typoFont": "Serif",
+        "cardTexture": "Wood",
+        "logo": "true",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "48",
+      "name": "이지우",
+      "email": "user48@poticard.com",
+      "url": "github.com/user48",
+      "affiliation": "Backend Developer",
+      "namecard_title": "이지우입니다. 함께 자라기를 실천하는 리더",
+      "keywords": [
+        "Figma",
+        "Python",
+        "JavaScript"
+      ],
+      "style": {
+        "color": "green",
+        "typoFont": "Nanum Gothic",
+        "cardTexture": "None",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "49",
+      "name": "오예성",
+      "email": "user49@poticard.com",
+      "url": "github.com/user49",
+      "affiliation": "DevOps Engineer",
+      "namecard_title": "오예성입니다. 함께 자라기를 실천하는 리더",
+      "keywords": [
+        "AWS",
+        "TypeScript",
+        "Swift"
+      ],
+      "style": {
+        "color": "blue",
+        "typoFont": "Sans-serif",
+        "cardTexture": "None",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "50",
+      "name": "황주원",
+      "email": "user50@poticard.com",
+      "url": "github.com/user50",
+      "affiliation": "Frontend Developer",
+      "namecard_title": "황주원입니다. 문제를 해결하는 엔지니어",
+      "keywords": [
+        "C++",
+        "React",
+        "Go"
+      ],
+      "style": {
+        "color": "gray",
+        "typoFont": "Nanum Gothic",
+        "cardTexture": "None",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "51",
+      "name": "전현우",
+      "email": "user51@poticard.com",
+      "url": "github.com/user51",
+      "affiliation": "UI/UX Designer",
+      "namecard_title": "전현우입니다. 데이터로 세상을 보는 분석가",
+      "keywords": [
+        "Rust",
+        "Swift",
+        "AWS"
+      ],
+      "style": {
+        "color": "green",
+        "typoFont": "Pretendard",
+        "cardTexture": "Metal",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "52",
+      "name": "오예준",
+      "email": "user52@poticard.com",
+      "url": "github.com/user52",
+      "affiliation": "Backend Developer",
+      "namecard_title": "오예준입니다. 사용자 경험을 디자인하는 디자이너",
+      "keywords": [
+        "Swift",
+        "Python",
+        "C++"
+      ],
+      "style": {
+        "color": "white",
+        "typoFont": "Monospace",
+        "cardTexture": "Fabric",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "53",
+      "name": "류지우",
+      "email": "user53@poticard.com",
+      "url": "github.com/user53",
+      "affiliation": "Data Scientist",
+      "namecard_title": "류지우입니다. 데이터로 세상을 보는 분석가",
+      "keywords": [
+        "Figma",
+        "React",
+        "JavaScript"
+      ],
+      "style": {
+        "color": "green",
+        "typoFont": "Sans-serif",
+        "cardTexture": "Metal",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "54",
+      "name": "송예준",
+      "email": "user54@poticard.com",
+      "url": "github.com/user54",
+      "affiliation": "DevOps Engineer",
+      "namecard_title": "송예준입니다. 사용자 경험을 디자인하는 디자이너",
+      "keywords": [
+        "Python",
+        "Kotlin",
+        "React"
+      ],
+      "style": {
+        "color": "gray",
+        "typoFont": "Pretendard",
+        "cardTexture": "Wood",
+        "logo": "true",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "55",
+      "name": "윤도윤",
+      "email": "user55@poticard.com",
+      "url": "github.com/user55",
+      "affiliation": "Backend Developer",
+      "namecard_title": "윤도윤입니다. 문제를 해결하는 엔지니어",
+      "keywords": [
+        "Swift",
+        "React",
+        "Rust"
+      ],
+      "style": {
+        "color": "white",
+        "typoFont": "Monospace",
+        "cardTexture": "None",
+        "logo": "true",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "56",
+      "name": "신민서",
+      "email": "user56@poticard.com",
+      "url": "github.com/user56",
+      "affiliation": "DevOps Engineer",
+      "namecard_title": "신민서입니다. 함께 자라기를 실천하는 리더",
+      "keywords": [
+        "JavaScript",
+        "Kotlin",
+        "Spring"
+      ],
+      "style": {
+        "color": "gray",
+        "typoFont": "Pretendard",
+        "cardTexture": "None",
+        "logo": "true",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "57",
+      "name": "권지아",
+      "email": "user57@poticard.com",
+      "url": "github.com/user57",
+      "affiliation": "Product Manager",
+      "namecard_title": "권지아입니다. 데이터로 세상을 보는 분석가",
+      "keywords": [
+        "JavaScript",
+        "Docker",
+        "Figma"
+      ],
+      "style": {
+        "color": "orange",
+        "typoFont": "Sans-serif",
+        "cardTexture": "Metal",
+        "logo": "true",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "58",
+      "name": "김주원",
+      "email": "user58@poticard.com",
+      "url": "github.com/user58",
+      "affiliation": "DevOps Engineer",
+      "namecard_title": "김주원입니다. 사용자 경험을 디자인하는 디자이너",
+      "keywords": [
+        "JavaScript",
+        "C++",
+        "AWS"
+      ],
+      "style": {
+        "color": "red",
+        "typoFont": "Pretendard",
+        "cardTexture": "None",
+        "logo": "true",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "59",
+      "name": "신시우",
+      "email": "user59@poticard.com",
+      "url": "github.com/user59",
+      "affiliation": "DevOps Engineer",
+      "namecard_title": "신시우입니다. 사용자 경험을 디자인하는 디자이너",
+      "keywords": [
+        "Kotlin",
+        "Python",
+        "React"
+      ],
+      "style": {
+        "color": "blue",
+        "typoFont": "Monospace",
+        "cardTexture": "Wood",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "60",
+      "name": "최주원",
+      "email": "user60@poticard.com",
+      "url": "github.com/user60",
+      "affiliation": "DevOps Engineer",
+      "namecard_title": "최주원입니다. 사용자 경험을 디자인하는 디자이너",
+      "keywords": [
+        "Kotlin",
+        "AWS",
+        "Rust"
+      ],
+      "style": {
+        "color": "blue",
+        "typoFont": "Pretendard",
+        "cardTexture": "Paper",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "61",
+      "name": "황민서",
+      "email": "user61@poticard.com",
+      "url": "github.com/user61",
+      "affiliation": "Product Manager",
+      "namecard_title": "황민서입니다. 문제를 해결하는 엔지니어",
+      "keywords": [
+        "Python",
+        "Kotlin",
+        "Go"
+      ],
+      "style": {
+        "color": "red",
+        "typoFont": "Pretendard",
+        "cardTexture": "Wood",
+        "logo": "true",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "62",
+      "name": "강하윤",
+      "email": "user62@poticard.com",
+      "url": "github.com/user62",
+      "affiliation": "DevOps Engineer",
+      "namecard_title": "강하윤입니다. 문제를 해결하는 엔지니어",
+      "keywords": [
+        "C++",
+        "JavaScript",
+        "AWS"
+      ],
+      "style": {
+        "color": "orange",
+        "typoFont": "Serif",
+        "cardTexture": "Fabric",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "63",
+      "name": "김하은",
+      "email": "user63@poticard.com",
+      "url": "github.com/user63",
+      "affiliation": "Frontend Developer",
+      "namecard_title": "김하은입니다. 함께 자라기를 실천하는 리더",
+      "keywords": [
+        "TypeScript",
+        "Rust",
+        "Docker"
+      ],
+      "style": {
+        "color": "gray",
+        "typoFont": "Pretendard",
+        "cardTexture": "Paper",
+        "logo": "true",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "64",
+      "name": "신현우",
+      "email": "user64@poticard.com",
+      "url": "github.com/user64",
+      "affiliation": "DevOps Engineer",
+      "namecard_title": "신현우입니다. 데이터로 세상을 보는 분석가",
+      "keywords": [
+        "TypeScript",
+        "Spring",
+        "Swift"
+      ],
+      "style": {
+        "color": "orange",
+        "typoFont": "Monospace",
+        "cardTexture": "Metal",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "65",
+      "name": "김현우",
+      "email": "user65@poticard.com",
+      "url": "github.com/user65",
+      "affiliation": "UI/UX Designer",
+      "namecard_title": "김현우입니다. 사용자 경험을 디자인하는 디자이너",
+      "keywords": [
+        "Kotlin",
+        "Python",
+        "Rust"
+      ],
+      "style": {
+        "color": "purple",
+        "typoFont": "Monospace",
+        "cardTexture": "Wood",
+        "logo": "true",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "66",
+      "name": "박민준",
+      "email": "user66@poticard.com",
+      "url": "github.com/user66",
+      "affiliation": "Frontend Developer",
+      "namecard_title": "박민준입니다. 함께 자라기를 실천하는 리더",
+      "keywords": [
+        "TypeScript",
+        "AWS",
+        "Spring"
+      ],
+      "style": {
+        "color": "orange",
+        "typoFont": "Pretendard",
+        "cardTexture": "Wood",
+        "logo": "false",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "67",
+      "name": "서지유",
+      "email": "user67@poticard.com",
+      "url": "github.com/user67",
+      "affiliation": "DevOps Engineer",
+      "namecard_title": "서지유입니다. 문제를 해결하는 엔지니어",
+      "keywords": [
+        "JavaScript",
+        "C++",
+        "Figma"
+      ],
+      "style": {
+        "color": "white",
+        "typoFont": "Pretendard",
+        "cardTexture": "None",
+        "logo": "true",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "68",
+      "name": "송민준",
+      "email": "user68@poticard.com",
+      "url": "github.com/user68",
+      "affiliation": "Backend Developer",
+      "namecard_title": "송민준입니다. 사용자 경험을 디자인하는 디자이너",
+      "keywords": [
+        "Figma",
+        "Swift",
+        "Python"
+      ],
+      "style": {
+        "color": "red",
+        "typoFont": "Serif",
+        "cardTexture": "Wood",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "69",
+      "name": "서하윤",
+      "email": "user69@poticard.com",
+      "url": "github.com/user69",
+      "affiliation": "Backend Developer",
+      "namecard_title": "서하윤입니다. 함께 자라기를 실천하는 리더",
+      "keywords": [
+        "Go",
+        "Spring",
+        "Vue.js"
+      ],
+      "style": {
+        "color": "purple",
+        "typoFont": "Nanum Gothic",
+        "cardTexture": "Metal",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "70",
+      "name": "황민서",
+      "email": "user70@poticard.com",
+      "url": "github.com/user70",
+      "affiliation": "Frontend Developer",
+      "namecard_title": "황민서입니다. 성장을 즐기는 개발자",
+      "keywords": [
+        "Figma",
+        "Spring",
+        "C++"
+      ],
+      "style": {
+        "color": "blue",
+        "typoFont": "Sans-serif",
+        "cardTexture": "Wood",
+        "logo": "false",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "71",
+      "name": "강수아",
+      "email": "user71@poticard.com",
+      "url": "github.com/user71",
+      "affiliation": "DevOps Engineer",
+      "namecard_title": "강수아입니다. 성장을 즐기는 개발자",
+      "keywords": [
+        "Vue.js",
+        "TypeScript",
+        "Kotlin"
+      ],
+      "style": {
+        "color": "purple",
+        "typoFont": "Nanum Gothic",
+        "cardTexture": "None",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "72",
+      "name": "신예성",
+      "email": "user72@poticard.com",
+      "url": "github.com/user72",
+      "affiliation": "Full Stack Developer",
+      "namecard_title": "신예성입니다. 문제를 해결하는 엔지니어",
+      "keywords": [
+        "Python",
+        "Go",
+        "React"
+      ],
+      "style": {
+        "color": "blue",
+        "typoFont": "Nanum Gothic",
+        "cardTexture": "Fabric",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "73",
+      "name": "송하윤",
+      "email": "user73@poticard.com",
+      "url": "github.com/user73",
+      "affiliation": "Full Stack Developer",
+      "namecard_title": "송하윤입니다. 사용자 경험을 디자인하는 디자이너",
+      "keywords": [
+        "React",
+        "Go",
+        "Rust"
+      ],
+      "style": {
+        "color": "orange",
+        "typoFont": "Nanum Gothic",
+        "cardTexture": "Wood",
+        "logo": "false",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "74",
+      "name": "박지유",
+      "email": "user74@poticard.com",
+      "url": "github.com/user74",
+      "affiliation": "Backend Developer",
+      "namecard_title": "박지유입니다. 데이터로 세상을 보는 분석가",
+      "keywords": [
+        "Swift",
+        "Figma",
+        "Docker"
+      ],
+      "style": {
+        "color": "blue",
+        "typoFont": "Pretendard",
+        "cardTexture": "None",
+        "logo": "true",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "75",
+      "name": "정예준",
+      "email": "user75@poticard.com",
+      "url": "github.com/user75",
+      "affiliation": "Data Scientist",
+      "namecard_title": "정예준입니다. 코드로 가치를 만드는 사람",
+      "keywords": [
+        "C++",
+        "Rust",
+        "Kotlin"
+      ],
+      "style": {
+        "color": "black",
+        "typoFont": "Pretendard",
+        "cardTexture": "Paper",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "76",
+      "name": "황지유",
+      "email": "user76@poticard.com",
+      "url": "github.com/user76",
+      "affiliation": "Frontend Developer",
+      "namecard_title": "황지유입니다. 사용자 경험을 디자인하는 디자이너",
+      "keywords": [
+        "Java",
+        "Kotlin",
+        "React"
+      ],
+      "style": {
+        "color": "red",
+        "typoFont": "Serif",
+        "cardTexture": "Wood",
+        "logo": "false",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "77",
+      "name": "오지호",
+      "email": "user77@poticard.com",
+      "url": "github.com/user77",
+      "affiliation": "UI/UX Designer",
+      "namecard_title": "오지호입니다. 함께 자라기를 실천하는 리더",
+      "keywords": [
+        "React",
+        "Spring",
+        "Java"
+      ],
+      "style": {
+        "color": "orange",
+        "typoFont": "Nanum Gothic",
+        "cardTexture": "Wood",
+        "logo": "true",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "78",
+      "name": "조시우",
+      "email": "user78@poticard.com",
+      "url": "github.com/user78",
+      "affiliation": "Backend Developer",
+      "namecard_title": "조시우입니다. 함께 자라기를 실천하는 리더",
+      "keywords": [
+        "Spring",
+        "Java",
+        "Rust"
+      ],
+      "style": {
+        "color": "green",
+        "typoFont": "Pretendard",
+        "cardTexture": "Metal",
+        "logo": "false",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "79",
+      "name": "김서현",
+      "email": "user79@poticard.com",
+      "url": "github.com/user79",
+      "affiliation": "DevOps Engineer",
+      "namecard_title": "김서현입니다. 데이터로 세상을 보는 분석가",
+      "keywords": [
+        "C++",
+        "Kotlin",
+        "Swift"
+      ],
+      "style": {
+        "color": "yellow",
+        "typoFont": "Monospace",
+        "cardTexture": "Wood",
+        "logo": "true",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "80",
+      "name": "강민준",
+      "email": "user80@poticard.com",
+      "url": "github.com/user80",
+      "affiliation": "Frontend Developer",
+      "namecard_title": "강민준입니다. 데이터로 세상을 보는 분석가",
+      "keywords": [
+        "C++",
+        "Python",
+        "Kotlin"
+      ],
+      "style": {
+        "color": "purple",
+        "typoFont": "Sans-serif",
+        "cardTexture": "Fabric",
+        "logo": "false",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "81",
+      "name": "류지호",
+      "email": "user81@poticard.com",
+      "url": "github.com/user81",
+      "affiliation": "Backend Developer",
+      "namecard_title": "류지호입니다. 코드로 가치를 만드는 사람",
+      "keywords": [
+        "Python",
+        "Kotlin",
+        "Rust"
+      ],
+      "style": {
+        "color": "gray",
+        "typoFont": "Sans-serif",
+        "cardTexture": "None",
+        "logo": "true",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "82",
+      "name": "정서준",
+      "email": "user82@poticard.com",
+      "url": "github.com/user82",
+      "affiliation": "DevOps Engineer",
+      "namecard_title": "정서준입니다. 성장을 즐기는 개발자",
+      "keywords": [
+        "JavaScript",
+        "AWS",
+        "Docker"
+      ],
+      "style": {
+        "color": "gray",
+        "typoFont": "Monospace",
+        "cardTexture": "Paper",
+        "logo": "true",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "83",
+      "name": "윤현우",
+      "email": "user83@poticard.com",
+      "url": "github.com/user83",
+      "affiliation": "Full Stack Developer",
+      "namecard_title": "윤현우입니다. 문제를 해결하는 엔지니어",
+      "keywords": [
+        "TypeScript",
+        "Python",
+        "Kotlin"
+      ],
+      "style": {
+        "color": "orange",
+        "typoFont": "Monospace",
+        "cardTexture": "None",
+        "logo": "true",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "84",
+      "name": "전하은",
+      "email": "user84@poticard.com",
+      "url": "github.com/user84",
+      "affiliation": "Product Manager",
+      "namecard_title": "전하은입니다. 데이터로 세상을 보는 분석가",
+      "keywords": [
+        "Rust",
+        "JavaScript",
+        "C++"
+      ],
+      "style": {
+        "color": "black",
+        "typoFont": "Pretendard",
+        "cardTexture": "Metal",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "85",
+      "name": "정서준",
+      "email": "user85@poticard.com",
+      "url": "github.com/user85",
+      "affiliation": "Product Manager",
+      "namecard_title": "정서준입니다. 함께 자라기를 실천하는 리더",
+      "keywords": [
+        "Vue.js",
+        "Java",
+        "Python"
+      ],
+      "style": {
+        "color": "purple",
+        "typoFont": "Nanum Gothic",
+        "cardTexture": "Metal",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "86",
+      "name": "송서윤",
+      "email": "user86@poticard.com",
+      "url": "github.com/user86",
+      "affiliation": "Backend Developer",
+      "namecard_title": "송서윤입니다. 사용자 경험을 디자인하는 디자이너",
+      "keywords": [
+        "Kotlin",
+        "Java",
+        "Swift"
+      ],
+      "style": {
+        "color": "green",
+        "typoFont": "Pretendard",
+        "cardTexture": "Metal",
+        "logo": "false",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "87",
+      "name": "임민준",
+      "email": "user87@poticard.com",
+      "url": "github.com/user87",
+      "affiliation": "Backend Developer",
+      "namecard_title": "임민준입니다. 문제를 해결하는 엔지니어",
+      "keywords": [
+        "Figma",
+        "Go",
+        "Vue.js"
+      ],
+      "style": {
+        "color": "black",
+        "typoFont": "Pretendard",
+        "cardTexture": "Wood",
+        "logo": "true",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "88",
+      "name": "류지유",
+      "email": "user88@poticard.com",
+      "url": "github.com/user88",
+      "affiliation": "Product Manager",
+      "namecard_title": "류지유입니다. 성장을 즐기는 개발자",
+      "keywords": [
+        "JavaScript",
+        "C++",
+        "Swift"
+      ],
+      "style": {
+        "color": "purple",
+        "typoFont": "Nanum Gothic",
+        "cardTexture": "None",
+        "logo": "true",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "89",
+      "name": "신서현",
+      "email": "user89@poticard.com",
+      "url": "github.com/user89",
+      "affiliation": "Product Manager",
+      "namecard_title": "신서현입니다. 문제를 해결하는 엔지니어",
+      "keywords": [
+        "Docker",
+        "C++",
+        "Rust"
+      ],
+      "style": {
+        "color": "gray",
+        "typoFont": "Serif",
+        "cardTexture": "Wood",
+        "logo": "false",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "90",
+      "name": "전준우",
+      "email": "user90@poticard.com",
+      "url": "github.com/user90",
+      "affiliation": "Backend Developer",
+      "namecard_title": "전준우입니다. 코드로 가치를 만드는 사람",
+      "keywords": [
+        "Python",
+        "Kotlin",
+        "Docker"
+      ],
+      "style": {
+        "color": "black",
+        "typoFont": "Pretendard",
+        "cardTexture": "Metal",
+        "logo": "false",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "91",
+      "name": "송서준",
+      "email": "user91@poticard.com",
+      "url": "github.com/user91",
+      "affiliation": "Backend Developer",
+      "namecard_title": "송서준입니다. 데이터로 세상을 보는 분석가",
+      "keywords": [
+        "C++",
+        "Python",
+        "TypeScript"
+      ],
+      "style": {
+        "color": "green",
+        "typoFont": "Nanum Gothic",
+        "cardTexture": "Metal",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "92",
+      "name": "장준우",
+      "email": "user92@poticard.com",
+      "url": "github.com/user92",
+      "affiliation": "Frontend Developer",
+      "namecard_title": "장준우입니다. 함께 자라기를 실천하는 리더",
+      "keywords": [
+        "Docker",
+        "Vue.js",
+        "Java"
+      ],
+      "style": {
+        "color": "gray",
+        "typoFont": "Serif",
+        "cardTexture": "None",
+        "logo": "false",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "93",
+      "name": "박채원",
+      "email": "user93@poticard.com",
+      "url": "github.com/user93",
+      "affiliation": "Data Scientist",
+      "namecard_title": "박채원입니다. 코드로 가치를 만드는 사람",
+      "keywords": [
+        "AWS",
+        "React",
+        "C++"
+      ],
+      "style": {
+        "color": "white",
+        "typoFont": "Pretendard",
+        "cardTexture": "Wood",
+        "logo": "true",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "94",
+      "name": "강서윤",
+      "email": "user94@poticard.com",
+      "url": "github.com/user94",
+      "affiliation": "Frontend Developer",
+      "namecard_title": "강서윤입니다. 성장을 즐기는 개발자",
+      "keywords": [
+        "Python",
+        "Kotlin",
+        "C++"
+      ],
+      "style": {
+        "color": "white",
+        "typoFont": "Serif",
+        "cardTexture": "None",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "95",
+      "name": "전시우",
+      "email": "user95@poticard.com",
+      "url": "github.com/user95",
+      "affiliation": "UI/UX Designer",
+      "namecard_title": "전시우입니다. 문제를 해결하는 엔지니어",
+      "keywords": [
+        "Swift",
+        "Kotlin",
+        "Rust"
+      ],
+      "style": {
+        "color": "red",
+        "typoFont": "Monospace",
+        "cardTexture": "Wood",
+        "logo": "false",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "96",
+      "name": "윤예성",
+      "email": "user96@poticard.com",
+      "url": "github.com/user96",
+      "affiliation": "UI/UX Designer",
+      "namecard_title": "윤예성입니다. 문제를 해결하는 엔지니어",
+      "keywords": [
+        "Rust",
+        "AWS",
+        "Java"
+      ],
+      "style": {
+        "color": "red",
+        "typoFont": "Sans-serif",
+        "cardTexture": "Wood",
+        "logo": "false",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "97",
+      "name": "권채원",
+      "email": "user97@poticard.com",
+      "url": "github.com/user97",
+      "affiliation": "Frontend Developer",
+      "namecard_title": "권채원입니다. 문제를 해결하는 엔지니어",
+      "keywords": [
+        "Docker",
+        "AWS",
+        "TypeScript"
+      ],
+      "style": {
+        "color": "blue",
+        "typoFont": "Sans-serif",
+        "cardTexture": "None",
+        "logo": "true",
+        "qrcode": "true"
+      }
+    },
+    {
+      "user_id": "98",
+      "name": "송서윤",
+      "email": "user98@poticard.com",
+      "url": "github.com/user98",
+      "affiliation": "Data Scientist",
+      "namecard_title": "송서윤입니다. 사용자 경험을 디자인하는 디자이너",
+      "keywords": [
+        "Java",
+        "C++",
+        "Kotlin"
+      ],
+      "style": {
+        "color": "green",
+        "typoFont": "Serif",
+        "cardTexture": "Paper",
+        "logo": "true",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "99",
+      "name": "송지아",
+      "email": "user99@poticard.com",
+      "url": "github.com/user99",
+      "affiliation": "Data Scientist",
+      "namecard_title": "송지아입니다. 함께 자라기를 실천하는 리더",
+      "keywords": [
+        "Go",
+        "JavaScript",
+        "Kotlin"
+      ],
+      "style": {
+        "color": "orange",
+        "typoFont": "Pretendard",
+        "cardTexture": "Paper",
+        "logo": "true",
+        "qrcode": "false"
+      }
+    },
+    {
+      "user_id": "100",
+      "name": "임주원",
+      "email": "user100@poticard.com",
+      "url": "github.com/user100",
+      "affiliation": "Product Manager",
+      "namecard_title": "임주원입니다. 사용자 경험을 디자인하는 디자이너",
+      "keywords": [
+        "Vue.js",
+        "Python",
+        "JavaScript"
+      ],
+      "style": {
+        "color": "red",
+        "typoFont": "Pretendard",
+        "cardTexture": "None",
+        "logo": "false",
+        "qrcode": "false"
+      }
+    }
+  ]
+}

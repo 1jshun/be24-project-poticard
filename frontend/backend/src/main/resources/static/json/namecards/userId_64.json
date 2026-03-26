@@ -1,0 +1,29 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "64",
+    "name": "최지민",
+    "email": "user64@poticard.com",
+    "url": "github.com/user64",
+    "affiliation": "Data Scientist",
+    "namecard_title": "최지민입니다. Data Scientist로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "M",
+    "keywords": [
+      "Go",
+      "Spring",
+      "Vue.js"
+    ],
+    "style": {
+      "color": "red",
+      "typoFont": "Cursive",
+      "cardTexture": "Wood",
+      "logo": "false",
+      "qrcode": "true",
+      "avatar": "https://api.dicebear.com/7.x/micah/svg?seed=ubkm9a"
+    }
+  }
+}

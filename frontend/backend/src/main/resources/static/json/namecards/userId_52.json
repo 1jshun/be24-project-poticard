@@ -1,0 +1,28 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "52",
+    "name": "박채원",
+    "email": "user52@poticard.com",
+    "url": "github.com/user52",
+    "affiliation": "Product Manager",
+    "namecard_title": "박채원입니다. Product Manager로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "F",
+    "keywords": [
+      "Python",
+      "Svelte"
+    ],
+    "style": {
+      "color": "black",
+      "typoFont": "Sans-serif",
+      "cardTexture": "Plastic",
+      "logo": "true",
+      "qrcode": "false",
+      "avatar": "https://api.dicebear.com/7.x/lorelei/svg?seed=jw8cku"
+    }
+  }
+}

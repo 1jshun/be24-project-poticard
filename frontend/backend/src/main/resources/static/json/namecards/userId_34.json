@@ -1,0 +1,28 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "34",
+    "name": "송지아",
+    "email": "user34@poticard.com",
+    "url": "github.com/user34",
+    "affiliation": "UI/UX Designer",
+    "namecard_title": "송지아입니다. UI/UX Designer로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "M",
+    "keywords": [
+      "Spring",
+      "Kubernetes"
+    ],
+    "style": {
+      "color": "orange",
+      "typoFont": "Serif",
+      "cardTexture": "Wood",
+      "logo": "false",
+      "qrcode": "true",
+      "avatar": "https://api.dicebear.com/7.x/notionists/svg?seed=10rsog"
+    }
+  }
+}

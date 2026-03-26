@@ -1,0 +1,29 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "29",
+    "name": "류채원",
+    "email": "user29@poticard.com",
+    "url": "github.com/user29",
+    "affiliation": "Student",
+    "namecard_title": "류채원입니다. Student로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "F",
+    "keywords": [
+      "Svelte",
+      "React",
+      "Next.js"
+    ],
+    "style": {
+      "color": "black",
+      "typoFont": "Monospace",
+      "cardTexture": "Glass",
+      "logo": "false",
+      "qrcode": "false",
+      "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=bcwfar"
+    }
+  }
+}

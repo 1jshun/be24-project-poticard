@@ -1,0 +1,20 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "postId": "16",
+    "category": "FREE",
+    "isQNA": false,
+    "isSolved": false,
+    "title": "올해 개발 트렌드 정리",
+    "author": "영희",
+    "likes": "78",
+    "replys": "5",
+    "tags": [
+      "UI",
+      "Tailwind"
+    ],
+    "createdAt": "2025-04-11-00:37:33"
+  }
+}

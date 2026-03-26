@@ -1,0 +1,29 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "22",
+    "name": "이민지",
+    "email": "user22@poticard.com",
+    "url": "github.com/user22",
+    "affiliation": "Product Manager",
+    "namecard_title": "이민지입니다. Product Manager로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "M",
+    "keywords": [
+      "AWS",
+      "Docker",
+      "React"
+    ],
+    "style": {
+      "color": "black",
+      "typoFont": "Serif",
+      "cardTexture": "Wood",
+      "logo": "true",
+      "qrcode": "true",
+      "avatar": "https://api.dicebear.com/7.x/adventurer/svg?seed=x66uro"
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "74",
+    "name": "장민준",
+    "email": "user74@poticard.com",
+    "url": "github.com/user74",
+    "affiliation": "DevOps Engineer",
+    "namecard_title": "장민준입니다. DevOps Engineer로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "F",
+    "keywords": [
+      "TypeScript",
+      "AWS",
+      "Node.js",
+      "Kubernetes"
+    ],
+    "style": {
+      "color": "orange",
+      "typoFont": "Monospace",
+      "cardTexture": "Paper",
+      "logo": "true",
+      "qrcode": "false",
+      "avatar": "https://api.dicebear.com/7.x/open-peeps/svg?seed=ozl6jf"
+    }
+  }
+}

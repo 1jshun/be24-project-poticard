@@ -1,0 +1,19 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "postId": "10",
+    "category": "RECRUIT",
+    "isQNA": false,
+    "isSolved": false,
+    "title": "주말 코딩 스터디 모집",
+    "author": "성훈",
+    "likes": "60",
+    "replys": "8",
+    "tags": [
+      "Vue"
+    ],
+    "createdAt": "2025-07-24-12:19:53"
+  }
+}

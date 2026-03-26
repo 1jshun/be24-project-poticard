@@ -1,0 +1,29 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "17",
+    "name": "강서준",
+    "email": "user17@poticard.com",
+    "url": "github.com/user17",
+    "affiliation": "Data Scientist",
+    "namecard_title": "강서준입니다. Data Scientist로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "M",
+    "keywords": [
+      "React",
+      "Go",
+      "Rust"
+    ],
+    "style": {
+      "color": "purple",
+      "typoFont": "Sans-serif",
+      "cardTexture": "Plastic",
+      "logo": "true",
+      "qrcode": "true",
+      "avatar": "https://api.dicebear.com/7.x/open-peeps/svg?seed=xqjft"
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "30",
+    "name": "전하은",
+    "email": "user30@poticard.com",
+    "url": "github.com/user30",
+    "affiliation": "Product Manager",
+    "namecard_title": "전하은입니다. Product Manager로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "F",
+    "keywords": [
+      "Vue.js",
+      "Django",
+      "Angular",
+      "Node.js"
+    ],
+    "style": {
+      "color": "red",
+      "typoFont": "Monospace",
+      "cardTexture": "Metal",
+      "logo": "true",
+      "qrcode": "false",
+      "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=497jms"
+    }
+  }
+}

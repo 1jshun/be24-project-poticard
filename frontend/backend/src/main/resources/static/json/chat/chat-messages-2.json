@@ -1,0 +1,38 @@
+{
+    "success": true,
+    "code": 20000,
+    "message": "OK",
+    "data": {
+        "roomId": 2,
+        "roomStatus": "ACTIVE", 
+        "host": {
+            "userId": 2,
+            "userName": "이민수"
+        },
+        "guest": {
+            "userId": 1,
+            "userName": "김포티"
+        },
+        "messages": [ 
+            {
+                "messageId": 1,
+                "senderId": 2,
+                "content": "ERD 그린 거 봤는데 notification 테이블 FK 구성 괜찮아 보여.",
+                "contentType": "TEXT",
+                "isRead": true,
+                "createdAt": "2026-01-15T21:03:00Z",
+                "updatedAt": "2026-01-15T21:03:00Z"
+            },
+	    {
+                "messageId": 2,
+                "senderId": 1,
+                "content": "오 고마워. 인덱스도 같이 잡아볼까?",
+                "contentType": "TEXT",
+                "isRead": true,
+                "createdAt": "2026-01-15T21:04:00Z",
+                "updatedAt": "2026-01-15T21:04:00Z"
+            }
+        ],
+        "totalMessageCount": 2
+    }
+}

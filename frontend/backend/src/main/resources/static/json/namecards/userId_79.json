@@ -1,0 +1,29 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "79",
+    "name": "이서연",
+    "email": "user79@poticard.com",
+    "url": "github.com/user79",
+    "affiliation": "Backend Dev",
+    "namecard_title": "이서연입니다. Backend Dev로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "M",
+    "keywords": [
+      "Spring",
+      "AWS",
+      "Rust"
+    ],
+    "style": {
+      "color": "black",
+      "typoFont": "Cursive",
+      "cardTexture": "Paper",
+      "logo": "false",
+      "qrcode": "true",
+      "avatar": "https://api.dicebear.com/7.x/lorelei/svg?seed=clpzmm"
+    }
+  }
+}

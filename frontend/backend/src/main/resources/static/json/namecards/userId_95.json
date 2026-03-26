@@ -1,0 +1,29 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "95",
+    "name": "김시우",
+    "email": "user95@poticard.com",
+    "url": "github.com/user95",
+    "affiliation": "Full Stack Dev",
+    "namecard_title": "김시우입니다. Full Stack Dev로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "F",
+    "keywords": [
+      "Python",
+      "AWS",
+      "Go"
+    ],
+    "style": {
+      "color": "purple",
+      "typoFont": "Serif",
+      "cardTexture": "Plastic",
+      "logo": "false",
+      "qrcode": "false",
+      "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=cjwqk"
+    }
+  }
+}

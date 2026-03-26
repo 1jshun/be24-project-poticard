@@ -1,0 +1,30 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "32",
+    "name": "황하은",
+    "email": "user32@poticard.com",
+    "url": "github.com/user32",
+    "affiliation": "UI/UX Designer",
+    "namecard_title": "황하은입니다. UI/UX Designer로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "F",
+    "keywords": [
+      "Docker",
+      "Kubernetes",
+      "Rust",
+      "TypeScript"
+    ],
+    "style": {
+      "color": "gray",
+      "typoFont": "Cursive",
+      "cardTexture": "Wood",
+      "logo": "true",
+      "qrcode": "false",
+      "avatar": "https://api.dicebear.com/7.x/open-peeps/svg?seed=yqad9"
+    }
+  }
+}

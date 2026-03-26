@@ -1,0 +1,20 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "postId": "18",
+    "category": "QNA",
+    "isQNA": true,
+    "isSolved": true,
+    "title": "Next.js 14 서버 컴포넌트 질문",
+    "author": "준호",
+    "likes": "40",
+    "replys": "12",
+    "tags": [
+      "UI",
+      "TypeScript"
+    ],
+    "createdAt": "2025-04-21-15:36:37"
+  }
+}

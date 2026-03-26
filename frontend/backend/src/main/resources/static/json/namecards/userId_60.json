@@ -1,0 +1,29 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "60",
+    "name": "황하은",
+    "email": "user60@poticard.com",
+    "url": "github.com/user60",
+    "affiliation": "Backend Dev",
+    "namecard_title": "황하은입니다. Backend Dev로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "M",
+    "keywords": [
+      "TypeScript",
+      "Django",
+      "Vue.js"
+    ],
+    "style": {
+      "color": "purple",
+      "typoFont": "Cursive",
+      "cardTexture": "Paper",
+      "logo": "false",
+      "qrcode": "false",
+      "avatar": "https://api.dicebear.com/7.x/notionists/svg?seed=44osxe"
+    }
+  }
+}

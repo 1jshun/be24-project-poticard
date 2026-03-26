@@ -1,0 +1,19 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "postId": "30",
+    "category": "FREE",
+    "isQNA": false,
+    "isSolved": false,
+    "title": "재택근무 장단점 후기",
+    "author": "영희",
+    "likes": "15",
+    "replys": "41",
+    "tags": [
+      "Spring"
+    ],
+    "createdAt": "2025-02-14-05:27:14"
+  }
+}

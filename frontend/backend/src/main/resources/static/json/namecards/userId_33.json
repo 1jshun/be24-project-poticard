@@ -1,0 +1,30 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "33",
+    "name": "박도윤",
+    "email": "user33@poticard.com",
+    "url": "github.com/user33",
+    "affiliation": "Student",
+    "namecard_title": "박도윤입니다. Student로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "F",
+    "keywords": [
+      "Kubernetes",
+      "Vue.js",
+      "Angular",
+      "Rust"
+    ],
+    "style": {
+      "color": "green",
+      "typoFont": "Cursive",
+      "cardTexture": "Glass",
+      "logo": "false",
+      "qrcode": "true",
+      "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=ootbrm"
+    }
+  }
+}

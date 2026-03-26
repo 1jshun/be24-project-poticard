@@ -1,0 +1,13 @@
+{
+  "id": 4,
+  "name": "CloudNine",
+  "role": "DevOps Engineer",
+  "category": "DevOps",
+  "location": "Seoul",
+  "exp": "주니어/미들",
+  "skills": ["AWS", "Docker", "Nginx", "Linux"],
+  "badges": ["추천"],
+  "likes": 77,
+  "views": 990,
+  "updatedAt": "2026-01-09"
+}

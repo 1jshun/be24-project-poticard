@@ -1,0 +1,21 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "postId": "7",
+    "category": "FREE",
+    "isQNA": false,
+    "isSolved": false,
+    "title": "올해 개발 트렌드 정리",
+    "author": "철수",
+    "likes": "93",
+    "replys": "43",
+    "tags": [
+      "UI",
+      "Tailwind",
+      "TypeScript"
+    ],
+    "createdAt": "2025-12-17-13:22:13"
+  }
+}

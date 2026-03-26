@@ -1,0 +1,29 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "55",
+    "name": "한지민",
+    "email": "user55@poticard.com",
+    "url": "github.com/user55",
+    "affiliation": "Frontend Dev",
+    "namecard_title": "한지민입니다. Frontend Dev로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "M",
+    "keywords": [
+      "Python",
+      "Docker",
+      "Svelte"
+    ],
+    "style": {
+      "color": "purple",
+      "typoFont": "Sans-serif",
+      "cardTexture": "Wood",
+      "logo": "true",
+      "qrcode": "false",
+      "avatar": "https://api.dicebear.com/7.x/adventurer/svg?seed=p78mgp"
+    }
+  }
+}

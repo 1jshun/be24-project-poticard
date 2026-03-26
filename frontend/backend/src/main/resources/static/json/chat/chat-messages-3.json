@@ -1,0 +1,74 @@
+{
+    "success": true,
+    "code": 20000,
+    "message": "OK",
+    "data": {
+        "roomId": 3,
+        "roomStatus": "ACTIVE", 
+        "host": {
+            "userId": 4,
+            "userName": "박지영"
+        },
+        "guest": {
+            "userId": 1,
+            "userName": "김포티"
+        },
+        "messages": [ 
+            {
+                "messageId": 1,
+                "senderId": 4,
+                "content": "포티카드 커뮤니티 UI 너무 깔끔하네요",
+                "contentType": "TEXT",
+                "isRead": true,
+                "createdAt": "2026-01-14T21:03:00Z",
+                "updatedAt": "2026-01-14T21:03:00Z"
+            },
+	    {
+                "messageId": 2,
+                "senderId": 4,
+                "content": "네 맞아요! 백엔드/풀스택 관심 있어요. 어떤 포지션인지 궁금합니다.",
+                "contentType": "TEXT",
+                "isRead": true,
+                "createdAt": "2026-01-14T21:04:00Z",
+                "updatedAt": "2026-01-14T21:04:00Z"
+            },
+	    {
+                "messageId": 3,
+                "senderId": 1,
+                "content": "맞아요. 지금 채팅 페이지도 작업 중이에요.",
+                "contentType": "TEXT",
+                "isRead": true,
+                "createdAt": "2026-01-14T21:05:00Z",
+                "updatedAt": "2026-01-14T21:05:00Z"
+            },
+            {
+                "messageId": 3,
+                "senderId": 4,
+                "content": "좋아요. 얼른 끝내고 채용쪽도 마무리해주세요~",
+                "contentType": "TEXT",
+                "isRead": true,
+                "createdAt": "2026-01-14T21:10:00Z",
+                "updatedAt": "2026-01-14T21:10:00Z"
+            },
+            {
+                "messageId": 3,
+                "senderId": 4,
+                "content": "포티님 메신저 확인 부탁드릴게요",
+                "contentType": "TEXT",
+                "isRead": true,
+                "createdAt": "2026-01-14T21:15:00Z",
+                "updatedAt": "2026-01-14T21:15:00Z"
+            },
+            {
+                "messageId": 3,
+                "senderId": 4,
+                "content": "대답",
+                "contentType": "TEXT",
+                "isRead": true,
+                "createdAt": "2026-01-14T21:18:00Z",
+                "updatedAt": "2026-01-14T21:18:00Z"
+            }
+        ],
+        "totalMessageCount": 6
+    }
+}

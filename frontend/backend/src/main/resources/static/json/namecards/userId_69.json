@@ -1,0 +1,28 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "69",
+    "name": "오민준",
+    "email": "user69@poticard.com",
+    "url": "github.com/user69",
+    "affiliation": "Student",
+    "namecard_title": "오민준입니다. Student로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "M",
+    "keywords": [
+      "Kubernetes",
+      "Angular"
+    ],
+    "style": {
+      "color": "orange",
+      "typoFont": "Serif",
+      "cardTexture": "Wood",
+      "logo": "false",
+      "qrcode": "true",
+      "avatar": "https://api.dicebear.com/7.x/miniavs/svg?seed=1eoan"
+    }
+  }
+}

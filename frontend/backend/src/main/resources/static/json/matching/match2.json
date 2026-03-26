@@ -1,0 +1,13 @@
+{
+  "id": 2,
+  "name": "Poticard",
+  "role": "Fullstack Engineer",
+  "category": "Fullstack",
+  "location": "Remote",
+  "exp": "주니어",
+  "skills": ["Vue", "Spring", "MySQL", "Nginx"],
+  "badges": ["인기"],
+  "likes": 98,
+  "views": 1522,
+  "updatedAt": "2026-01-10"
+}

@@ -1,0 +1,28 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "51",
+    "name": "서민지",
+    "email": "user51@poticard.com",
+    "url": "github.com/user51",
+    "affiliation": "DevOps Engineer",
+    "namecard_title": "서민지입니다. DevOps Engineer로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "M",
+    "keywords": [
+      "Python",
+      "Rust"
+    ],
+    "style": {
+      "color": "black",
+      "typoFont": "Sans-serif",
+      "cardTexture": "Plastic",
+      "logo": "true",
+      "qrcode": "false",
+      "avatar": "https://api.dicebear.com/7.x/miniavs/svg?seed=cs9j5p"
+    }
+  }
+}

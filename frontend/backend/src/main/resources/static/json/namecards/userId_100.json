@@ -1,0 +1,28 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "100",
+    "name": "신민지",
+    "email": "user100@poticard.com",
+    "url": "github.com/user100",
+    "affiliation": "UI/UX Designer",
+    "namecard_title": "신민지입니다. UI/UX Designer로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "M",
+    "keywords": [
+      "Spring",
+      "React"
+    ],
+    "style": {
+      "color": "gray",
+      "typoFont": "Monospace",
+      "cardTexture": "Wood",
+      "logo": "false",
+      "qrcode": "false",
+      "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=tmynhgh"
+    }
+  }
+}

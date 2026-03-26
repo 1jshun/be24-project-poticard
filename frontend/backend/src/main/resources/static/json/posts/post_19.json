@@ -1,0 +1,21 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "postId": "19",
+    "category": "TIPS",
+    "isQNA": false,
+    "isSolved": false,
+    "title": "오늘 점심 뭐 드셨나요?",
+    "author": "철수",
+    "likes": "35",
+    "replys": "17",
+    "tags": [
+      "UI",
+      "Tailwind",
+      "React"
+    ],
+    "createdAt": "2025-05-17-23:03:20"
+  }
+}

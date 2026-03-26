@@ -1,0 +1,29 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "16",
+    "name": "이민지",
+    "email": "user16@poticard.com",
+    "url": "github.com/user16",
+    "affiliation": "Student",
+    "namecard_title": "이민지입니다. Student로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "M",
+    "keywords": [
+      "Angular",
+      "TypeScript",
+      "Go"
+    ],
+    "style": {
+      "color": "blue",
+      "typoFont": "Serif",
+      "cardTexture": "Paper",
+      "logo": "false",
+      "qrcode": "false",
+      "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=38xl4ic"
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "40",
+    "name": "윤서연",
+    "email": "user40@poticard.com",
+    "url": "github.com/user40",
+    "affiliation": "Frontend Dev",
+    "namecard_title": "윤서연입니다. Frontend Dev로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "F",
+    "keywords": [
+      "Python",
+      "Go"
+    ],
+    "style": {
+      "color": "black",
+      "typoFont": "Serif",
+      "cardTexture": "Wood",
+      "logo": "true",
+      "qrcode": "false",
+      "avatar": "https://api.dicebear.com/7.x/notionists/svg?seed=mpschl"
+    }
+  }
+}

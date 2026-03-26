@@ -1,0 +1,21 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "postId": "26",
+    "category": "QNA",
+    "isQNA": true,
+    "isSolved": false,
+    "title": "Tailwind CSS 적용이 안되네요",
+    "author": "다은",
+    "likes": "6",
+    "replys": "20",
+    "tags": [
+      "Java",
+      "UI",
+      "Spring"
+    ],
+    "createdAt": "2025-07-12-19:23:39"
+  }
+}

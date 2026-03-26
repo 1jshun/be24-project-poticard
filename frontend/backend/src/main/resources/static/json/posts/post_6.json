@@ -1,0 +1,21 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "postId": "6",
+    "category": "RECRUIT",
+    "isQNA": false,
+    "isSolved": false,
+    "title": "오늘 점심 뭐 드셨나요?",
+    "author": "영희",
+    "likes": "97",
+    "replys": "39",
+    "tags": [
+      "UI",
+      "Spring",
+      "Vue"
+    ],
+    "createdAt": "2025-10-02-15:35:47"
+  }
+}

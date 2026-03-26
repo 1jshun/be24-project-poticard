@@ -1,0 +1,47 @@
+{
+    "success": true,
+    "code": 20000,
+    "message": "OK",
+    "data": {
+        "roomId": 1,
+        "roomStatus": "ACTIVE", 
+        "host": {
+            "userId": 3,
+            "userName": "김채용"
+        },
+        "guest": {
+            "userId": 1,
+            "userName": "김포티"
+        },
+        "messages": [ 
+            {
+                "messageId": 1,
+                "senderId": 3,
+                "content": "안녕하세요! 포트폴리오 잘 봤습니다. 백엔드 쪽 지원 맞으신가요?",
+                "contentType": "TEXT",
+                "isRead": true,
+                "createdAt": "2026-01-13T21:03:00Z",
+                "updatedAt": "2026-01-13T21:03:00Z"
+            },
+	    {
+                "messageId": 2,
+                "senderId": 1,
+                "content": "예??",
+                "contentType": "TEXT",
+                "isRead": true,
+                "createdAt": "2026-01-13T21:04:00Z",
+                "updatedAt": "2026-01-13T21:04:00Z"
+            },
+	    {
+                "messageId": 3,
+                "senderId": 3,
+                "content": "Spring 기반 서비스 운영 경험 있으시면 좋을 것 같아요. 간단히 통화 가능하실까요?",
+                "contentType": "TEXT",
+                "isRead": true,
+                "createdAt": "2026-01-13T21:05:00Z",
+                "updatedAt": "2026-01-13T21:05:00Z"
+            }
+        ],
+        "totalMessageCount": 3
+    }
+}

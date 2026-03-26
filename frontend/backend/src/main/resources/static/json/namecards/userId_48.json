@@ -1,0 +1,30 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "48",
+    "name": "조윤서",
+    "email": "user48@poticard.com",
+    "url": "github.com/user48",
+    "affiliation": "UI/UX Designer",
+    "namecard_title": "조윤서입니다. UI/UX Designer로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "M",
+    "keywords": [
+      "Node.js",
+      "Docker",
+      "Kubernetes",
+      "Django"
+    ],
+    "style": {
+      "color": "purple",
+      "typoFont": "Sans-serif",
+      "cardTexture": "Plastic",
+      "logo": "false",
+      "qrcode": "false",
+      "avatar": "https://api.dicebear.com/7.x/open-peeps/svg?seed=1rc0db"
+    }
+  }
+}

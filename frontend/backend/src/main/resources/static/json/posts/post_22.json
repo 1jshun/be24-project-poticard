@@ -1,0 +1,21 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "postId": "22",
+    "category": "SHOWCASE",
+    "isQNA": false,
+    "isSolved": false,
+    "title": "새로 만든 라이브러리 소개",
+    "author": "철수",
+    "likes": "67",
+    "replys": "33",
+    "tags": [
+      "React",
+      "Spring",
+      "Vue"
+    ],
+    "createdAt": "2025-06-22-12:47:51"
+  }
+}

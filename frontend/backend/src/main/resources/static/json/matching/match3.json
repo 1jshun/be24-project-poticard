@@ -1,0 +1,13 @@
+{
+  "id": 3,
+  "name": "Ssam Platform",
+  "role": "Frontend Engineer",
+  "category": "Frontend",
+  "location": "Seoul",
+  "exp": "신입",
+  "skills": ["Vue", "Tailwind", "TypeScript"],
+  "badges": ["신규"],
+  "likes": 44,
+  "views": 630,
+  "updatedAt": "2026-01-14"
+}

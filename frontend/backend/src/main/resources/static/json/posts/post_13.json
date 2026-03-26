@@ -1,0 +1,20 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "postId": "13",
+    "category": "RECRUIT",
+    "isQNA": false,
+    "isSolved": false,
+    "title": "재택근무 장단점 후기",
+    "author": "서연",
+    "likes": "23",
+    "replys": "19",
+    "tags": [
+      "Vue",
+      "React"
+    ],
+    "createdAt": "2025-09-11-16:30:05"
+  }
+}

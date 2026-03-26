@@ -1,0 +1,29 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "10",
+    "name": "신하은",
+    "email": "user10@poticard.com",
+    "url": "github.com/user10",
+    "affiliation": "Frontend Dev",
+    "namecard_title": "신하은입니다. Frontend Dev로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "M",
+    "keywords": [
+      "Docker",
+      "Django",
+      "Angular"
+    ],
+    "style": {
+      "color": "green",
+      "typoFont": "Serif",
+      "cardTexture": "Glass",
+      "logo": "true",
+      "qrcode": "false",
+      "avatar": "https://api.dicebear.com/7.x/lorelei/svg?seed=4mujn"
+    }
+  }
+}

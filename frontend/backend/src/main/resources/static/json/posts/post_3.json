@@ -1,0 +1,21 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "postId": "3",
+    "category": "RECRUIT",
+    "isQNA": false,
+    "isSolved": false,
+    "title": "개발자 키보드 추천 부탁드립니다",
+    "author": "다은",
+    "likes": "79",
+    "replys": "16",
+    "tags": [
+      "Vue",
+      "Spring",
+      "TypeScript"
+    ],
+    "createdAt": "2025-11-06-15:06:01"
+  }
+}

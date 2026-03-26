@@ -1,0 +1,19 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "postId": "4",
+    "category": "RECRUIT",
+    "isQNA": false,
+    "isSolved": false,
+    "title": "올해 개발 트렌드 정리",
+    "author": "영희",
+    "likes": "19",
+    "replys": "7",
+    "tags": [
+      "TypeScript"
+    ],
+    "createdAt": "2025-12-03-05:28:39"
+  }
+}

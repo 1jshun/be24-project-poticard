@@ -1,0 +1,30 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "50",
+    "name": "권지민",
+    "email": "user50@poticard.com",
+    "url": "github.com/user50",
+    "affiliation": "Full Stack Dev",
+    "namecard_title": "권지민입니다. Full Stack Dev로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "F",
+    "keywords": [
+      "TypeScript",
+      "Kubernetes",
+      "Docker",
+      "Spring"
+    ],
+    "style": {
+      "color": "green",
+      "typoFont": "Serif",
+      "cardTexture": "Wood",
+      "logo": "false",
+      "qrcode": "true",
+      "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=r9i3o"
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "1",
+    "name": "조지아",
+    "email": "user1@poticard.com",
+    "url": "github.com/user1",
+    "affiliation": "DevOps Engineer",
+    "namecard_title": "조지아입니다. DevOps Engineer로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "M",
+    "keywords": [
+      "Kubernetes",
+      "Spring",
+      "AWS"
+    ],
+    "style": {
+      "color": "purple",
+      "typoFont": "Cursive",
+      "cardTexture": "Glass",
+      "logo": "false",
+      "qrcode": "true",
+      "avatar": "https://api.dicebear.com/7.x/open-peeps/svg?seed=5ilzpk"
+    }
+  }
+}

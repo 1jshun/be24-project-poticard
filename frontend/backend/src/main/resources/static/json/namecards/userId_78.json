@@ -1,0 +1,29 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "78",
+    "name": "전지아",
+    "email": "user78@poticard.com",
+    "url": "github.com/user78",
+    "affiliation": "Frontend Dev",
+    "namecard_title": "전지아입니다. Frontend Dev로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "F",
+    "keywords": [
+      "Django",
+      "Angular",
+      "Svelte"
+    ],
+    "style": {
+      "color": "red",
+      "typoFont": "Sans-serif",
+      "cardTexture": "Metal",
+      "logo": "true",
+      "qrcode": "true",
+      "avatar": "https://api.dicebear.com/7.x/lorelei/svg?seed=oajwhb"
+    }
+  }
+}

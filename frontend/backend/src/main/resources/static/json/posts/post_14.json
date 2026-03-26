@@ -1,0 +1,20 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "postId": "14",
+    "category": "TIPS",
+    "isQNA": false,
+    "isSolved": false,
+    "title": "오늘 점심 뭐 드셨나요?",
+    "author": "준호",
+    "likes": "78",
+    "replys": "30",
+    "tags": [
+      "Spring",
+      "UI"
+    ],
+    "createdAt": "2025-07-06-22:56:55"
+  }
+}

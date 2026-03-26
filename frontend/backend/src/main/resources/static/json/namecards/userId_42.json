@@ -1,0 +1,28 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "42",
+    "name": "임하준",
+    "email": "user42@poticard.com",
+    "url": "github.com/user42",
+    "affiliation": "Frontend Dev",
+    "namecard_title": "임하준입니다. Frontend Dev로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "F",
+    "keywords": [
+      "Kubernetes",
+      "Docker"
+    ],
+    "style": {
+      "color": "red",
+      "typoFont": "Serif",
+      "cardTexture": "Wood",
+      "logo": "true",
+      "qrcode": "false",
+      "avatar": "https://api.dicebear.com/7.x/adventurer/svg?seed=3f01nd"
+    }
+  }
+}

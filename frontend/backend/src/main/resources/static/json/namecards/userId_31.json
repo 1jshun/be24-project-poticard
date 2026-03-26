@@ -1,0 +1,29 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "31",
+    "name": "권지민",
+    "email": "user31@poticard.com",
+    "url": "github.com/user31",
+    "affiliation": "Product Manager",
+    "namecard_title": "권지민입니다. Product Manager로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "M",
+    "keywords": [
+      "Vue.js",
+      "Kubernetes",
+      "Node.js"
+    ],
+    "style": {
+      "color": "purple",
+      "typoFont": "Cursive",
+      "cardTexture": "Plastic",
+      "logo": "false",
+      "qrcode": "false",
+      "avatar": "https://api.dicebear.com/7.x/miniavs/svg?seed=5k1emo"
+    }
+  }
+}

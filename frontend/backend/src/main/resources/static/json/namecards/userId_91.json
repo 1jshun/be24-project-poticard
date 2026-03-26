@@ -1,0 +1,30 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "91",
+    "name": "송하준",
+    "email": "user91@poticard.com",
+    "url": "github.com/user91",
+    "affiliation": "Backend Dev",
+    "namecard_title": "송하준입니다. Backend Dev로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "F",
+    "keywords": [
+      "Next.js",
+      "Django",
+      "TypeScript",
+      "Svelte"
+    ],
+    "style": {
+      "color": "orange",
+      "typoFont": "Monospace",
+      "cardTexture": "Paper",
+      "logo": "true",
+      "qrcode": "true",
+      "avatar": "https://api.dicebear.com/7.x/open-peeps/svg?seed=lga41d"
+    }
+  }
+}

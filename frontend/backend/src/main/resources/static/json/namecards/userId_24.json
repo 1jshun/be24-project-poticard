@@ -1,0 +1,29 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "24",
+    "name": "강예준",
+    "email": "user24@poticard.com",
+    "url": "github.com/user24",
+    "affiliation": "Full Stack Dev",
+    "namecard_title": "강예준입니다. Full Stack Dev로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "F",
+    "keywords": [
+      "Go",
+      "Spring",
+      "Angular"
+    ],
+    "style": {
+      "color": "green",
+      "typoFont": "Serif",
+      "cardTexture": "Wood",
+      "logo": "true",
+      "qrcode": "true",
+      "avatar": "https://api.dicebear.com/7.x/micah/svg?seed=4936se"
+    }
+  }
+}

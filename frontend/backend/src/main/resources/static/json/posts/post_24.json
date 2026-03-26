@@ -1,0 +1,21 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "postId": "24",
+    "category": "FREE",
+    "isQNA": false,
+    "isSolved": false,
+    "title": "오늘 점심 뭐 드셨나요?",
+    "author": "다은",
+    "likes": "35",
+    "replys": "44",
+    "tags": [
+      "React",
+      "Java",
+      "Tailwind"
+    ],
+    "createdAt": "2025-02-16-08:20:08"
+  }
+}

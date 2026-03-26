@@ -1,0 +1,30 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "26",
+    "name": "오지우",
+    "email": "user26@poticard.com",
+    "url": "github.com/user26",
+    "affiliation": "Product Manager",
+    "namecard_title": "오지우입니다. Product Manager로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "M",
+    "keywords": [
+      "Docker",
+      "React",
+      "Svelte",
+      "Python"
+    ],
+    "style": {
+      "color": "black",
+      "typoFont": "Monospace",
+      "cardTexture": "Metal",
+      "logo": "false",
+      "qrcode": "false",
+      "avatar": "https://api.dicebear.com/7.x/adventurer/svg?seed=zniwig"
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "72",
+    "name": "신서현",
+    "email": "user72@poticard.com",
+    "url": "github.com/user72",
+    "affiliation": "Backend Dev",
+    "namecard_title": "신서현입니다. Backend Dev로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "F",
+    "keywords": [
+      "Svelte",
+      "Rust"
+    ],
+    "style": {
+      "color": "black",
+      "typoFont": "Serif",
+      "cardTexture": "Paper",
+      "logo": "false",
+      "qrcode": "false",
+      "avatar": "https://api.dicebear.com/7.x/adventurer/svg?seed=iwje98"
+    }
+  }
+}

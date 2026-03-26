@@ -1,0 +1,19 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "postId": "17",
+    "category": "TIPS",
+    "isQNA": false,
+    "isSolved": false,
+    "title": "주말 코딩 스터디 모집",
+    "author": "영희",
+    "likes": "2",
+    "replys": "15",
+    "tags": [
+      "TypeScript"
+    ],
+    "createdAt": "2025-07-07-16:00:49"
+  }
+}

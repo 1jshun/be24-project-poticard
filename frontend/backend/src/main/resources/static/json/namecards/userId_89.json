@@ -1,0 +1,29 @@
+{
+  "success": "true",
+  "code": "20000",
+  "message": "통신 성공",
+  "data": {
+    "user_id": "89",
+    "name": "서서연",
+    "email": "user89@poticard.com",
+    "url": "github.com/user89",
+    "affiliation": "Frontend Dev",
+    "namecard_title": "서서연입니다. Frontend Dev로 일하고 있습니다.",
+    "phone": "010-1234-5678",
+    "address": "Seoul, Korea",
+    "gender": "F",
+    "keywords": [
+      "Docker",
+      "Angular",
+      "Next.js"
+    ],
+    "style": {
+      "color": "green",
+      "typoFont": "Cursive",
+      "cardTexture": "Plastic",
+      "logo": "true",
+      "qrcode": "true",
+      "avatar": "https://api.dicebear.com/7.x/miniavs/svg?seed=zxqegun"
+    }
+  }
+}
