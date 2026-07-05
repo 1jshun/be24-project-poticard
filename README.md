@@ -6,7 +6,7 @@
 
 ## 바로가기
 
-- **Service** : [Poticard](https://www.poticard.kro.kr)
+- **Service** : [Poticard](https://www.poticd.kro.kr)
 - **API Docs** : [Swagger UI](https://api.poticard.kro.kr/swagger-ui/index.html)
 - **Wiki** : [Poticard Wiki](https://github.com/beyond-sw-camp/be24-3rd-DevOops-Poticard/wiki)
 - **Backend Repository** : [be24-3rd-DevOops-Poticard](https://github.com/beyond-sw-camp/be24-3rd-DevOops-Poticard)
