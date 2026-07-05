@@ -6,11 +6,11 @@
 
 ## 바로가기
 
-- 🌐 **Service** : [Poticard](https://www.poti.kro.kr)
-- 📖 **API Docs** : [Swagger UI](https://api.poticard.kro.kr/swagger-ui/index.html)
-- 📝 **Wiki** : [Poticard Wiki](https://github.com/beyond-sw-camp/be24-3rd-DevOops-Poticard/wiki)
-- 💻 **Backend Repository** : [be24-3rd-DevOops-Poticard](https://github.com/beyond-sw-camp/be24-3rd-DevOops-Poticard)
-- 🚀 **DevOps Repository** : [be24-4th-DevOops-Poticard](https://github.com/beyond-sw-camp/be24-4th-DevOops-Poticard)
+- **Service** : [Poticard](https://www.poti.kro.kr)
+- **API Docs** : [Swagger UI](https://api.poticard.kro.kr/swagger-ui/index.html)
+- **Wiki** : [Poticard Wiki](https://github.com/beyond-sw-camp/be24-3rd-DevOops-Poticard/wiki)
+- **Backend Repository** : [be24-3rd-DevOops-Poticard](https://github.com/beyond-sw-camp/be24-3rd-DevOops-Poticard)
+- **DevOps Repository** : [be24-4th-DevOops-Poticard](https://github.com/beyond-sw-camp/be24-4th-DevOops-Poticard)
 
 
 ## 담당 역할
