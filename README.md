@@ -71,6 +71,7 @@ Jenkins Pipeline은 Kubernetes Pod Agent에서 실행되며, 백엔드는 Gradle
   - [AI 첨삭 및 기술 스택 추출](#ai-review-keyword-extraction)
     - [AI 분석 흐름](#ai-analysis-flow)
   - [포트폴리오 목록 조회와 스타일 설정](#portfolio-list-style)
+    - [페이징 전략 성능 개선](#pagination-performance)
 - [2. 결제 검증 및 PRO 권한 관리](#payment-pro)
   - [PortOne 결제 위변조 검증](#payment-verification)
     - [결제 검증 및 저장 흐름](#payment-verification-flow)
@@ -170,6 +171,26 @@ AI 첨삭은 최신 성공 결제 내역의 `planCode`가 `PRO`인 사용자만 
 | 테마 | 포트폴리오 렌더링 테마 변경 |
 | 레이아웃 | 포트폴리오 레이아웃 유형 변경 |
 | 섹션 | 섹션별 표시 순서와 노출 여부 변경 |
+
+<a id="pagination-performance"></a>
+#### 페이징 전략 성능 개선
+
+포트폴리오 목록을 한 번에 불러오면 데이터가 늘어날수록 조회 범위와 응답 지연이 함께 커집니다. `PageRequest.of(page, size)`를 적용해 요청한 페이지 범위만 조회하도록 개선했고, 목록 화면의 초기 로딩 부담을 줄였습니다.
+
+| 구분 | 테스트 조건 |
+|:---|:---|
+| 데이터셋 | 사용자 1,000명, 명함 1,000건 |
+| 인프라 | Ubuntu 22.04, MariaDB, Grinder, Jaeger, Grafana |
+| 부하 환경 | VUser 2, Agent 2, Process 1, Thread 1, 1분 |
+| 측정 지표 | TPS(Transaction Per Second), MTT(Mean Transaction Time) |
+
+| 구분 | MTT | TPS |
+|:---|:---|:---|
+| 개선 전 | 29.7ms | 65.5 |
+| 페이징 적용 후 | 19.5ms | 100.9 |
+
+페이징 적용 후 평균 응답 시간은 `29.7ms → 19.5ms`로 감소했고, TPS는 `65.5 → 100.9`로 향상됐습니다.
+
 
 [목차로 돌아가기](#toc)
 
