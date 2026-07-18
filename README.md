@@ -139,6 +139,9 @@ Gemini 2.5 Flash를 활용해 포트폴리오 본문을 첨삭하고, 실제 사
 | AI 첨삭 | 원문에 없는 기술이나 경험을 만들지 않고, 개발자의 기여도와 기술 역량이 드러나도록 문장 개선 | 첨삭된 본문만 반환 |
 | 기술 스택 추출 | 실제 사용한 언어·프레임워크·라이브러리·DB·인프라 도구만 최대 8개 추출 | 쉼표로 구분된 응답을 `List<String>`으로 변환해 키워드 저장 |
 
+<img width="1046" height="607" alt="image (1)" src="https://github.com/user-attachments/assets/cb329f33-69a6-4d26-8061-3949bb20fbcb" />
+
+
 <a id="ai-analysis-flow"></a>
 #### AI 분석 흐름
 
@@ -173,21 +176,19 @@ AI 첨삭은 최신 성공 결제 내역의 `planCode`가 `PRO`인 사용자만 
 | 섹션 | 섹션별 표시 순서와 노출 여부 변경 |
 
 <a id="pagination-performance"></a>
-#### 페이징 전략 성능 개선
+#### 포트폴리오 목록 조회 성능 개선
 
-포트폴리오 목록을 한 번에 불러오면 데이터가 늘어날수록 조회 범위와 응답 지연이 함께 커집니다. `PageRequest.of(page, size)`를 적용해 요청한 페이지 범위만 조회하도록 개선했고, 목록 화면의 초기 로딩 부담을 줄였습니다.
+사용자의 포트폴리오가 누적될수록 목록을 한 번에 조회하는 방식은 조회 범위와 응답 지연을 함께 증가시킵니다. 이를 개선하기 위해 PageRequest.of(page, size)를 적용해 요청한 페이지의 데이터만 조회하도록 변경했고, 목록 화면의 초기 로딩 부담을 줄였습니다.
 
-| 구분 | 테스트 조건 |
-|:---|:---|
-| 데이터셋 | 사용자 1,000명, 명함 1,000건 |
-| 인프라 | Ubuntu 22.04, MariaDB, Grinder, Jaeger, Grafana |
-| 부하 환경 | VUser 2, Agent 2, Process 1, Thread 1, 1분 |
-| 측정 지표 | TPS(Transaction Per Second), MTT(Mean Transaction Time) |
+<img width="1608" height="282" alt="image" src="https://github.com/user-attachments/assets/2aa68ffc-4b8b-4744-849c-bb19230787b5" />
 
+<img width="1607" height="285" alt="image" src="https://github.com/user-attachments/assets/b5a41cee-089b-4290-9c45-512dea03e28f" />
+
+사용자 100명 기준
 | 구분 | MTT | TPS |
 |:---|:---|:---|
 | 개선 전 | 29.7ms | 65.5 |
-| 페이징 적용 후 | 19.5ms | 100.9 |
+| 페이징 처리 후 | 19.5ms | 100.9 |
 
 페이징 적용 후 평균 응답 시간은 `29.7ms → 19.5ms`로 감소했고, TPS는 `65.5 → 100.9`로 향상됐습니다.
 
