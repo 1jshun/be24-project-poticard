@@ -259,9 +259,3 @@ true 또는 false 반환
 | 조회 | 문자열 → 쉼표 기준으로 분리한 `List<String>` |
 
 [목차로 돌아가기](#toc)
-
----
-
-## 사용 기술
-
-`Java` `Spring Boot` `MariaDB` `AWS S3` `PortOne` `Gemini API` `Quill Editor`
