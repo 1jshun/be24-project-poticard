@@ -1,0 +1,21 @@
+architecture: "replication"
+
+auth:
+  user: "user"
+  rootPassword: "qwer1234"
+  password: "qwer1234"
+  replicationUser: "slave_user"
+  replicationPassword: "qwer1234"
+  usePasswordFiles: false
+  database: "poticard"
+ 
+passwordUpdateJob:
+  enable: true
+ 
+primary:
+  persistence:
+    size: 1Gi
+
+secondary:
+  persistence:
+    size: 1Gi

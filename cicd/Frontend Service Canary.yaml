@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service-canary
+spec:
+  type: ClusterIP          # 생략해도 기본값
+  selector:
+    type: frontend          # app=backend 라벨의 Pod에 연결
+    version: canary
+  ports:
+  - name: http
+    port: 80              # Service 포트
+    targetPort: 80     # Pod의 실제 포트
+  - name: https
+    port: 443
+    targetPort: 443
